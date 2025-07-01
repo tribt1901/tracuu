@@ -107,45 +107,54 @@
   </div>
 </div>
 <script type="module">
+// ==== Google Drive Upload via API Serverless ====
+// Tự động lấy đúng endpoint /api/upload dù ở domain nào (nếu cần dùng domain khác, sửa lại URL ở đây)
+function getApiUploadUrl() {
+  // Nếu bạn dùng custom domain, hãy để mặc định là /api/upload (tự động đúng domain hiện tại)
+  // Nếu TEST thử trên domain khác, có thể sửa thành: "https://tracuu-app.hugo.io.vn/api/upload"
+  return "/api/upload";
+}
+async function uploadFileToDriveViaAPI(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(getApiUploadUrl(), {
+    method: 'POST',
+    body: formData
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error("Upload ảnh thất bại: " + err);
+  }
+  const data = await response.json();
+  if (!data.url) throw new Error("Không nhận được link ảnh từ server!");
+  return data.url;
+}
+async function uploadAnswerImageToDrive(file) {
+  if (!file) return "";
+  try {
+    return await uploadFileToDriveViaAPI(file);
+  } catch (e) {
+    alert("Lỗi upload ảnh lên Google Drive: " + e.message);
+    return "";
+  }
+}
+// ==== END Google Drive ====
+
+// FIREBASE KHỞI TẠO
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// ==== Google Drive Upload via API Serverless ====
-// Hàm upload sử dụng API serverless của bạn
-async function uploadFileToDriveViaAPI(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData
-  });
-  const data = await response.json();
-  return data.url;
-}
-
-async function uploadAnswerImageToDrive(file, answerKey) {
-    if (!file) return "";
-    try {
-      return await uploadFileToDriveViaAPI(file);
-    } catch (e) {
-      alert("Lỗi upload ảnh lên Google Drive: " + e.message);
-      return "";
-    }
-}
-// ==== END Google Drive ====
-
-
 document.addEventListener("DOMContentLoaded", () => {
   const firebaseConfig = {
-      apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
-      authDomain: "tracuu-d3ee9.firebaseapp.com",
-      projectId: "tracuu-d3ee9",
-      storageBucket: "tracuu-d3ee9.firebasestorage.app",
-      messagingSenderId: "593568604435",
-      appId: "1:593568604435:web:9a5145457a8ee734143ae6",
-      measurementId: "G-R0M6Y502NP"
-    };
+    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
+    authDomain: "tracuu-d3ee9.firebaseapp.com",
+    projectId: "tracuu-d3ee9",
+    storageBucket: "tracuu-d3ee9.appspot.com",
+    messagingSenderId: "593568604435",
+    appId: "1:593568604435:web:9a5145457a8ee734143ae6",
+    measurementId: "G-R0M6Y502NP"
+  };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
@@ -283,10 +292,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Upload ảnh (nếu có) lên Google Drive qua API serverless
     const [answerAImgUrl, answerBImgUrl, answerCImgUrl, answerDImgUrl] = await Promise.all([
-      uploadAnswerImageToDrive(answerAImage, 'a'),
-      uploadAnswerImageToDrive(answerBImage, 'b'),
-      uploadAnswerImageToDrive(answerCImage, 'c'),
-      uploadAnswerImageToDrive(answerDImage, 'd')
+      uploadAnswerImageToDrive(answerAImage),
+      uploadAnswerImageToDrive(answerBImage),
+      uploadAnswerImageToDrive(answerCImage),
+      uploadAnswerImageToDrive(answerDImage)
     ]);
 
     await addDoc(collection(db, "cau_hoi"), {
@@ -335,18 +344,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const answerDImage = document.getElementById("answerDImage").files[0];
 
     // Lấy link ảnh cũ
-    const oldDoc = await getDocs(collection(db, "cau_hoi"));
+    const docSnap = await getDocs(collection(db, "cau_hoi"));
     let oldData = {};
-    oldDoc.forEach(docSnap=>{
-      if(docSnap.id===editingQuestionId) oldData = docSnap.data();
+    docSnap.forEach(d=>{
+      if(d.id===editingQuestionId) oldData = d.data();
     });
 
     // Upload ảnh mới nếu có, hoặc giữ ảnh cũ
     const [answerAImgUrl, answerBImgUrl, answerCImgUrl, answerDImgUrl] = await Promise.all([
-      answerAImage ? uploadAnswerImageToDrive(answerAImage, 'a') : (oldData.lua_chon?.aImg || ""),
-      answerBImage ? uploadAnswerImageToDrive(answerBImage, 'b') : (oldData.lua_chon?.bImg || ""),
-      answerCImage ? uploadAnswerImageToDrive(answerCImage, 'c') : (oldData.lua_chon?.cImg || ""),
-      answerDImage ? uploadAnswerImageToDrive(answerDImage, 'd') : (oldData.lua_chon?.dImg || "")
+      answerAImage ? uploadAnswerImageToDrive(answerAImage) : (oldData.lua_chon?.aImg || ""),
+      answerBImage ? uploadAnswerImageToDrive(answerBImage) : (oldData.lua_chon?.bImg || ""),
+      answerCImage ? uploadAnswerImageToDrive(answerCImage) : (oldData.lua_chon?.cImg || ""),
+      answerDImage ? uploadAnswerImageToDrive(answerDImage) : (oldData.lua_chon?.dImg || "")
     ]);
 
     await updateDoc(doc(db, "cau_hoi", editingQuestionId), {
