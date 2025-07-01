@@ -106,90 +106,33 @@
     <div id="questionList" style="max-height:400px; overflow-y:auto;"></div>
   </div>
 </div>
-<!-- Google Drive API script -->
-<script src="https://apis.google.com/js/api.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// ==== Google Drive Upload Helpers ====
-// Cấu hình Google Drive API (bạn phải tạo OAuth client trên Google Cloud, lấy CLIENT_ID và API_KEY)
-const CLIENT_ID = '596192103465-r6ec7jootma6l185n4k5sfmbmb0rpf20.apps.googleusercontent.com';         // <-- điền CLIENT_ID của bạn ở đây
-const API_KEY = 'AIzaSyC30eHxIrW1CBh41gfSowrjzzkHdWQcdZs';                                       // <-- điền API_KEY của bạn ở đây
-const DRIVE_FOLDER_ID = '1-7ey3WwXhw1kP7g8qy3_FSPdPLtXdlMm?usp=sharing';                       // <-- ID thư mục Drive bạn muốn lưu ảnh
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-
-function initGapiAndSignIn() {
-  return new Promise((resolve, reject) => {
-    gapi.load('client:auth2', () => {
-      gapi.client.init({
-        apiKey: API_KEY,
-        clientId: CLIENT_ID,
-        scope: SCOPES,
-        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-      }).then(() => {
-        const authInstance = gapi.auth2.getAuthInstance();
-        if (!authInstance.isSignedIn.get()) {
-          authInstance.signIn().then(resolve).catch(reject);
-        } else {
-          resolve();
-        }
-      }).catch(reject);
-    });
+// ==== Google Drive Upload via API Serverless ====
+// Hàm upload sử dụng API serverless của bạn
+async function uploadFileToDriveViaAPI(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData
   });
+  const data = await response.json();
+  return data.url;
 }
 
-async function uploadFileToDrive(file, answerKey) {
-  await initGapiAndSignIn();
-  const boundary = '-------314159265358979323846';
-  const delimiter = "\r\n--" + boundary + "\r\n";
-  const close_delim = "\r\n--" + boundary + "--";
-  const reader = new FileReader();
-  return new Promise((resolve, reject) => {
-    reader.onload = async function(e) {
-      const contentType = file.type || 'application/octet-stream';
-      const metadata = {
-        'name': `${Date.now()}_${answerKey}_${file.name}`,
-        'mimeType': contentType,
-        'parents': [DRIVE_FOLDER_ID]
-      };
-      const base64Data = btoa(reader.result);
-      const multipartRequestBody =
-        delimiter +
-        'Content-Type: application/json\r\n\r\n' +
-        JSON.stringify(metadata) +
-        delimiter +
-        'Content-Type: ' + contentType + '\r\n' +
-        'Content-Transfer-Encoding: base64\r\n' +
-        '\r\n' +
-        base64Data +
-        close_delim;
-
-      gapi.client.request({
-        'path': '/upload/drive/v3/files',
-        'method': 'POST',
-        'params': {'uploadType': 'multipart'},
-        'headers': {
-          'Content-Type': 'multipart/related; boundary="' + boundary + '"'
-        },
-        'body': multipartRequestBody
-      }).then(function(response) {
-        // Tạo link ảnh xem trực tiếp
-        const fileId = response.result.id;
-        // fileId: để public, cần gọi thêm permissions nếu muốn public cho mọi người
-        // Nhưng với scope drive.file thì chỉ chủ tài khoản xem được, hoặc dùng link download
-        // Xem ảnh: https://drive.google.com/uc?id=FILE_ID
-        resolve('https://drive.google.com/uc?id=' + fileId);
-      }, function(error) {
-        reject(error);
-      });
-    };
-    reader.onerror = reject;
-    reader.readAsBinaryString(file);
-  });
+async function uploadAnswerImageToDrive(file, answerKey) {
+    if (!file) return "";
+    try {
+      return await uploadFileToDriveViaAPI(file);
+    } catch (e) {
+      alert("Lỗi upload ảnh lên Google Drive: " + e.message);
+      return "";
+    }
 }
-
 // ==== END Google Drive ====
 
 
@@ -311,16 +254,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  async function uploadAnswerImageToDrive(file, answerKey) {
-    if (!file) return "";
-    try {
-      return await uploadFileToDrive(file, answerKey);
-    } catch (e) {
-      alert("Lỗi upload ảnh lên Google Drive: " + e.message);
-      return "";
-    }
-  }
-
   // Question CRUD
   questionForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -348,7 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!subjectId || !questionText || !answerA || !answerB || !answerC || !answerD || !correctAnswer) return;
 
-    // Upload ảnh (nếu có) lên Google Drive
+    // Upload ảnh (nếu có) lên Google Drive qua API serverless
     const [answerAImgUrl, answerBImgUrl, answerCImgUrl, answerDImgUrl] = await Promise.all([
       uploadAnswerImageToDrive(answerAImage, 'a'),
       uploadAnswerImageToDrive(answerBImage, 'b'),
