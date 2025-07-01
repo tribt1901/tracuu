@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<title>Quản trị hệ thống</title>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<style>
+    .mode-section { display: none; }
+    #logoutBtn { margin: 1rem 0; }
+    body { padding-top: 70px; }
+    .answer-input-group img { max-height: 60px; margin-left: 10px; }
+    #subjectList {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px 5px;
+        background: #fafbfc;
+    }
+</style>
+<script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<!-- Thanh menu -->
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
+  <div class="container-fluid">
+    <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
+    <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="container py-4">
+  <button class="btn btn-sm btn-danger float-end" id="logoutBtn">🚪 Đăng xuất</button>
+  <h3 class="mb-4">Chọn chế độ quản trị:</h3>
+  <select class="form-select mb-4" id="modeSelect">
+    <option value="subject">Quản trị Môn học</option>
+    <option value="question">Quản trị Câu hỏi</option>
+  </select>
+  <!-- Quản trị môn học -->
+  <div class="mode-section" id="subjectSection">
+    <h4>➕ Thêm môn học</h4>
+    <form class="mb-3" id="subjectForm">
+      <input class="form-control mb-2" id="subjectName" placeholder="Tên môn học" required type="text"/>
+      <button class="btn btn-success">Thêm</button>
+    </form>
+    <div id="subjectList"></div>
+  </div>
+  <!-- Quản trị câu hỏi -->
+  <div class="mode-section" id="questionSection">
+    <h4>🧠 Thêm câu hỏi</h4>
+    <form id="questionForm">
+      <select class="form-select mb-2" id="subjectDropdown"></select>
+      <textarea class="form-control mb-2" id="questionText" placeholder="Nội dung câu hỏi (hỗ trợ MathJax)" required rows="3"></textarea>
+      
+      <div class="answer-input-group mb-2">
+        <label for="answerA" class="form-label mb-1">Đáp án a</label>
+        <div class="input-group">
+          <input class="form-control" id="answerA" placeholder="Đáp án a" required type="text"/>
+          <input type="file" accept="image/*" class="form-control form-control-sm" id="answerAImage" style="max-width:150px;">
+        </div>
+        <div id="previewAnswerA"></div>
+      </div>
+      <div class="answer-input-group mb-2">
+        <label for="answerB" class="form-label mb-1">Đáp án b</label>
+        <div class="input-group">
+          <input class="form-control" id="answerB" placeholder="Đáp án b" required type="text"/>
+          <input type="file" accept="image/*" class="form-control form-control-sm" id="answerBImage" style="max-width:150px;">
+        </div>
+        <div id="previewAnswerB"></div>
+      </div>
+      <div class="answer-input-group mb-2">
+        <label for="answerC" class="form-label mb-1">Đáp án c</label>
+        <div class="input-group">
+          <input class="form-control" id="answerC" placeholder="Đáp án c" required type="text"/>
+          <input type="file" accept="image/*" class="form-control form-control-sm" id="answerCImage" style="max-width:150px;">
+        </div>
+        <div id="previewAnswerC"></div>
+      </div>
+      <div class="answer-input-group mb-2">
+        <label for="answerD" class="form-label mb-1">Đáp án d</label>
+        <div class="input-group">
+          <input class="form-control" id="answerD" placeholder="Đáp án d" required type="text"/>
+          <input type="file" accept="image/*" class="form-control form-control-sm" id="answerDImage" style="max-width:150px;">
+        </div>
+        <div id="previewAnswerD"></div>
+      </div>
+      <select class="form-select mb-2" id="correctAnswerDropdown" required>
+        <option value="">Chọn đáp án đúng</option>
+        <option value="a">a</option>
+        <option value="b">b</option>
+        <option value="c">c</option>
+        <option value="d">d</option>
+      </select>
+      <button type="submit" class="btn btn-success" id="submitQuestionBtn">Thêm câu hỏi</button>
+      <button type="button" class="btn btn-primary d-none" id="updateQuestionBtn">Lưu sửa đổi</button>
+    </form>
+    <div id="questionList" style="max-height:400px; overflow-y:auto;"></div>
+  </div>
+</div>
+<!-- Google Drive API script -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// ==== Google Drive Upload Helpers ====
+// Cấu hình Google Drive API (bạn phải tạo OAuth client trên Google Cloud, lấy CLIENT_ID và API_KEY)
+const CLIENT_ID = '410499196902-us2qnpk412makh2l2p06q5mjas2dm455.apps.googleusercontent.com';         // <-- điền CLIENT_ID của bạn ở đây
+const API_KEY = 'AIzaSyD_fwURlZojkM6XoP6vFliSMicGrfYH-U';                                       // <-- điền API_KEY của bạn ở đây
+const DRIVE_FOLDER_ID = '1UVEGyaONl9zywlk0tpaYtoO2HgHrMwUh';                       // <-- ID thư mục Drive bạn muốn lưu ảnh
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+function initGapiAndSignIn() {
+  return new Promise((resolve, reject) => {
+    gapi.load('client:auth2', () => {
+      gapi.client.init({
+        apiKey: API_KEY,
+        clientId: CLIENT_ID,
+        scope: SCOPES,
+        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+      }).then(() => {
+        const authInstance = gapi.auth2.getAuthInstance();
+        if (!authInstance.isSignedIn.get()) {
+          authInstance.signIn().then(resolve).catch(reject);
+        } else {
+          resolve();
+        }
+      }).catch(reject);
+    });
+  });
+}
+
+async function uploadFileToDrive(file, answerKey) {
+  await initGapiAndSignIn();
+  const boundary = '-------314159265358979323846';
+  const delimiter = "\r\n--" + boundary + "\r\n";
+  const close_delim = "\r\n--" + boundary + "--";
+  const reader = new FileReader();
+  return new Promise((resolve, reject) => {
+    reader.onload = async function(e) {
+      const contentType = file.type || 'application/octet-stream';
+      const metadata = {
+        'name': `${Date.now()}_${answerKey}_${file.name}`,
+        'mimeType': contentType,
+        'parents': [DRIVE_FOLDER_ID]
+      };
+      const base64Data = btoa(reader.result);
+      const multipartRequestBody =
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        JSON.stringify(metadata) +
+        delimiter +
+        'Content-Type: ' + contentType + '\r\n' +
+        'Content-Transfer-Encoding: base64\r\n' +
+        '\r\n' +
+        base64Data +
+        close_delim;
+
+      gapi.client.request({
+        'path': '/upload/drive/v3/files',
+        'method': 'POST',
+        'params': {'uploadType': 'multipart'},
+        'headers': {
+          'Content-Type': 'multipart/related; boundary="' + boundary + '"'
+        },
+        'body': multipartRequestBody
+      }).then(function(response) {
+        // Tạo link ảnh xem trực tiếp
+        const fileId = response.result.id;
+        // fileId: để public, cần gọi thêm permissions nếu muốn public cho mọi người
+        // Nhưng với scope drive.file thì chỉ chủ tài khoản xem được, hoặc dùng link download
+        // Xem ảnh: https://drive.google.com/uc?id=FILE_ID
+        resolve('https://drive.google.com/uc?id=' + fileId);
+      }, function(error) {
+        reject(error);
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsBinaryString(file);
+  });
+}
+
+// ==== END Google Drive ====
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const firebaseConfig = {
+    apiKey: "AIzaSyCfv6NMe_2oGLaXxt-uA0v7emWcxbHgI-M",
+    authDomain: "webtracuu-7f09a.firebaseapp.com",
+    projectId: "webtracuu-7f09a",
+    storageBucket: "webtracuu-7f09a.appspot.com",
+    messagingSenderId: "616666801965",
+    appId: "1:616666801965:web:ca5956d55f83969f6b55a4",
+    measurementId: "G-FZ1PHD50BP"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const subjectForm = document.getElementById("subjectForm");
+  const subjectList = document.getElementById("subjectList");
+  const questionForm = document.getElementById("questionForm");
+  const questionList = document.getElementById("questionList");
+  const subjectDropdown = document.getElementById("subjectDropdown");
+  const submitQuestionBtn = document.getElementById("submitQuestionBtn");
+  const updateQuestionBtn = document.getElementById("updateQuestionBtn");
+
+  let editingQuestionId = null;
+
+  // Xử lý preview ảnh
+  function handleImagePreview(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+    input.addEventListener("change", () => {
+      preview.innerHTML = "";
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement("img");
+          img.src = e.target.result;
+          preview.innerHTML = "";
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    });
+  }
+  handleImagePreview("answerAImage", "previewAnswerA");
+  handleImagePreview("answerBImage", "previewAnswerB");
+  handleImagePreview("answerCImage", "previewAnswerC");
+  handleImagePreview("answerDImage", "previewAnswerD");
+
+  // Auth check
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.href = "admin";
+    }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    signOut(auth).then(() => {
+      window.location.href = "admin";
+    });
+  });
+
+  // Switch mode
+  function switchMode() {
+    const mode = document.getElementById("modeSelect").value;
+    document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
+    if (mode === "subject") {
+      document.getElementById("subjectSection").style.display = "block";
+      loadSubjects();
+    } else if (mode === "question") {
+      document.getElementById("questionSection").style.display = "block";
+      loadSubjectsDropdown();
+      loadQuestions();
+    }
+  }
+  document.getElementById("modeSelect").addEventListener("change", switchMode);
+  switchMode();
+
+  // Subject CRUD
+  subjectForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("subjectName").value.trim();
+    if (!name) return;
+    await addDoc(collection(db, "mon_hoc"), { ten_mon: name });
+    subjectForm.reset();
+    loadSubjects();
+  });
+
+  async function loadSubjects() {
+    subjectList.innerHTML = "";
+    const snapshot = await getDocs(collection(db, "mon_hoc"));
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      const div = document.createElement("div");
+      div.className = "d-flex justify-content-between align-items-center border p-2 mb-2";
+      div.innerHTML = `
+        <span>${data.ten_mon}</span>
+        <div>
+          <button class="btn btn-sm btn-warning me-2">Sửa</button>
+          <button class="btn btn-sm btn-danger">Xóa</button>
+        </div>
+      `;
+      div.querySelector(".btn-warning").onclick = async () => {
+        const newName = prompt("Nhập tên mới:", data.ten_mon);
+        if (newName) {
+          await updateDoc(doc(db, "mon_hoc", docSnap.id), { ten_mon: newName });
+          loadSubjects();
+        }
+      };
+      div.querySelector(".btn-danger").onclick = async () => {
+        if (confirm("Bạn có chắc muốn xóa môn học này?")) {
+          await deleteDoc(doc(db, "mon_hoc", docSnap.id));
+          loadSubjects();
+        }
+      };
+      subjectList.appendChild(div);
+    });
+  }
+
+  async function uploadAnswerImageToDrive(file, answerKey) {
+    if (!file) return "";
+    try {
+      return await uploadFileToDrive(file, answerKey);
+    } catch (e) {
+      alert("Lỗi upload ảnh lên Google Drive: " + e.message);
+      return "";
+    }
+  }
+
+  // Question CRUD
+  questionForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (editingQuestionId) {
+      await updateQuestion();
+    } else {
+      await addQuestion();
+    }
+  });
+
+  async function addQuestion() {
+    const subjectId = subjectDropdown.value;
+    const questionText = document.getElementById("questionText").value.trim();
+    const answerA = document.getElementById("answerA").value.trim();
+    const answerB = document.getElementById("answerB").value.trim();
+    const answerC = document.getElementById("answerC").value.trim();
+    const answerD = document.getElementById("answerD").value.trim();
+    const correctAnswer = document.getElementById("correctAnswerDropdown").value;
+
+    // Ảnh cho đáp án
+    const answerAImage = document.getElementById("answerAImage").files[0];
+    const answerBImage = document.getElementById("answerBImage").files[0];
+    const answerCImage = document.getElementById("answerCImage").files[0];
+    const answerDImage = document.getElementById("answerDImage").files[0];
+
+    if (!subjectId || !questionText || !answerA || !answerB || !answerC || !answerD || !correctAnswer) return;
+
+    // Upload ảnh (nếu có) lên Google Drive
+    const [answerAImgUrl, answerBImgUrl, answerCImgUrl, answerDImgUrl] = await Promise.all([
+      uploadAnswerImageToDrive(answerAImage, 'a'),
+      uploadAnswerImageToDrive(answerBImage, 'b'),
+      uploadAnswerImageToDrive(answerCImage, 'c'),
+      uploadAnswerImageToDrive(answerDImage, 'd')
+    ]);
+
+    await addDoc(collection(db, "cau_hoi"), {
+      mon_hoc_id: subjectId,
+      noi_dung: questionText,
+      lua_chon: {
+        a: answerA, aImg: answerAImgUrl,
+        b: answerB, bImg: answerBImgUrl,
+        c: answerC, cImg: answerCImgUrl,
+        d: answerD, dImg: answerDImgUrl
+      },
+      dap_an_dung: correctAnswer
+    });
+
+    questionForm.reset();
+    editingQuestionId = null;
+    submitQuestionBtn.classList.remove("d-none");
+    updateQuestionBtn.classList.add("d-none");
+    // Xóa preview ảnh
+    ["previewAnswerA","previewAnswerB","previewAnswerC","previewAnswerD"].forEach(id=>{
+      document.getElementById(id).innerHTML="";
+    });
+    loadQuestions();
+  }
+
+  updateQuestionBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    await updateQuestion();
+  });
+
+  async function updateQuestion() {
+    if (!editingQuestionId) return;
+
+    const subjectId = subjectDropdown.value;
+    const questionText = document.getElementById("questionText").value.trim();
+    const answerA = document.getElementById("answerA").value.trim();
+    const answerB = document.getElementById("answerB").value.trim();
+    const answerC = document.getElementById("answerC").value.trim();
+    const answerD = document.getElementById("answerD").value.trim();
+    const correctAnswer = document.getElementById("correctAnswerDropdown").value;
+
+    // Ảnh cho đáp án
+    const answerAImage = document.getElementById("answerAImage").files[0];
+    const answerBImage = document.getElementById("answerBImage").files[0];
+    const answerCImage = document.getElementById("answerCImage").files[0];
+    const answerDImage = document.getElementById("answerDImage").files[0];
+
+    // Lấy link ảnh cũ
+    const oldDoc = await getDocs(collection(db, "cau_hoi"));
+    let oldData = {};
+    oldDoc.forEach(docSnap=>{
+      if(docSnap.id===editingQuestionId) oldData = docSnap.data();
+    });
+
+    // Upload ảnh mới nếu có, hoặc giữ ảnh cũ
+    const [answerAImgUrl, answerBImgUrl, answerCImgUrl, answerDImgUrl] = await Promise.all([
+      answerAImage ? uploadAnswerImageToDrive(answerAImage, 'a') : (oldData.lua_chon?.aImg || ""),
+      answerBImage ? uploadAnswerImageToDrive(answerBImage, 'b') : (oldData.lua_chon?.bImg || ""),
+      answerCImage ? uploadAnswerImageToDrive(answerCImage, 'c') : (oldData.lua_chon?.cImg || ""),
+      answerDImage ? uploadAnswerImageToDrive(answerDImage, 'd') : (oldData.lua_chon?.dImg || "")
+    ]);
+
+    await updateDoc(doc(db, "cau_hoi", editingQuestionId), {
+      mon_hoc_id: subjectId,
+      noi_dung: questionText,
+      lua_chon: {
+        a: answerA, aImg: answerAImgUrl,
+        b: answerB, bImg: answerBImgUrl,
+        c: answerC, cImg: answerCImgUrl,
+        d: answerD, dImg: answerDImgUrl
+      },
+      dap_an_dung: correctAnswer
+    });
+
+    editingQuestionId = null;
+    questionForm.reset();
+    submitQuestionBtn.classList.remove("d-none");
+    updateQuestionBtn.classList.add("d-none");
+    ["previewAnswerA","previewAnswerB","previewAnswerC","previewAnswerD"].forEach(id=>{
+      document.getElementById(id).innerHTML="";
+    });
+    loadQuestions();
+  }
+
+  async function loadSubjectsDropdown() {
+    subjectDropdown.innerHTML = "";
+    const snapshot = await getDocs(collection(db, "mon_hoc"));
+    snapshot.forEach(docSnap => {
+      const option = document.createElement("option");
+      option.value = docSnap.id;
+      option.textContent = docSnap.data().ten_mon;
+      subjectDropdown.appendChild(option);
+    });
+  }
+
+  async function loadQuestions() {
+    questionList.innerHTML = "";
+    const snapshot = await getDocs(collection(db, "cau_hoi"));
+    const subjects = {};
+    const subjectSnap = await getDocs(collection(db, "mon_hoc"));
+    subjectSnap.forEach(doc => subjects[doc.id] = doc.data().ten_mon);
+
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      const div = document.createElement("div");
+      div.className = "border p-2 mb-2";
+      div.innerHTML = `
+        <strong>Môn học:</strong> ${subjects[data.mon_hoc_id] || "?"}<br>
+        <strong>Câu hỏi:</strong> ${data.noi_dung}<br>
+        <ul class="list-group list-group-flush mt-2">
+          ${["a", "b", "c", "d"].map(k => {
+            const val = data.lua_chon?.[k] || "";
+            const imgUrl = data.lua_chon?.[`${k}Img`] || "";
+            const isCorrect = data.dap_an_dung === k;
+            return `<li class="list-group-item ${isCorrect ? 'text-success fw-bold bg-light' : ''}">
+              ${isCorrect ? '✅ ' : ''}${k}. ${val}
+              ${imgUrl ? `<br/><img src="${imgUrl}" style="max-height:60px; margin-top:4px;">` : ""}
+            </li>`;
+          }).join("")}
+        </ul>
+        <div class="mt-2">
+          <button class="btn btn-sm btn-warning me-2">Sửa</button>
+          <button class="btn btn-sm btn-danger">Xóa</button>
+        </div>
+      `;
+      div.querySelector(".btn-warning").onclick = () => {
+        editingQuestionId = docSnap.id;
+        subjectDropdown.value = data.mon_hoc_id;
+        document.getElementById("questionText").value = data.noi_dung;
+        document.getElementById("answerA").value = data.lua_chon?.a || "";
+        document.getElementById("answerB").value = data.lua_chon?.b || "";
+        document.getElementById("answerC").value = data.lua_chon?.c || "";
+        document.getElementById("answerD").value = data.lua_chon?.d || "";
+        document.getElementById("correctAnswerDropdown").value = data.dap_an_dung;
+        // Hiện ảnh preview (nếu có)
+        ["A","B","C","D"].forEach(l=>{
+          const prev = document.getElementById("previewAnswer"+l);
+          prev.innerHTML = "";
+          const url = data.lua_chon?.[l.toLowerCase()+"Img"];
+          if(url) {
+            const img = document.createElement("img");
+            img.src = url;
+            prev.appendChild(img);
+          }
+        });
+        submitQuestionBtn.classList.add("d-none");
+        updateQuestionBtn.classList.remove("d-none");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+      div.querySelector(".btn-danger").onclick = async () => {
+        if (confirm("Bạn có chắc muốn xóa câu hỏi này?")) {
+          await deleteDoc(doc(db, "cau_hoi", docSnap.id));
+          loadQuestions();
+        }
+      };
+      questionList.appendChild(div);
+      if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  }
+});
+</script>
+</body>
+</html>
