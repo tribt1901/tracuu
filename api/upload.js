@@ -7,7 +7,6 @@ const CLIENT_SECRET = process.env.GDRIVE_CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.GDRIVE_REFRESH_TOKEN;
 const FOLDER_ID = process.env.GDRIVE_FOLDER_ID;
 
-// Hàm xác thực Google Drive
 function getDriveService() {
   const oAuth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET);
   oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
@@ -19,7 +18,6 @@ module.exports = async (req, res) => {
     res.status(405).json({ error: 'Method Not Allowed' });
     return;
   }
-
   const form = formidable({ multiples: false });
   form.parse(req, async function (err, fields, files) {
     if (err) {
@@ -49,6 +47,7 @@ module.exports = async (req, res) => {
         media: media,
         fields: 'id'
       });
+
       const fileId = response.data.id;
       const fileUrl = `https://drive.google.com/uc?id=${fileId}`;
       res.status(200).json({ url: fileUrl, fileId });
