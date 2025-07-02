@@ -37,33 +37,39 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // Dùng formidable v3
   const form = new formidable.IncomingForm({ multiples: false });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
+      console.error('Formidable parse error:', err);
       res.status(500).json({ error: 'Error parsing form data' });
       return;
     }
-    try {
-      // Kiểm tra file
-      const file = files.file;
-      if (!file) {
-        res.status(400).json({ error: 'No file uploaded' });
-        return;
-      }
 
-      // Đọc stream file
+    // Log cấu trúc files để debug khi bị lỗi
+    console.log('files:', files);
+
+    // Kiểm tra trường file (FE phải gửi form-data với key là 'file')
+    let file = files.file;
+    // Nếu là upload nhiều file, formidable sẽ trả về mảng
+    if (Array.isArray(file)) file = file[0];
+
+    if (!file || !file.filepath) {
+      res.status(400).json({ error: 'No file uploaded or file missing filepath' });
+      return;
+    }
+
+    try {
       const fileStream = fs.createReadStream(file.filepath);
 
       // Upload lên Google Drive
       const response = await drive.files.create({
         requestBody: {
-          name: file.originalFilename,
+          name: file.originalFilename || file.newFilename || 'uploaded_file',
           parents: [FOLDER_ID],
         },
         media: {
-          mimeType: file.mimetype,
+          mimeType: file.mimetype || 'application/octet-stream',
           body: fileStream,
         },
         fields: 'id,webViewLink,webContentLink',
@@ -78,7 +84,7 @@ module.exports = async (req, res) => {
         webContentLink: response.data.webContentLink,
       });
     } catch (error) {
-      console.error(error);
+      console.error('Upload error:', error);
       res.status(500).json({
         error: error.message || 'Error uploading file to Google Drive',
       });
