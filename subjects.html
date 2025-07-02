@@ -142,6 +142,22 @@ async function uploadAnswerImageToDrive(file) {
 }
 // ==== END Google Drive ====
 
+// Hàm chuyển link Google Drive về dạng thumbnail để đảm bảo hiển thị được ảnh trên web
+function convertToThumbnail(url) {
+  // Nếu link Google Drive dạng uc?id=xxx thì chuyển sang thumbnail
+  const match = url.match(/uc\?id=([a-zA-Z0-9_-]{20,})/);
+  if (match) {
+    return `https://drive.google.com/thumbnail?id=${match[1]}`;
+  }
+  // Nếu link Google Drive có id=xxx thì chuyển sang thumbnail
+  const match2 = url.match(/id=([a-zA-Z0-9_-]{20,})/);
+  if (match2) {
+    return `https://drive.google.com/thumbnail?id=${match2[1]}`;
+  }
+  // Không phải link Drive thì giữ nguyên
+  return url;
+}
+
 // FIREBASE KHỞI TẠO
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -438,7 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
       div.innerHTML = `
         <strong>Môn học:</strong> ${subjects[data.mon_hoc_id] || "?"}<br>
         <strong>Câu hỏi:</strong> ${data.noi_dung}
-        ${data.noi_dung_img ? `<br/><img src="${data.noi_dung_img}" style="max-height:80px;margin:6px 0;">` : ""}
+        ${data.noi_dung_img ? `<br/><img src="${convertToThumbnail(data.noi_dung_img)}" style="max-height:80px;margin:6px 0;">` : ""}
         <br>
         <ul class="list-group list-group-flush mt-2">
           ${["a", "b", "c", "d"].map(k => {
@@ -447,7 +463,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const isCorrect = data.dap_an_dung === k;
             return `<li class="list-group-item ${isCorrect ? 'text-success fw-bold bg-light' : ''}">
               ${isCorrect ? '✅ ' : ''}${k}. ${val}
-              ${imgUrl ? `<br/><img src="${imgUrl}" style="max-height:60px; margin-top:4px;">` : ""}
+              ${imgUrl ? `<br/><img src="${convertToThumbnail(imgUrl)}" style="max-height:60px; margin-top:4px;">` : ""}
             </li>`;
           }).join("")}
         </ul>
@@ -472,7 +488,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const url = data.lua_chon?.[l.toLowerCase()+"Img"];
           if(url) {
             const img = document.createElement("img");
-            img.src = url;
+            img.src = convertToThumbnail(url);
             prev.appendChild(img);
           }
         });
@@ -480,7 +496,7 @@ document.addEventListener("DOMContentLoaded", () => {
         previewQuestionImage.innerHTML = "";
         if(data.noi_dung_img){
           const img = document.createElement("img");
-          img.src = data.noi_dung_img;
+          img.src = convertToThumbnail(data.noi_dung_img);
           img.style.maxHeight = "80px";
           previewQuestionImage.appendChild(img);
         }
