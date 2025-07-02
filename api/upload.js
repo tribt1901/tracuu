@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
     try {
       const fileStream = fs.createReadStream(file.filepath);
 
-      // Upload file lên Google Drive
+      // Upload file to Google Drive
       const response = await drive.files.create({
         requestBody: {
           name: file.originalFilename || file.newFilename || 'uploaded_file',
@@ -67,7 +67,7 @@ module.exports = async (req, res) => {
         fields: 'id,webViewLink,webContentLink',
       });
 
-      // Set quyền public cho file vừa upload
+      // Make the file public
       await drive.permissions.create({
         fileId: response.data.id,
         requestBody: {
@@ -76,20 +76,24 @@ module.exports = async (req, res) => {
         },
       });
 
-      // Log kết quả upload rõ ràng
+      // Clean up temporary file
+      fs.unlink(file.filepath, () => {});
+
+      // Prepare the image link (webContentLink is best for <img src>)
+      const imageUrl = response.data.webContentLink || `https://drive.google.com/uc?id=${response.data.id}`;
+
+      // Log for debugging
       console.log('Upload response:', {
         fileId: response.data.id,
         webViewLink: response.data.webViewLink,
         webContentLink: response.data.webContentLink,
         directLink: `https://drive.google.com/uc?id=${response.data.id}`,
+        imageUrl,
       });
 
-      // Xóa file tạm sau khi upload xong
-      fs.unlink(file.filepath, () => {});
-
-      // Trả về trường "url" chung cho FE
+      // Return a unified url field for the frontend
       res.status(200).json({
-        url: response.data.webContentLink || `https://drive.google.com/uc?id=${response.data.id}`,
+        url: imageUrl,
         fileId: response.data.id,
         webViewLink: response.data.webViewLink,
         webContentLink: response.data.webContentLink,
