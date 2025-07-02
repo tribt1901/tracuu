@@ -2,14 +2,12 @@ const { google } = require('googleapis');
 const formidable = require('formidable');
 const fs = require('fs');
 
-// Lấy biến môi trường từ Vercel dashboard
 const CLIENT_ID = process.env.GDRIVE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GDRIVE_CLIENT_SECRET;
 const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
 const REFRESH_TOKEN = process.env.GDRIVE_REFRESH_TOKEN;
 const FOLDER_ID = process.env.GDRIVE_FOLDER_ID;
 
-// Tạo OAuth2 client
 const oauth2Client = new google.auth.OAuth2(
   CLIENT_ID,
   CLIENT_SECRET,
@@ -23,7 +21,6 @@ const drive = google.drive({
 });
 
 module.exports = async (req, res) => {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', '*');
@@ -46,12 +43,11 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Log cấu trúc files để debug khi bị lỗi
+    // Log cấu trúc files
     console.log('files:', files);
 
-    // Kiểm tra trường file (FE phải gửi form-data với key là 'file')
+    // Xử lý trường hợp files.file là mảng
     let file = files.file;
-    // Nếu là upload nhiều file, formidable sẽ trả về mảng
     if (Array.isArray(file)) file = file[0];
 
     if (!file || !file.filepath) {
@@ -62,7 +58,6 @@ module.exports = async (req, res) => {
     try {
       const fileStream = fs.createReadStream(file.filepath);
 
-      // Upload lên Google Drive
       const response = await drive.files.create({
         requestBody: {
           name: file.originalFilename || file.newFilename || 'uploaded_file',
@@ -92,7 +87,6 @@ module.exports = async (req, res) => {
   });
 };
 
-// Ngăn Vercel tự parse body
 export const config = {
   api: {
     bodyParser: false,
