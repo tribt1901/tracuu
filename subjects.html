@@ -167,7 +167,7 @@
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -358,7 +358,19 @@ document.addEventListener("DOMContentLoaded", () => {
     importHtmlInput.disabled = !subjectDropdownImport.value;
   });
 
-  // ==== Thêm thủ công ====
+  // ==== Hàm kiểm tra trùng câu hỏi + đáp án đúng ====
+  async function isDuplicateQuestion(db, mon_hoc_id, noi_dung, dap_an_dung) {
+    const q = query(
+      collection(db, "cau_hoi"),
+      where("mon_hoc_id", "==", mon_hoc_id),
+      where("noi_dung", "==", noi_dung),
+      where("dap_an_dung", "==", dap_an_dung)
+    );
+    const snap = await getDocs(q);
+    return !snap.empty;
+  }
+
+  // ==== Thêm thủ công không có ảnh ====
   questionForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const subjectId = subjectDropdown.value;
@@ -369,15 +381,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const answerD = document.getElementById("answerD").value.trim();
     const correctAnswer = document.getElementById("correctAnswerDropdown").value;
     if (!subjectId || !questionText || !answerA || !answerB || !answerC || !answerD || !correctAnswer) return;
+    // Kiểm tra trùng
+    if(await isDuplicateQuestion(db, subjectId, questionText, correctAnswer)) {
+      alert("Câu hỏi này với đáp án đúng này đã tồn tại!");
+      return;
+    }
     await addDoc(collection(db, "cau_hoi"), {
       mon_hoc_id: subjectId,
       noi_dung: questionText,
       noi_dung_img: "",
       lua_chon: {
-        a: answerA, aImg:"",
-        b: answerB, bImg:"",
-        c: answerC, cImg:"",
-        d: answerD, dImg:""
+        a: answerA, aImg: "",
+        b: answerB, bImg: "",
+        c: answerC, cImg: "",
+        d: answerD, dImg: ""
       },
       dap_an_dung: correctAnswer
     });
@@ -430,17 +447,21 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsText(file);
   });
 
-  // ===== Lưu vào DB khi bấm nút =====
+  // ===== Lưu vào DB khi bấm nút (loại trùng) =====
   saveImportBtn.onclick = async function() {
     const mon_hoc_id = subjectDropdownImport.value;
     if (!mon_hoc_id) { alert("Vui lòng chọn môn học để lưu!"); return; }
     if (!importedQuestions.length) { alert("Chưa có dữ liệu để lưu!"); return; }
     saveImportBtn.disabled = true;
-    let success = 0, fail = 0;
+    let success = 0, fail = 0, duplicated = 0;
     for (let q of importedQuestions) {
+      // Chuẩn hóa nội dung câu hỏi (loại khoảng trắng thừa)
+      const noi_dung = (q.questionText||"").replace(/\s+/g," ").trim();
+      let isDup = await isDuplicateQuestion(db, mon_hoc_id, noi_dung, q.correctKey);
+      if(isDup) { duplicated++; continue; }
       await addDoc(collection(db, "cau_hoi"), {
         mon_hoc_id,
-        noi_dung: q.questionText,
+        noi_dung: noi_dung,
         noi_dung_img: "",
         lua_chon: {
           a: q.answers[0]||"", aImg:"",
@@ -451,7 +472,7 @@ document.addEventListener("DOMContentLoaded", () => {
         dap_an_dung: q.correctKey
       }).then(()=>success++).catch(()=>fail++);
     }
-    alert(`Đã lưu ${success} câu hỏi${fail>0?`, lỗi ${fail} câu`:''}.`);
+    alert(`Đã lưu ${success} câu hỏi. Bỏ qua ${duplicated} câu bị trùng.${fail>0?` Lỗi ${fail} câu.`:""}`);
     saveImportBtn.disabled = false;
   };
 
@@ -516,7 +537,7 @@ document.addEventListener("DOMContentLoaded", () => {
   questionSearchInput.addEventListener("input", renderQuestionList);
   subjectFilterDropdown.addEventListener("change", renderQuestionList);
 
-  // ==== SỬA CÂU HỎI ====
+  // ==== SỬA CÂU HỎI (không có ảnh) ====
   async function showEditModal(qid) {
     const q = allQuestionsRaw.find(x=>x.id===qid);
     if(!q) return;
@@ -541,6 +562,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const d = editAnswerD.value.trim();
     const dap_an_dung = editCorrectAnswerDropdown.value;
     if(!mon_hoc_id||!noi_dung||!a||!b||!c||!d||!dap_an_dung) return;
+    // Kiểm tra trùng (loại chính nó ra khỏi kiểm tra)
+    const q = query(
+      collection(db, "cau_hoi"),
+      where("mon_hoc_id", "==", mon_hoc_id),
+      where("noi_dung", "==", noi_dung),
+      where("dap_an_dung", "==", dap_an_dung)
+    );
+    const snap = await getDocs(q);
+    let isDup = false;
+    snap.forEach(docSnap => { if(docSnap.id !== currentEditQid) isDup = true; });
+    if(isDup) {
+      alert("Câu hỏi này với đáp án đúng này đã tồn tại!");
+      return;
+    }
     await updateDoc(doc(db,"cau_hoi",currentEditQid),{
       mon_hoc_id, noi_dung, noi_dung_img: "",
       lua_chon: {a:a,aImg:"",b:b,bImg:"",c:c,cImg:"",d:d,dImg:""},
