@@ -55,6 +55,7 @@
 </nav>
 <div class="container py-4">
   <div class="top-btn-bar">
+    <button class="btn btn-outline-primary" id="backBtn">← Quay lại trang chính</button>
     <button class="btn btn-secondary d-none" id="backToChoice1">← Quay lại</button>
     <button class="btn btn-secondary d-none" id="backToChoice2">← Quay lại</button>
     <button class="btn btn-secondary d-none" id="backToChoice3">← Quay lại</button>
@@ -216,26 +217,38 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // ==== Firebase config ====
 const firebaseConfig = {
-    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
-    authDomain: "tracuu-d3ee9.firebaseapp.com",
-    projectId: "tracuu-d3ee9",
-    storageBucket: "tracuu-d3ee9.firebasestorage.app",
-    messagingSenderId: "593568604435",
-    appId: "1:593568604435:web:9a5145457a8ee734143ae6",
-    measurementId: "G-R0M6Y502NP"
+  apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
+  authDomain: "tracuu-d3ee9.firebaseapp.com",
+  projectId: "tracuu-d3ee9",
+  storageBucket: "tracuu-d3ee9.firebasestorage.app",
+  messagingSenderId: "593568604435",
+  appId: "1:593568604435:web:9a5145457a8ee734143ae6",
+  measurementId: "G-R0M6Y502NP"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Nút logout
-logoutBtn.onclick = () => signOut(auth).then(() => location.reload());
+// ==== Xác thực đăng nhập: chỉ cho phép user đã đăng nhập truy cập ====
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    window.location.href = "admin.html";
+  }
+});
 
-// ====== CRUD Môn học ======
+// ==== Nút quay lại trang chính ====
+document.getElementById('backBtn').onclick = function() {
+  window.location.href = '/';
+};
+
+// ==== Nút logout ====
+logoutBtn.onclick = () => signOut(auth).then(() => window.location.href = "admin.html");
+
+// ==== CRUD môn học ====
 async function loadSubjects() {
   subjectList.innerHTML = "";
   let snap = await getDocs(collection(db, "mon_hoc"));
@@ -283,7 +296,7 @@ async function loadSubjectsDropdown() {
   });
 }
 
-// ====== Chuyển mode ======
+// ==== Chuyển mode ====
 function switchMode() {
   let mode = modeSelect.value;
   document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
@@ -304,7 +317,7 @@ function showQuestionChoice() {
 }
 switchMode();
 
-// ===== CRUD THÊM THỦ CÔNG, UPLOAD ẢNH, KIỂM TRA TRÙNG =====
+// ==== CRUD Thêm thủ công, upload ảnh, kiểm tra trùng ====
 function handleImagePreview(inputElem, previewElem, urlObj) {
   inputElem.addEventListener("change", () => {
     previewElem.innerHTML = "";
@@ -314,6 +327,7 @@ function handleImagePreview(inputElem, previewElem, urlObj) {
       reader.onload = e => {
         const img = document.createElement("img");
         img.src = e.target.result;
+        previewElem.innerHTML = "";
         previewElem.appendChild(img);
         const btn = document.createElement("button");
         btn.type = "button";
@@ -396,7 +410,7 @@ questionForm.onsubmit = async (e) => {
   urlObjQuestion.value = urlObjA.value = urlObjB.value = urlObjC.value = urlObjD.value = "";
 };
 
-// ===== CRUD DANH SÁCH CÂU HỎI, SỬA, XÓA, TÌM KIẾM, LỌC =====
+// ==== CRUD Danh sách câu hỏi, sửa, xóa, tìm kiếm, lọc ====
 viewQuestionListBtn.onclick = async () => {
   questionModeChoice.style.display = "none";
   importHtmlSection.style.display = "none";
@@ -478,7 +492,7 @@ async function loadSubjectFilterDropdown() {
   });
 }
 
-// ===== MODAL SỬA CÂU HỎI =====
+// ==== Modal sửa câu hỏi ====
 const editQuestionModal = document.getElementById("editQuestionModal");
 const editForm = document.getElementById("editForm");
 const closeEditModal = document.getElementById("closeEditModal");
@@ -503,6 +517,7 @@ function previewEditImage(inputElem, previewElem, key) {
       reader.onload = e => {
         const img = document.createElement("img");
         img.src = e.target.result;
+        previewElem.innerHTML = "";
         previewElem.appendChild(img);
         const btn = document.createElement("button");
         btn.type = "button";
@@ -533,9 +548,9 @@ async function loadEditSubjectDropdown(selected) {
     sel.appendChild(option);
   });
 }
-window.allQuestionsRaw = [];
+window._allQuestionsRaw = [];
 async function showEditModal(qid) {
-  const q = window._allQuestionsRaw.find(x=>x.id===qid)||window._allQuestionsRaw.find(x=>x.id===qid); if(!q) return;
+  const q = window._allQuestionsRaw.find(x=>x.id===qid); if(!q) return;
   currentEditQid = qid;
   await loadEditSubjectDropdown(q.mon_hoc_id);
   document.getElementById("editQuestionText").value = q.noi_dung || "";
@@ -555,6 +570,7 @@ async function showEditModal(qid) {
   if (q.noi_dung_img) {
     const img = document.createElement("img");
     img.src = q.noi_dung_img;
+    editPreviewQuestionImage.innerHTML = "";
     editPreviewQuestionImage.appendChild(img);
     const btn = document.createElement("button");
     btn.type = "button";
@@ -572,6 +588,7 @@ async function showEditModal(qid) {
     if(imgUrl){
       const img = document.createElement("img");
       img.src = imgUrl;
+      previewElem.innerHTML = "";
       previewElem.appendChild(img);
       const btn = document.createElement("button");
       btn.type = "button";
@@ -626,7 +643,7 @@ editForm.onsubmit = async function(e){
   await refreshQuestionList();
 };
 
-// ===== IMPORT HTML, PHÂN TÍCH, LƯU, KIỂM TRA TRÙNG, ĐÁP ÁN ĐÚNG =====
+// ==== Import HTML, phân tích, lưu, kiểm tra trùng, đáp án đúng ====
 let importedQuestions = [];
 importHtmlBtn.onclick = async () => {
   questionModeChoice.style.display = "none";
@@ -734,7 +751,12 @@ saveImportBtn.onclick = async function() {
   saveImportBtn.disabled = false;
 };
 
-// ==== Khởi động ====
+// ==== Hàm loadQuestions để tránh lỗi khi chuyển mode ====
+async function loadQuestions() {
+  // Nếu cần có thể gọi refreshQuestionList() ở đây, hoặc chỉ để trống cho đúng logic chuyển mode:
+  // await refreshQuestionList();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   loadSubjects();
 });
