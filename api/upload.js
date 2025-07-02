@@ -43,7 +43,6 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Lấy file đầu tiên nếu là mảng
     let file = files.file;
     if (Array.isArray(file)) file = file[0];
 
@@ -77,14 +76,23 @@ module.exports = async (req, res) => {
         },
       });
 
-      // Xóa file tạm sau khi upload xong
-      fs.unlink(file.filepath, () => {});
-
-      res.status(200).json({
+      // Log kết quả upload rõ ràng
+      console.log('Upload response:', {
         fileId: response.data.id,
         webViewLink: response.data.webViewLink,
         webContentLink: response.data.webContentLink,
-        // Đường dẫn xem trực tiếp ảnh:
+        directLink: `https://drive.google.com/uc?id=${response.data.id}`,
+      });
+
+      // Xóa file tạm sau khi upload xong
+      fs.unlink(file.filepath, () => {});
+
+      // Trả về trường "url" chung cho FE
+      res.status(200).json({
+        url: response.data.webContentLink || `https://drive.google.com/uc?id=${response.data.id}`,
+        fileId: response.data.id,
+        webViewLink: response.data.webViewLink,
+        webContentLink: response.data.webContentLink,
         directLink: `https://drive.google.com/uc?id=${response.data.id}`,
       });
     } catch (error) {
