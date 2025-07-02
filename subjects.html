@@ -19,6 +19,7 @@
         background: #fafbfc;
     }
     .question-img-preview img { max-height:80px; margin:6px 0; }
+    .btn-delete-img { margin-left: 10px; margin-top: 5px; }
   </style>
   <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
@@ -158,6 +159,32 @@ function convertToThumbnail(url) {
   return url;
 }
 
+// Map để lưu trạng thái xóa ảnh (dùng cho sửa)
+const deleteImageFlags = {
+  noi_dung_img: false,
+  aImg: false,
+  bImg: false,
+  cImg: false,
+  dImg: false
+};
+
+// Hàm dùng để thêm nút xóa ảnh vào preview
+function addDeleteButton(previewElem, key, inputElem) {
+  // Nếu chưa có nút xóa thì thêm
+  if (!previewElem.querySelector('.btn-delete-img')) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn-sm btn-outline-danger btn-delete-img";
+    btn.textContent = "Xóa ảnh";
+    btn.onclick = () => {
+      previewElem.innerHTML = "";
+      deleteImageFlags[key] = true;
+      if (inputElem) inputElem.value = "";
+    };
+    previewElem.appendChild(btn);
+  }
+}
+
 // FIREBASE KHỞI TẠO
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -200,13 +227,14 @@ document.addEventListener("DOMContentLoaded", () => {
         img.src = e.target.result;
         img.style.maxHeight = "80px";
         previewQuestionImage.appendChild(img);
+        addDeleteButton(previewQuestionImage, "noi_dung_img", questionImageInput);
       };
       reader.readAsDataURL(questionImageInput.files[0]);
     }
   });
 
   // Xử lý preview ảnh cho đáp án
-  function handleImagePreview(inputId, previewId) {
+  function handleImagePreview(inputId, previewId, flagKey) {
     const input = document.getElementById(inputId);
     const preview = document.getElementById(previewId);
     input.addEventListener("change", () => {
@@ -218,15 +246,16 @@ document.addEventListener("DOMContentLoaded", () => {
           img.src = e.target.result;
           preview.innerHTML = "";
           preview.appendChild(img);
+          addDeleteButton(preview, flagKey, input);
         };
         reader.readAsDataURL(input.files[0]);
       }
     });
   }
-  handleImagePreview("answerAImage", "previewAnswerA");
-  handleImagePreview("answerBImage", "previewAnswerB");
-  handleImagePreview("answerCImage", "previewAnswerC");
-  handleImagePreview("answerDImage", "previewAnswerD");
+  handleImagePreview("answerAImage", "previewAnswerA", "aImg");
+  handleImagePreview("answerBImage", "previewAnswerB", "bImg");
+  handleImagePreview("answerCImage", "previewAnswerC", "cImg");
+  handleImagePreview("answerDImage", "previewAnswerD", "dImg");
 
   // Auth check
   onAuthStateChanged(auth, (user) => {
@@ -360,6 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ["previewAnswerA","previewAnswerB","previewAnswerC","previewAnswerD","previewQuestionImage"].forEach(id=>{
       document.getElementById(id).innerHTML="";
     });
+    Object.keys(deleteImageFlags).forEach(k=>deleteImageFlags[k]=false);
     loadQuestions();
   }
 
@@ -395,16 +425,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if(d.id===editingQuestionId) oldData = d.data();
     });
 
-    // Upload ảnh mới nếu có, hoặc giữ ảnh cũ
-    const [answerAImgUrl, answerBImgUrl, answerCImgUrl, answerDImgUrl] = await Promise.all([
-      answerAImage ? uploadAnswerImageToDrive(answerAImage) : (oldData.lua_chon?.aImg || ""),
-      answerBImage ? uploadAnswerImageToDrive(answerBImage) : (oldData.lua_chon?.bImg || ""),
-      answerCImage ? uploadAnswerImageToDrive(answerCImage) : (oldData.lua_chon?.cImg || ""),
-      answerDImage ? uploadAnswerImageToDrive(answerDImage) : (oldData.lua_chon?.dImg || "")
-    ]);
-
-    // Ảnh nội dung câu hỏi
-    const questionImgUrl = questionImageFile ? await uploadAnswerImageToDrive(questionImageFile) : (oldData.noi_dung_img || "");
+    // Upload ảnh mới nếu có, hoặc giữ ảnh cũ (nếu chưa xóa)
+    const answerAImgUrl = deleteImageFlags.aImg ? "" : (answerAImage ? await uploadAnswerImageToDrive(answerAImage) : (oldData.lua_chon?.aImg || ""));
+    const answerBImgUrl = deleteImageFlags.bImg ? "" : (answerBImage ? await uploadAnswerImageToDrive(answerBImage) : (oldData.lua_chon?.bImg || ""));
+    const answerCImgUrl = deleteImageFlags.cImg ? "" : (answerCImage ? await uploadAnswerImageToDrive(answerCImage) : (oldData.lua_chon?.cImg || ""));
+    const answerDImgUrl = deleteImageFlags.dImg ? "" : (answerDImage ? await uploadAnswerImageToDrive(answerDImage) : (oldData.lua_chon?.dImg || ""));
+    const questionImgUrl = deleteImageFlags.noi_dung_img ? "" : (questionImageFile ? await uploadAnswerImageToDrive(questionImageFile) : (oldData.noi_dung_img || ""));
 
     await updateDoc(doc(db, "cau_hoi", editingQuestionId), {
       mon_hoc_id: subjectId,
@@ -426,6 +452,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ["previewAnswerA","previewAnswerB","previewAnswerC","previewAnswerD","previewQuestionImage"].forEach(id=>{
       document.getElementById(id).innerHTML="";
     });
+    Object.keys(deleteImageFlags).forEach(k=>deleteImageFlags[k]=false);
     loadQuestions();
   }
 
@@ -490,6 +517,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const img = document.createElement("img");
             img.src = convertToThumbnail(url);
             prev.appendChild(img);
+            addDeleteButton(prev, l.toLowerCase() + "Img", document.getElementById("answer" + l + "Image"));
+            deleteImageFlags[l.toLowerCase()+"Img"] = false;
           }
         });
         // Hiện preview ảnh nội dung câu hỏi
@@ -499,6 +528,8 @@ document.addEventListener("DOMContentLoaded", () => {
           img.src = convertToThumbnail(data.noi_dung_img);
           img.style.maxHeight = "80px";
           previewQuestionImage.appendChild(img);
+          addDeleteButton(previewQuestionImage, "noi_dung_img", questionImageInput);
+          deleteImageFlags.noi_dung_img = false;
         }
         submitQuestionBtn.classList.add("d-none");
         updateQuestionBtn.classList.remove("d-none");
