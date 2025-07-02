@@ -30,7 +30,16 @@
     }
     .top-btn-bar .btn { margin-bottom: 0 !important;}
     .top-btn-bar .ms-auto { margin-left: auto !important;}
-    #backBtn { display: none; }
+    #backBtn, #backManualBtn, #backImportBtn { display: none; }
+    .thumb-inline {
+      max-width: 32px;
+      max-height: 32px;
+      vertical-align: middle;
+      margin-left: 6px;
+      border-radius: 4px;
+      object-fit: contain;
+      box-shadow: 0 0 2px #aaa;
+    }
     @media (max-width: 600px) {
       .question-list-scroll { max-height: 320px; }
       #importHtmlResultContainer { max-height: 210px;}
@@ -57,6 +66,8 @@
 <div class="container py-4">
   <div class="top-btn-bar">
     <button class="btn btn-outline-primary" id="backBtn">← Quay lại</button>
+    <button class="btn btn-outline-primary" id="backImportBtn">← Quay lại</button>
+    <button class="btn btn-outline-primary" id="backManualBtn">← Quay lại</button>
     <button class="btn btn-secondary d-none" id="backToChoice1">← Quay lại</button>
     <button class="btn btn-secondary d-none" id="backToChoice2">← Quay lại</button>
     <button class="btn btn-secondary d-none" id="backToChoice3">← Quay lại</button>
@@ -82,6 +93,7 @@
       <button class="btn btn-outline-secondary" id="viewQuestionListBtn">Danh sách câu hỏi</button>
     </div>
     <div id="importHtmlSection" style="display:none;">
+      <button class="btn btn-outline-primary mb-2" id="backImportBtnTop">← Quay lại</button>
       <h5>Nhập câu hỏi từ file HTML Moodle</h5>
       <select class="form-select mb-2" id="subjectDropdownImport" style="max-width:350px;">
         <option value="">-- Chọn môn học để lưu --</option>
@@ -93,6 +105,7 @@
       <button class="btn btn-success mt-2" id="saveImportBtn" style="display:none;">💾 Lưu vào CSDL</button>
     </div>
     <div id="manualSection" style="display:none;">
+      <button class="btn btn-outline-primary mb-2" id="backManualBtnTop">← Quay lại</button>
       <h5>Thêm câu hỏi thủ công</h5>
       <form id="questionForm" autocomplete="off">
         <select class="form-select mb-2" id="subjectDropdown"></select>
@@ -241,10 +254,29 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// ==== Nút quay lại chỉ áp dụng cho mode quản lý câu hỏi ====
+// ==== Nút quay lại cho quản lý câu hỏi/nhập html/thêm thủ công ====
 const backBtn = document.getElementById('backBtn');
+const backManualBtn = document.getElementById('backManualBtn');
+const backManualBtnTop = document.getElementById('backManualBtnTop');
+const backImportBtn = document.getElementById('backImportBtn');
+const backImportBtnTop = document.getElementById('backImportBtnTop');
+
+// Quay lại từ màn Thủ công
+function showBackManualBtn() {
+  backManualBtn.style.display = backManualBtnTop.style.display = 'inline-block';
+}
+function hideBackManualBtn() {
+  backManualBtn.style.display = backManualBtnTop.style.display = 'none';
+}
+// Quay lại từ màn Import
+function showBackImportBtn() {
+  backImportBtn.style.display = backImportBtnTop.style.display = 'inline-block';
+}
+function hideBackImportBtn() {
+  backImportBtn.style.display = backImportBtnTop.style.display = 'none';
+}
+// Quay lại từ mode quản lý câu hỏi
 backBtn.onclick = function() {
-  // Ẩn tất cả các section của mode quản lý câu hỏi, về lại giao diện chọn chế độ quản trị
   showQuestionChoice();
   backBtn.style.display = "none";
   modeSelect.disabled = false;
@@ -257,6 +289,19 @@ function hideBackBtn() {
   backBtn.style.display = 'none';
   modeSelect.disabled = false;
 }
+
+// Quay lại từ thêm thủ công
+backManualBtn.onclick = backManualBtnTop.onclick = function() {
+  showQuestionChoice();
+  hideBackManualBtn();
+  showBackBtn();
+};
+// Quay lại từ nhập HTML
+backImportBtn.onclick = backImportBtnTop.onclick = function() {
+  showQuestionChoice();
+  hideBackImportBtn();
+  showBackBtn();
+};
 
 // ==== Nút logout ====
 logoutBtn.onclick = () => signOut(auth).then(() => window.location.href = "admin.html");
@@ -313,7 +358,7 @@ async function loadSubjectsDropdown() {
 function switchMode() {
   let mode = modeSelect.value;
   document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
-  hideBackBtn();
+  hideBackBtn(); hideBackManualBtn(); hideBackImportBtn();
   if(mode==="subject") subjectSection.style.display = "block";
   if(mode==="question") {
     questionSection.style.display = "block";
@@ -329,6 +374,8 @@ function showQuestionChoice() {
   importHtmlSection.style.display = "none";
   manualSection.style.display = "none";
   questionListSection.style.display = "none";
+  hideBackManualBtn();
+  hideBackImportBtn();
 }
 switchMode();
 
@@ -466,13 +513,16 @@ function renderQuestionList() {
       <div class="question-list-item">
         <div><span class="fw-medium">Môn học:</span> ${monHoc}</div>
         <div><span class="fw-medium">Câu hỏi:</span> ${q.noi_dung}</div>
-        ${q.noi_dung_img ? `<div><img src="${q.noi_dung_img}" style="max-width:120px;max-height:70px"/></div>` : ""}
+        ${q.noi_dung_img && q.noi_dung_img.trim() && q.noi_dung_img !== "undefined" && q.noi_dung_img !== "null"
+          ? `<div><img src="${q.noi_dung_img}" class="thumb-inline" style="max-width:120px;max-height:70px"/></div>` : ""}
         <div class="question-list-answers">
           ${["a","b","c","d"].map(k=>{
             const isCorrect = q.dap_an_dung===k;
             const ansText = (q.lua_chon && q.lua_chon[k]) ? q.lua_chon[k] : "";
-            const img = (q.lua_chon && q.lua_chon[k + "Img"]) ? `<img src="${q.lua_chon[k+"Img"]}" style="max-width:70px;max-height:40px;vertical-align:middle"/>` : "";
-            return `<div class="answer-item${isCorrect?' correct':''}">${k}. ${ansText} ${img}</div>`
+            const imgUrl = q.lua_chon && q.lua_chon[k + "Img"];
+            const img = (imgUrl && imgUrl.trim() && imgUrl !== "undefined" && imgUrl !== "null")
+              ? `<img src="${imgUrl}" class="thumb-inline" alt="" />` : "";
+            return `<div class="answer-item${isCorrect?' correct':''}">${k}. ${ansText}${img}</div>`
           }).join("")}
         </div>
         <div class="mt-2">
@@ -665,12 +715,21 @@ importHtmlBtn.onclick = async () => {
   importHtmlSection.style.display = "block";
   manualSection.style.display = "none";
   questionListSection.style.display = "none";
+  showBackImportBtn();
+  hideBackBtn();
+  await loadSubjectsDropdownImport();
+  importHtmlInput.disabled = true;
+  importHtmlResult.innerHTML = "";
+  saveImportBtn.style.display = "none";
 };
 manualBtn.onclick = () => {
   questionModeChoice.style.display = "none";
   importHtmlSection.style.display = "none";
   manualSection.style.display = "block";
   questionListSection.style.display = "none";
+  showBackManualBtn();
+  hideBackBtn();
+  loadSubjectsDropdown();
 };
 backToChoice1.onclick = backToChoice2.onclick = backToChoice3.onclick = showQuestionChoice;
 
