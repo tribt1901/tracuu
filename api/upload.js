@@ -43,12 +43,14 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Log cấu trúc files
+    // Log cấu trúc files để kiểm tra
     console.log('files:', files);
 
-    // Xử lý trường hợp files.file là mảng
     let file = files.file;
     if (Array.isArray(file)) file = file[0];
+
+    // Log thêm chi tiết file
+    console.log('selected file:', file);
 
     if (!file || !file.filepath) {
       res.status(400).json({ error: 'No file uploaded or file missing filepath' });
@@ -79,9 +81,11 @@ module.exports = async (req, res) => {
         webContentLink: response.data.webContentLink,
       });
     } catch (error) {
-      console.error('Upload error:', error);
+      // Log lỗi chi tiết nhất có thể
+      console.error('Upload error:', error, error.stack);
       res.status(500).json({
         error: error.message || 'Error uploading file to Google Drive',
+        detail: error.stack,
       });
     }
   });
