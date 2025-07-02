@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8"/>
-<title>Quản trị hệ thống</title>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-<style>
+  <meta charset="utf-8"/>
+  <title>Quản trị hệ thống</title>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
     .mode-section { display: none; }
     #logoutBtn { margin: 1rem 0; }
     body { padding-top: 70px; }
-    .answer-input-group img { max-height: 60px; margin-left: 10px; }
+    .answer-input-group img, .question-img-preview img { max-height: 60px; margin-left: 10px; }
     #subjectList {
         max-height: 300px;
         overflow-y: auto;
@@ -18,8 +18,9 @@
         padding: 10px 5px;
         background: #fafbfc;
     }
-</style>
-<script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    .question-img-preview img { max-height:80px; margin:6px 0; }
+  </style>
+  <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
 <!-- Thanh menu -->
@@ -57,10 +58,14 @@
   <!-- Quản trị câu hỏi -->
   <div class="mode-section" id="questionSection">
     <h4>🧠 Thêm câu hỏi</h4>
-    <form id="questionForm">
+    <form id="questionForm" autocomplete="off">
       <select class="form-select mb-2" id="subjectDropdown"></select>
+      <div class="mb-2">
+        <label for="questionImage" class="form-label mb-1">Ảnh cho nội dung câu hỏi (tùy chọn)</label>
+        <input type="file" accept="image/*" class="form-control form-control-sm" id="questionImage" style="max-width:250px;">
+        <div id="previewQuestionImage" class="question-img-preview"></div>
+      </div>
       <textarea class="form-control mb-2" id="questionText" placeholder="Nội dung câu hỏi (hỗ trợ MathJax)" required rows="3"></textarea>
-      
       <div class="answer-input-group mb-2">
         <label for="answerA" class="form-label mb-1">Đáp án a</label>
         <div class="input-group">
@@ -106,356 +111,6 @@
     <div id="questionList" style="max-height:400px; overflow-y:auto;"></div>
   </div>
 </div>
-<script type="module">
-// ==== Google Drive Upload via API Serverless ====
-// Tự động lấy đúng endpoint /api/upload dù ở domain nào (nếu cần dùng domain khác, sửa lại URL ở đây)
-function getApiUploadUrl() {
-  // Nếu bạn dùng custom domain, hãy để mặc định là /api/upload (tự động đúng domain hiện tại)
-  // Nếu TEST thử trên domain khác, có thể sửa thành: "https://tracuu-app.hugo.io.vn/api/upload"
-  return "https://tracuu-app.hugo.io.vn/api/upload";
-}
-async function uploadFileToDriveViaAPI(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-  const response = await fetch(getApiUploadUrl(), {
-    method: 'POST',
-    body: formData
-  });
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error("Upload ảnh thất bại: " + err);
-  }
-  const data = await response.json();
-  if (!data.url) throw new Error("Không nhận được link ảnh từ server!");
-  return data.url;
-}
-async function uploadAnswerImageToDrive(file) {
-  if (!file) return "";
-  try {
-    return await uploadFileToDriveViaAPI(file);
-  } catch (e) {
-    alert("Lỗi upload ảnh lên Google Drive: " + e.message);
-    return "";
-  }
-}
-// ==== END Google Drive ====
-
-// FIREBASE KHỞI TẠO
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-document.addEventListener("DOMContentLoaded", () => {
-  const firebaseConfig = {
-    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
-    authDomain: "tracuu-d3ee9.firebaseapp.com",
-    projectId: "tracuu-d3ee9",
-    storageBucket: "tracuu-d3ee9.appspot.com",
-    messagingSenderId: "593568604435",
-    appId: "1:593568604435:web:9a5145457a8ee734143ae6",
-    measurementId: "G-R0M6Y502NP"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-
-  const subjectForm = document.getElementById("subjectForm");
-  const subjectList = document.getElementById("subjectList");
-  const questionForm = document.getElementById("questionForm");
-  const questionList = document.getElementById("questionList");
-  const subjectDropdown = document.getElementById("subjectDropdown");
-  const submitQuestionBtn = document.getElementById("submitQuestionBtn");
-  const updateQuestionBtn = document.getElementById("updateQuestionBtn");
-
-  let editingQuestionId = null;
-
-  // Xử lý preview ảnh
-  function handleImagePreview(inputId, previewId) {
-    const input = document.getElementById(inputId);
-    const preview = document.getElementById(previewId);
-    input.addEventListener("change", () => {
-      preview.innerHTML = "";
-      if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = document.createElement("img");
-          img.src = e.target.result;
-          preview.innerHTML = "";
-          preview.appendChild(img);
-        };
-        reader.readAsDataURL(input.files[0]);
-      }
-    });
-  }
-  handleImagePreview("answerAImage", "previewAnswerA");
-  handleImagePreview("answerBImage", "previewAnswerB");
-  handleImagePreview("answerCImage", "previewAnswerC");
-  handleImagePreview("answerDImage", "previewAnswerD");
-
-  // Auth check
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "admin";
-    }
-  });
-
-  document.getElementById("logoutBtn").addEventListener("click", () => {
-    signOut(auth).then(() => {
-      window.location.href = "admin";
-    });
-  });
-
-  // Switch mode
-  function switchMode() {
-    const mode = document.getElementById("modeSelect").value;
-    document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
-    if (mode === "subject") {
-      document.getElementById("subjectSection").style.display = "block";
-      loadSubjects();
-    } else if (mode === "question") {
-      document.getElementById("questionSection").style.display = "block";
-      loadSubjectsDropdown();
-      loadQuestions();
-    }
-  }
-  document.getElementById("modeSelect").addEventListener("change", switchMode);
-  switchMode();
-
-  // Subject CRUD
-  subjectForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("subjectName").value.trim();
-    if (!name) return;
-    await addDoc(collection(db, "mon_hoc"), { ten_mon: name });
-    subjectForm.reset();
-    loadSubjects();
-  });
-
-  async function loadSubjects() {
-    subjectList.innerHTML = "";
-    const snapshot = await getDocs(collection(db, "mon_hoc"));
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      const div = document.createElement("div");
-      div.className = "d-flex justify-content-between align-items-center border p-2 mb-2";
-      div.innerHTML = `
-        <span>${data.ten_mon}</span>
-        <div>
-          <button class="btn btn-sm btn-warning me-2">Sửa</button>
-          <button class="btn btn-sm btn-danger">Xóa</button>
-        </div>
-      `;
-      div.querySelector(".btn-warning").onclick = async () => {
-        const newName = prompt("Nhập tên mới:", data.ten_mon);
-        if (newName) {
-          await updateDoc(doc(db, "mon_hoc", docSnap.id), { ten_mon: newName });
-          loadSubjects();
-        }
-      };
-      div.querySelector(".btn-danger").onclick = async () => {
-        if (confirm("Bạn có chắc muốn xóa môn học này?")) {
-          await deleteDoc(doc(db, "mon_hoc", docSnap.id));
-          loadSubjects();
-        }
-      };
-      subjectList.appendChild(div);
-    });
-  }
-
-  // Question CRUD
-  questionForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (editingQuestionId) {
-      await updateQuestion();
-    } else {
-      await addQuestion();
-    }
-  });
-
-  async function addQuestion() {
-    const subjectId = subjectDropdown.value;
-    const questionText = document.getElementById("questionText").value.trim();
-    const answerA = document.getElementById("answerA").value.trim();
-    const answerB = document.getElementById("answerB").value.trim();
-    const answerC = document.getElementById("answerC").value.trim();
-    const answerD = document.getElementById("answerD").value.trim();
-    const correctAnswer = document.getElementById("correctAnswerDropdown").value;
-
-    // Ảnh cho đáp án
-    const answerAImage = document.getElementById("answerAImage").files[0];
-    const answerBImage = document.getElementById("answerBImage").files[0];
-    const answerCImage = document.getElementById("answerCImage").files[0];
-    const answerDImage = document.getElementById("answerDImage").files[0];
-
-    if (!subjectId || !questionText || !answerA || !answerB || !answerC || !answerD || !correctAnswer) return;
-
-    // Upload ảnh (nếu có) lên Google Drive qua API serverless
-    const [answerAImgUrl, answerBImgUrl, answerCImgUrl, answerDImgUrl] = await Promise.all([
-      uploadAnswerImageToDrive(answerAImage),
-      uploadAnswerImageToDrive(answerBImage),
-      uploadAnswerImageToDrive(answerCImage),
-      uploadAnswerImageToDrive(answerDImage)
-    ]);
-
-    await addDoc(collection(db, "cau_hoi"), {
-      mon_hoc_id: subjectId,
-      noi_dung: questionText,
-      lua_chon: {
-        a: answerA, aImg: answerAImgUrl,
-        b: answerB, bImg: answerBImgUrl,
-        c: answerC, cImg: answerCImgUrl,
-        d: answerD, dImg: answerDImgUrl
-      },
-      dap_an_dung: correctAnswer
-    });
-
-    questionForm.reset();
-    editingQuestionId = null;
-    submitQuestionBtn.classList.remove("d-none");
-    updateQuestionBtn.classList.add("d-none");
-    // Xóa preview ảnh
-    ["previewAnswerA","previewAnswerB","previewAnswerC","previewAnswerD"].forEach(id=>{
-      document.getElementById(id).innerHTML="";
-    });
-    loadQuestions();
-  }
-
-  updateQuestionBtn.addEventListener("click", async (e) => {
-    e.preventDefault();
-    await updateQuestion();
-  });
-
-  async function updateQuestion() {
-    if (!editingQuestionId) return;
-
-    const subjectId = subjectDropdown.value;
-    const questionText = document.getElementById("questionText").value.trim();
-    const answerA = document.getElementById("answerA").value.trim();
-    const answerB = document.getElementById("answerB").value.trim();
-    const answerC = document.getElementById("answerC").value.trim();
-    const answerD = document.getElementById("answerD").value.trim();
-    const correctAnswer = document.getElementById("correctAnswerDropdown").value;
-
-    // Ảnh cho đáp án
-    const answerAImage = document.getElementById("answerAImage").files[0];
-    const answerBImage = document.getElementById("answerBImage").files[0];
-    const answerCImage = document.getElementById("answerCImage").files[0];
-    const answerDImage = document.getElementById("answerDImage").files[0];
-
-    // Lấy link ảnh cũ
-    const docSnap = await getDocs(collection(db, "cau_hoi"));
-    let oldData = {};
-    docSnap.forEach(d=>{
-      if(d.id===editingQuestionId) oldData = d.data();
-    });
-
-    // Upload ảnh mới nếu có, hoặc giữ ảnh cũ
-    const [answerAImgUrl, answerBImgUrl, answerCImgUrl, answerDImgUrl] = await Promise.all([
-      answerAImage ? uploadAnswerImageToDrive(answerAImage) : (oldData.lua_chon?.aImg || ""),
-      answerBImage ? uploadAnswerImageToDrive(answerBImage) : (oldData.lua_chon?.bImg || ""),
-      answerCImage ? uploadAnswerImageToDrive(answerCImage) : (oldData.lua_chon?.cImg || ""),
-      answerDImage ? uploadAnswerImageToDrive(answerDImage) : (oldData.lua_chon?.dImg || "")
-    ]);
-
-    await updateDoc(doc(db, "cau_hoi", editingQuestionId), {
-      mon_hoc_id: subjectId,
-      noi_dung: questionText,
-      lua_chon: {
-        a: answerA, aImg: answerAImgUrl,
-        b: answerB, bImg: answerBImgUrl,
-        c: answerC, cImg: answerCImgUrl,
-        d: answerD, dImg: answerDImgUrl
-      },
-      dap_an_dung: correctAnswer
-    });
-
-    editingQuestionId = null;
-    questionForm.reset();
-    submitQuestionBtn.classList.remove("d-none");
-    updateQuestionBtn.classList.add("d-none");
-    ["previewAnswerA","previewAnswerB","previewAnswerC","previewAnswerD"].forEach(id=>{
-      document.getElementById(id).innerHTML="";
-    });
-    loadQuestions();
-  }
-
-  async function loadSubjectsDropdown() {
-    subjectDropdown.innerHTML = "";
-    const snapshot = await getDocs(collection(db, "mon_hoc"));
-    snapshot.forEach(docSnap => {
-      const option = document.createElement("option");
-      option.value = docSnap.id;
-      option.textContent = docSnap.data().ten_mon;
-      subjectDropdown.appendChild(option);
-    });
-  }
-
-  async function loadQuestions() {
-    questionList.innerHTML = "";
-    const snapshot = await getDocs(collection(db, "cau_hoi"));
-    const subjects = {};
-    const subjectSnap = await getDocs(collection(db, "mon_hoc"));
-    subjectSnap.forEach(doc => subjects[doc.id] = doc.data().ten_mon);
-
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      const div = document.createElement("div");
-      div.className = "border p-2 mb-2";
-      div.innerHTML = `
-        <strong>Môn học:</strong> ${subjects[data.mon_hoc_id] || "?"}<br>
-        <strong>Câu hỏi:</strong> ${data.noi_dung}<br>
-        <ul class="list-group list-group-flush mt-2">
-          ${["a", "b", "c", "d"].map(k => {
-            const val = data.lua_chon?.[k] || "";
-            const imgUrl = data.lua_chon?.[`${k}Img`] || "";
-            const isCorrect = data.dap_an_dung === k;
-            return `<li class="list-group-item ${isCorrect ? 'text-success fw-bold bg-light' : ''}">
-              ${isCorrect ? '✅ ' : ''}${k}. ${val}
-              ${imgUrl ? `<br/><img src="${imgUrl}" style="max-height:60px; margin-top:4px;">` : ""}
-            </li>`;
-          }).join("")}
-        </ul>
-        <div class="mt-2">
-          <button class="btn btn-sm btn-warning me-2">Sửa</button>
-          <button class="btn btn-sm btn-danger">Xóa</button>
-        </div>
-      `;
-      div.querySelector(".btn-warning").onclick = () => {
-        editingQuestionId = docSnap.id;
-        subjectDropdown.value = data.mon_hoc_id;
-        document.getElementById("questionText").value = data.noi_dung;
-        document.getElementById("answerA").value = data.lua_chon?.a || "";
-        document.getElementById("answerB").value = data.lua_chon?.b || "";
-        document.getElementById("answerC").value = data.lua_chon?.c || "";
-        document.getElementById("answerD").value = data.lua_chon?.d || "";
-        document.getElementById("correctAnswerDropdown").value = data.dap_an_dung;
-        // Hiện ảnh preview (nếu có)
-        ["A","B","C","D"].forEach(l=>{
-          const prev = document.getElementById("previewAnswer"+l);
-          prev.innerHTML = "";
-          const url = data.lua_chon?.[l.toLowerCase()+"Img"];
-          if(url) {
-            const img = document.createElement("img");
-            img.src = url;
-            prev.appendChild(img);
-          }
-        });
-        submitQuestionBtn.classList.add("d-none");
-        updateQuestionBtn.classList.remove("d-none");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      };
-      div.querySelector(".btn-danger").onclick = async () => {
-        if (confirm("Bạn có chắc muốn xóa câu hỏi này?")) {
-          await deleteDoc(doc(db, "cau_hoi", docSnap.id));
-          loadQuestions();
-        }
-      };
-      questionList.appendChild(div);
-      if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
-    });
-  }
-});
-</script>
+<script type="module" src="admin.js"></script>
 </body>
 </html>
