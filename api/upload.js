@@ -43,14 +43,9 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Log cấu trúc files để kiểm tra
-    console.log('files:', files);
-
+    // Lấy file đầu tiên nếu là mảng
     let file = files.file;
     if (Array.isArray(file)) file = file[0];
-
-    // Log thêm chi tiết file
-    console.log('selected file:', file);
 
     if (!file || !file.filepath) {
       res.status(400).json({ error: 'No file uploaded or file missing filepath' });
@@ -60,6 +55,7 @@ module.exports = async (req, res) => {
     try {
       const fileStream = fs.createReadStream(file.filepath);
 
+      // Upload file lên Google Drive
       const response = await drive.files.create({
         requestBody: {
           name: file.originalFilename || file.newFilename || 'uploaded_file',
@@ -72,6 +68,15 @@ module.exports = async (req, res) => {
         fields: 'id,webViewLink,webContentLink',
       });
 
+      // Set quyền public cho file vừa upload
+      await drive.permissions.create({
+        fileId: response.data.id,
+        requestBody: {
+          role: 'reader',
+          type: 'anyone',
+        },
+      });
+
       // Xóa file tạm sau khi upload xong
       fs.unlink(file.filepath, () => {});
 
@@ -79,9 +84,10 @@ module.exports = async (req, res) => {
         fileId: response.data.id,
         webViewLink: response.data.webViewLink,
         webContentLink: response.data.webContentLink,
+        // Đường dẫn xem trực tiếp ảnh:
+        directLink: `https://drive.google.com/uc?id=${response.data.id}`,
       });
     } catch (error) {
-      // Log lỗi chi tiết nhất có thể
       console.error('Upload error:', error, error.stack);
       res.status(500).json({
         error: error.message || 'Error uploading file to Google Drive',
