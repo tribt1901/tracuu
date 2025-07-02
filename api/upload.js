@@ -2,19 +2,28 @@ const { google } = require('googleapis');
 const formidable = require('formidable');
 const fs = require('fs');
 
+// Lấy biến môi trường từ Vercel dashboard
 const CLIENT_ID = process.env.GDRIVE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GDRIVE_CLIENT_SECRET;
+const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
 const REFRESH_TOKEN = process.env.GDRIVE_REFRESH_TOKEN;
 const FOLDER_ID = process.env.GDRIVE_FOLDER_ID;
 
-function getDriveService() {
-  const oAuth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET);
-  oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
-  return google.drive({ version: 'v3', auth: oAuth2Client });
-}
+// Tạo OAuth2 client
+const oauth2Client = new google.auth.OAuth2(
+  CLIENT_ID,
+  CLIENT_SECRET,
+  REDIRECT_URI
+);
+oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+
+const drive = google.drive({
+  version: 'v3',
+  auth: oauth2Client,
+});
 
 module.exports = async (req, res) => {
-  // --- Thêm CORS cho mọi request ---
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', '*');
@@ -22,51 +31,64 @@ module.exports = async (req, res) => {
     res.status(200).end();
     return;
   }
-  // ----------------------------------
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method Not Allowed' });
     return;
   }
-  const form = formidable({ multiples: false });
-  form.parse(req, async function (err, fields, files) {
+
+  // Dùng formidable v3
+  const form = new formidable.IncomingForm({ multiples: false });
+
+  form.parse(req, async (err, fields, files) => {
     if (err) {
       res.status(500).json({ error: 'Error parsing form data' });
       return;
     }
-    if (!files.file) {
-      res.status(400).json({ error: 'No file uploaded' });
-      return;
-    }
-
-    const file = files.file;
-    const filePath = file.filepath || file.path;
-
     try {
-      const drive = getDriveService();
-      const fileMeta = {
-        name: file.originalFilename || file.name,
-        parents: [FOLDER_ID]
-      };
-      const media = {
-        mimeType: file.mimetype || file.type,
-        body: fs.createReadStream(filePath)
-      };
+      // Kiểm tra file
+      const file = files.file;
+      if (!file) {
+        res.status(400).json({ error: 'No file uploaded' });
+        return;
+      }
+
+      // Đọc stream file
+      const fileStream = fs.createReadStream(file.filepath);
+
+      // Upload lên Google Drive
       const response = await drive.files.create({
-        resource: fileMeta,
-        media: media,
-        fields: 'id'
+        requestBody: {
+          name: file.originalFilename,
+          parents: [FOLDER_ID],
+        },
+        media: {
+          mimeType: file.mimetype,
+          body: fileStream,
+        },
+        fields: 'id,webViewLink,webContentLink',
       });
 
-      const fileId = response.data.id;
-      const fileUrl = `https://drive.google.com/uc?id=${fileId}`;
-      res.status(200).json({ url: fileUrl, fileId });
+      // Xóa file tạm sau khi upload xong
+      fs.unlink(file.filepath, () => {});
+
+      res.status(200).json({
+        fileId: response.data.id,
+        webViewLink: response.data.webViewLink,
+        webContentLink: response.data.webContentLink,
+      });
     } catch (error) {
-      res.status(500).json({ error: error.message || 'Error uploading file to Google Drive' });
-    } finally {
-      if (filePath && fs.existsSync(filePath)) {
-        fs.unlink(filePath, () => {});
-      }
+      console.error(error);
+      res.status(500).json({
+        error: error.message || 'Error uploading file to Google Drive',
+      });
     }
   });
+};
+
+// Ngăn Vercel tự parse body
+export const config = {
+  api: {
+    bodyParser: false,
+  },
 };
