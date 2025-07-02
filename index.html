@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -10,6 +9,7 @@
   <style>
     body { padding-top: 70px; }
     .answer-correct { background-color: #e6ffe6; font-weight: bold; color: green; }
+    .question-img, .answer-img { max-height: 80px; margin: 6px 0 6px 16px; display: block; }
   </style>
 </head>
 <body class="bg-light">
@@ -57,9 +57,9 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
- const firebaseConfig = {
+  const firebaseConfig = {
     apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
     authDomain: "tracuu-d3ee9.firebaseapp.com",
     projectId: "tracuu-d3ee9",
@@ -68,6 +68,20 @@
     appId: "1:593568604435:web:9a5145457a8ee734143ae6",
     measurementId: "G-R0M6Y502NP"
   };
+
+  // Chuyển link Google Drive sang dạng thumbnail để đảm bảo hiển thị được ảnh
+  function convertToThumbnail(url) {
+    if (!url) return "";
+    const match = url.match(/uc\?id=([a-zA-Z0-9_-]{20,})/);
+    if (match) {
+      return `https://drive.google.com/thumbnail?id=${match[1]}`;
+    }
+    const match2 = url.match(/id=([a-zA-Z0-9_-]{20,})/);
+    if (match2) {
+      return `https://drive.google.com/thumbnail?id=${match2[1]}`;
+    }
+    return url;
+  }
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
@@ -79,6 +93,7 @@
   const resultCount = document.getElementById("resultCount");
 
   async function loadSubjects() {
+    subjectSelect.innerHTML = ""; // clear any previous
     const snapshot = await getDocs(collection(db, "mon_hoc"));
     snapshot.forEach(doc => {
       const option = document.createElement("option");
@@ -93,11 +108,20 @@
     div.className = "card mb-3 shadow-sm";
     const content = document.createElement("div");
     content.className = "card-body";
+    // Nội dung câu hỏi
     const question = document.createElement("p");
     question.className = "mb-2 fw-semibold";
     question.innerHTML = "📌 " + data.noi_dung;
     content.appendChild(question);
-
+    // Ảnh của câu hỏi (nếu có)
+    if (data.noi_dung_img) {
+      const qimg = document.createElement("img");
+      qimg.src = convertToThumbnail(data.noi_dung_img);
+      qimg.className = "question-img";
+      qimg.alt = "Ảnh câu hỏi";
+      content.appendChild(qimg);
+    }
+    // Đáp án
     const ul = document.createElement("ul");
     ul.className = "list-group list-group-flush";
     const choices = data.lua_chon || {};
@@ -105,15 +129,18 @@
       if (choices[key]) {
         const li = document.createElement("li");
         li.className = "list-group-item";
-        li.textContent = `${key}. ${choices[key]}`;
+        let answerHtml = `${key}. ${choices[key]}`;
+        if (choices[key + "Img"]) {
+          answerHtml += `<br><img src="${convertToThumbnail(choices[key + "Img"])}" class="answer-img" alt="Ảnh đáp án ${key}">`;
+        }
         if (key === data.dap_an_dung) {
           li.classList.add("answer-correct");
-          li.textContent = `✅ ${key}. ${choices[key]}`;
+          answerHtml = `✅ ${answerHtml}`;
         }
+        li.innerHTML = answerHtml;
         ul.appendChild(li);
       }
     }
-
     content.appendChild(ul);
     div.appendChild(content);
     return div;
@@ -125,18 +152,23 @@
     const subjectId = subjectSelect.value;
     const keyword = keywordInput.value.trim().toLowerCase();
     let count = 0;
-
     const snapshot = await getDocs(collection(db, "cau_hoi"));
     snapshot.forEach(doc => {
       const data = doc.data();
-      if (data.mon_hoc_id === subjectId && data.noi_dung.toLowerCase().includes(keyword)) {
+      // Tìm kiếm theo môn và keyword
+      if (
+        data.mon_hoc_id === subjectId &&
+        (keyword === "" ||
+         (data.noi_dung && data.noi_dung.toLowerCase().includes(keyword)) ||
+         (data.lua_chon && Object.values(data.lua_chon).some(val => typeof val === "string" && val.toLowerCase().includes(keyword)))
+        )
+      ) {
         resultList.appendChild(renderQuestion(data));
         count++;
       }
     });
-
     resultCount.textContent = count;
-    if (window.MathJax) MathJax.typeset();
+    if (window.MathJax && window.MathJax.typeset) MathJax.typeset();
   });
 
   loadSubjects();
