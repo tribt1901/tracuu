@@ -15,6 +15,15 @@
     #importHtmlResult .import-answer { margin-left: 2em; }
     #importHtmlResult .import-answer-correct { color: #198754; font-weight: bold; }
     #importHtmlResult { font-size:1.05em; }
+    .question-list-section { display: none; margin-top: 24px;}
+    .question-list-item { border-bottom: 1px solid #e0e0e0; padding: 16px 0; }
+    .question-list-item:last-child { border-bottom: none; }
+    .question-list-answers { margin-left: 1.5em; margin-top: 8px;}
+    .question-list-answers .correct { color: #198754; font-weight: bold; }
+    .question-list-answers .answer-item { margin-bottom: 2px; }
+    .search-bar { margin-bottom: 16px; }
+    .filter-bar { margin-bottom: 16px; max-width: 350px;}
+    .fw-medium { font-weight: 500; }
   </style>
   <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
@@ -50,14 +59,13 @@
     <div id="subjectList"></div>
   </div>
   <div class="mode-section" id="questionSection">
-    <h4>🧠 Quản trị câu hỏi</h4>
     <div class="mb-3" id="questionModeChoice">
       <button class="btn btn-primary me-2" id="importHtmlBtn">Nhập từ file HTML</button>
-      <button class="btn btn-success" id="manualBtn">Thêm thủ công</button>
+      <button class="btn btn-success me-2" id="manualBtn">Thêm thủ công</button>
+      <button class="btn btn-outline-secondary" id="viewQuestionListBtn">Xem danh sách câu hỏi</button>
     </div>
     <div id="importHtmlSection" style="display:none;">
       <h5>Nhập câu hỏi từ file HTML Moodle</h5>
-      <!-- Bắt buộc phải chọn môn học trước khi chọn file -->
       <select class="form-select mb-2" id="subjectDropdownImport" style="max-width:350px;">
         <option value="">-- Chọn môn học để lưu --</option>
       </select>
@@ -97,14 +105,27 @@
         <button type="submit" class="btn btn-success" id="submitQuestionBtn">Thêm câu hỏi</button>
         <button type="button" class="btn btn-primary d-none" id="updateQuestionBtn">Lưu sửa đổi</button>
       </form>
-      <div id="questionList" style="max-height:400px; overflow-y:auto;"></div>
       <button class="btn btn-secondary mt-3" id="backToChoice2">← Quay lại</button>
+    </div>
+    <div class="question-list-section" id="questionListSection">
+      <div class="row">
+        <div class="col-md-6 search-bar">
+          <input type="text" id="questionSearchInput" class="form-control" placeholder="Tìm kiếm nội dung câu hỏi...">
+        </div>
+        <div class="col-md-6 filter-bar">
+          <select id="subjectFilterDropdown" class="form-select">
+            <option value="">Tất cả môn học</option>
+          </select>
+        </div>
+      </div>
+      <div id="questionListView"></div>
+      <button class="btn btn-secondary mt-3" id="backToChoice3">← Quay lại</button>
     </div>
   </div>
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -122,15 +143,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const db = getFirestore(app);
   const auth = getAuth(app);
 
+  // DOM refs
   const subjectForm = document.getElementById("subjectForm");
   const subjectList = document.getElementById("subjectList");
   const questionForm = document.getElementById("questionForm");
-  const questionList = document.getElementById("questionList");
   const subjectDropdown = document.getElementById("subjectDropdown");
   const submitQuestionBtn = document.getElementById("submitQuestionBtn");
   const updateQuestionBtn = document.getElementById("updateQuestionBtn");
+  const questionModeChoice = document.getElementById("questionModeChoice");
+  const importHtmlSection = document.getElementById("importHtmlSection");
+  const manualSection = document.getElementById("manualSection");
+  const importHtmlBtn = document.getElementById("importHtmlBtn");
+  const manualBtn = document.getElementById("manualBtn");
+  const importHtmlInput = document.getElementById("importHtmlInput");
+  const importHtmlResult = document.getElementById("importHtmlResult");
+  const backToChoice1 = document.getElementById("backToChoice1");
+  const backToChoice2 = document.getElementById("backToChoice2");
+  const saveImportBtn = document.getElementById("saveImportBtn");
+  const subjectDropdownImport = document.getElementById("subjectDropdownImport");
+  const viewQuestionListBtn = document.getElementById("viewQuestionListBtn");
+  const questionListSection = document.getElementById("questionListSection");
+  const questionListView = document.getElementById("questionListView");
+  const backToChoice3 = document.getElementById("backToChoice3");
+  const questionSearchInput = document.getElementById("questionSearchInput");
+  const subjectFilterDropdown = document.getElementById("subjectFilterDropdown");
 
   let editingQuestionId = null;
+  let allQuestionsRaw = [];
+  let importedQuestions = [];
+  let allSubjects = {};
 
   onAuthStateChanged(auth, (user) => {
     if (!user) {
@@ -144,40 +185,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Giao diện quản trị câu hỏi mới
-  const questionModeChoice = document.getElementById("questionModeChoice");
-  const importHtmlSection = document.getElementById("importHtmlSection");
-  const manualSection = document.getElementById("manualSection");
-  const importHtmlBtn = document.getElementById("importHtmlBtn");
-  const manualBtn = document.getElementById("manualBtn");
-  const importHtmlInput = document.getElementById("importHtmlInput");
-  const importHtmlResult = document.getElementById("importHtmlResult");
-  const backToChoice1 = document.getElementById("backToChoice1");
-  const backToChoice2 = document.getElementById("backToChoice2");
-  const saveImportBtn = document.getElementById("saveImportBtn");
-  const subjectDropdownImport = document.getElementById("subjectDropdownImport");
-
-  // ===== Chọn môn học cho import =====
-  async function loadSubjectsDropdownImport() {
-    subjectDropdownImport.innerHTML = `<option value="">-- Chọn môn học để lưu --</option>`;
-    const snapshot = await getDocs(collection(db, "mon_hoc"));
-    snapshot.forEach(docSnap => {
-      const option = document.createElement("option");
-      option.value = docSnap.id;
-      option.textContent = docSnap.data().ten_mon;
-      subjectDropdownImport.appendChild(option);
-    });
-  }
-
-  function showQuestionChoice() {
+  // ==== UI switching ====
+  function showChoice() {
     questionModeChoice.style.display = "block";
     importHtmlSection.style.display = "none";
     manualSection.style.display = "none";
+    questionListSection.style.display = "none";
   }
   importHtmlBtn.onclick = () => {
     questionModeChoice.style.display = "none";
     importHtmlSection.style.display = "block";
     manualSection.style.display = "none";
+    questionListSection.style.display = "none";
     importHtmlResult.innerHTML = "";
     importHtmlInput.value = "";
     saveImportBtn.style.display = "none";
@@ -188,36 +207,20 @@ document.addEventListener("DOMContentLoaded", () => {
     questionModeChoice.style.display = "none";
     importHtmlSection.style.display = "none";
     manualSection.style.display = "block";
+    questionListSection.style.display = "none";
   };
-  backToChoice1.onclick = backToChoice2.onclick = () => {
-    showQuestionChoice();
+  backToChoice1.onclick = backToChoice2.onclick = backToChoice3.onclick = () => {
+    showChoice();
+  };
+  viewQuestionListBtn.onclick = async () => {
+    questionModeChoice.style.display = "none";
+    importHtmlSection.style.display = "none";
+    manualSection.style.display = "none";
+    questionListSection.style.display = "block";
+    await refreshQuestionList();
   };
 
-  // Bật/tắt file input theo chọn môn học
-  subjectDropdownImport.addEventListener("change", function() {
-    importHtmlInput.value = "";
-    importHtmlResult.innerHTML = "";
-    saveImportBtn.style.display = "none";
-    importHtmlInput.disabled = !subjectDropdownImport.value;
-  });
-
-  function switchMode() {
-    const mode = document.getElementById("modeSelect").value;
-    document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
-    if (mode === "subject") {
-      document.getElementById("subjectSection").style.display = "block";
-      loadSubjects();
-    } else if (mode === "question") {
-      document.getElementById("questionSection").style.display = "block";
-      showQuestionChoice();
-      loadSubjectsDropdown();
-      loadQuestions();
-    }
-  }
-  document.getElementById("modeSelect").addEventListener("change", switchMode);
-  switchMode();
-
-  // Subject CRUD
+  // ==== Subject CRUD ====
   subjectForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = document.getElementById("subjectName").value.trim();
@@ -258,37 +261,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Question CRUD
-  questionForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (editingQuestionId) {
-      // ...code updateQuestion ở đây nếu cần
-    } else {
-      const subjectId = subjectDropdown.value;
-      const questionText = document.getElementById("questionText").value.trim();
-      const answerA = document.getElementById("answerA").value.trim();
-      const answerB = document.getElementById("answerB").value.trim();
-      const answerC = document.getElementById("answerC").value.trim();
-      const answerD = document.getElementById("answerD").value.trim();
-      const correctAnswer = document.getElementById("correctAnswerDropdown").value;
-      if (!subjectId || !questionText || !answerA || !answerB || !answerC || !answerD || !correctAnswer) return;
-      await addDoc(collection(db, "cau_hoi"), {
-        mon_hoc_id: subjectId,
-        noi_dung: questionText,
-        noi_dung_img: "",
-        lua_chon: {
-          a: answerA, aImg:"",
-          b: answerB, bImg:"",
-          c: answerC, cImg:"",
-          d: answerD, dImg:""
-        },
-        dap_an_dung: correctAnswer
-      });
-      questionForm.reset();
-      loadQuestions();
-    }
-  });
-
+  // ==== Dropdowns ====
+  async function loadSubjectsDropdownImport() {
+    subjectDropdownImport.innerHTML = `<option value="">-- Chọn môn học để lưu --</option>`;
+    allSubjects = {};
+    const snapshot = await getDocs(collection(db, "mon_hoc"));
+    snapshot.forEach(docSnap => {
+      const option = document.createElement("option");
+      option.value = docSnap.id;
+      option.textContent = docSnap.data().ten_mon;
+      allSubjects[docSnap.id] = docSnap.data().ten_mon;
+      subjectDropdownImport.appendChild(option);
+    });
+  }
   async function loadSubjectsDropdown() {
     subjectDropdown.innerHTML = "";
     const snapshot = await getDocs(collection(db, "mon_hoc"));
@@ -299,39 +284,53 @@ document.addEventListener("DOMContentLoaded", () => {
       subjectDropdown.appendChild(option);
     });
   }
-
-  async function loadQuestions() {
-    questionList.innerHTML = "";
-    const snapshot = await getDocs(collection(db, "cau_hoi"));
-    const subjects = {};
-    const subjectSnap = await getDocs(collection(db, "mon_hoc"));
-    subjectSnap.forEach(doc => subjects[doc.id] = doc.data().ten_mon);
-
+  async function loadSubjectFilterDropdown() {
+    subjectFilterDropdown.innerHTML = `<option value="">Tất cả môn học</option>`;
+    const snapshot = await getDocs(collection(db, "mon_hoc"));
     snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      const div = document.createElement("div");
-      div.className = "border p-2 mb-2";
-      div.innerHTML = `
-        <strong>Môn học:</strong> ${subjects[data.mon_hoc_id] || "?"}<br>
-        <strong>Câu hỏi:</strong> ${data.noi_dung}
-        <br>
-        <ul class="list-group list-group-flush mt-2">
-          ${["a", "b", "c", "d"].map(k => {
-            const val = data.lua_chon?.[k] || "";
-            const isCorrect = data.dap_an_dung === k;
-            return `<li class="list-group-item ${isCorrect ? 'text-success fw-bold bg-light' : ''}">
-              ${isCorrect ? '✅ ' : ''}${k}. ${val}
-            </li>`;
-          }).join("")}
-        </ul>
-      `;
-      questionList.appendChild(div);
-      if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
+      const option = document.createElement("option");
+      option.value = docSnap.id;
+      option.textContent = docSnap.data().ten_mon;
+      subjectFilterDropdown.appendChild(option);
     });
   }
 
+  // Enable/disable file upload input
+  subjectDropdownImport.addEventListener("change", function() {
+    importHtmlInput.value = "";
+    importHtmlResult.innerHTML = "";
+    saveImportBtn.style.display = "none";
+    importHtmlInput.disabled = !subjectDropdownImport.value;
+  });
+
+  // ==== Thêm thủ công ====
+  questionForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const subjectId = subjectDropdown.value;
+    const questionText = document.getElementById("questionText").value.trim();
+    const answerA = document.getElementById("answerA").value.trim();
+    const answerB = document.getElementById("answerB").value.trim();
+    const answerC = document.getElementById("answerC").value.trim();
+    const answerD = document.getElementById("answerD").value.trim();
+    const correctAnswer = document.getElementById("correctAnswerDropdown").value;
+    if (!subjectId || !questionText || !answerA || !answerB || !answerC || !answerD || !correctAnswer) return;
+    await addDoc(collection(db, "cau_hoi"), {
+      mon_hoc_id: subjectId,
+      noi_dung: questionText,
+      noi_dung_img: "",
+      lua_chon: {
+        a: answerA, aImg:"",
+        b: answerB, bImg:"",
+        c: answerC, cImg:"",
+        d: answerD, dImg:""
+      },
+      dap_an_dung: correctAnswer
+    });
+    questionForm.reset();
+    // Không loadQuestions ở đây nữa, chỉ thêm thủ công thôi
+  });
+
   // ==== Parse HTML Moodle quiz khi import ====
-  let importedQuestions = [];
   importHtmlInput.addEventListener("change", function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -404,6 +403,68 @@ document.addEventListener("DOMContentLoaded", () => {
     alert(`Đã lưu ${success} câu hỏi${fail>0?`, lỗi ${fail} câu`:''}.`);
     saveImportBtn.disabled = false;
   };
+
+  // ==== Danh sách câu hỏi, search, filter ====
+  async function refreshQuestionList() {
+    // Load subjects and all questions
+    await loadSubjectFilterDropdown();
+    allSubjects = {};
+    Array.from(subjectFilterDropdown.options).forEach(opt => {
+      if (opt.value) allSubjects[opt.value] = opt.textContent;
+    });
+    const questions = [];
+    const snapshot = await getDocs(collection(db, "cau_hoi"));
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      data.id = docSnap.id;
+      questions.push(data);
+    });
+    allQuestionsRaw = questions;
+    renderQuestionList();
+  }
+  function renderQuestionList() {
+    const searchVal = questionSearchInput.value.trim().toLowerCase();
+    const monHocId = subjectFilterDropdown.value;
+    let filtered = allQuestionsRaw;
+    if (monHocId) filtered = filtered.filter(q => q.mon_hoc_id === monHocId);
+    if (searchVal) filtered = filtered.filter(q => (q.noi_dung||"").toLowerCase().includes(searchVal));
+    let html = "";
+    filtered.forEach(q => {
+      const monHoc = allSubjects[q.mon_hoc_id] || "Không rõ";
+      html += `
+        <div class="question-list-item">
+          <div><span class="fw-medium">Môn học:</span> ${monHoc}</div>
+          <div><span class="fw-medium">Câu hỏi:</span> ${q.noi_dung}</div>
+          <div class="question-list-answers">
+            ${["a","b","c","d"].map(k=>{
+              const isCorrect = q.dap_an_dung===k;
+              const ansText = (q.lua_chon && q.lua_chon[k]) ? q.lua_chon[k] : "";
+              return `<div class="answer-item${isCorrect?' correct':''}">${k}. ${ansText}</div>`
+            }).join("")}
+          </div>
+        </div>
+      `;
+    });
+    questionListView.innerHTML = html || "<div>Không có câu hỏi nào phù hợp.</div>";
+  }
+  questionSearchInput.addEventListener("input", renderQuestionList);
+  subjectFilterDropdown.addEventListener("change", renderQuestionList);
+
+  // ==== Mode switching ====
+  function switchMode() {
+    const mode = document.getElementById("modeSelect").value;
+    document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
+    if (mode === "subject") {
+      document.getElementById("subjectSection").style.display = "block";
+      loadSubjects();
+    } else if (mode === "question") {
+      document.getElementById("questionSection").style.display = "block";
+      showChoice();
+      loadSubjectsDropdown();
+    }
+  }
+  document.getElementById("modeSelect").addEventListener("change", switchMode);
+  switchMode();
 });
 </script>
 </body>
