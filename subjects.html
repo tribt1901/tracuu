@@ -30,6 +30,7 @@
     }
     .top-btn-bar .btn { margin-bottom: 0 !important;}
     .top-btn-bar .ms-auto { margin-left: auto !important;}
+    #backBtn { display: none; }
     @media (max-width: 600px) {
       .question-list-scroll { max-height: 320px; }
       #importHtmlResultContainer { max-height: 210px;}
@@ -55,7 +56,7 @@
 </nav>
 <div class="container py-4">
   <div class="top-btn-bar">
-    <button class="btn btn-outline-primary" id="backBtn">← Quay lại trang chính</button>
+    <button class="btn btn-outline-primary" id="backBtn">← Quay lại</button>
     <button class="btn btn-secondary d-none" id="backToChoice1">← Quay lại</button>
     <button class="btn btn-secondary d-none" id="backToChoice2">← Quay lại</button>
     <button class="btn btn-secondary d-none" id="backToChoice3">← Quay lại</button>
@@ -240,10 +241,22 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// ==== Nút quay lại trang chính ====
-document.getElementById('backBtn').onclick = function() {
-  window.location.href = '/';
+// ==== Nút quay lại chỉ áp dụng cho mode quản lý câu hỏi ====
+const backBtn = document.getElementById('backBtn');
+backBtn.onclick = function() {
+  // Ẩn tất cả các section của mode quản lý câu hỏi, về lại giao diện chọn chế độ quản trị
+  showQuestionChoice();
+  backBtn.style.display = "none";
+  modeSelect.disabled = false;
 };
+function showBackBtn() {
+  backBtn.style.display = 'inline-block';
+  modeSelect.disabled = true;
+}
+function hideBackBtn() {
+  backBtn.style.display = 'none';
+  modeSelect.disabled = false;
+}
 
 // ==== Nút logout ====
 logoutBtn.onclick = () => signOut(auth).then(() => window.location.href = "admin.html");
@@ -300,12 +313,14 @@ async function loadSubjectsDropdown() {
 function switchMode() {
   let mode = modeSelect.value;
   document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
+  hideBackBtn();
   if(mode==="subject") subjectSection.style.display = "block";
   if(mode==="question") {
     questionSection.style.display = "block";
     showQuestionChoice();
     loadSubjectsDropdown();
     loadQuestions();
+    showBackBtn();
   }
 }
 modeSelect.onchange = switchMode;
@@ -650,10 +665,6 @@ importHtmlBtn.onclick = async () => {
   importHtmlSection.style.display = "block";
   manualSection.style.display = "none";
   questionListSection.style.display = "none";
-  await loadSubjectsDropdownImport();
-  importHtmlInput.disabled = true;
-  importHtmlResult.innerHTML = "";
-  saveImportBtn.style.display = "none";
 };
 manualBtn.onclick = () => {
   questionModeChoice.style.display = "none";
@@ -752,10 +763,7 @@ saveImportBtn.onclick = async function() {
 };
 
 // ==== Hàm loadQuestions để tránh lỗi khi chuyển mode ====
-async function loadQuestions() {
-  // Nếu cần có thể gọi refreshQuestionList() ở đây, hoặc chỉ để trống cho đúng logic chuyển mode:
-  // await refreshQuestionList();
-}
+async function loadQuestions() {}
 
 document.addEventListener("DOMContentLoaded", () => {
   loadSubjects();
