@@ -15,6 +15,7 @@
     #importHtmlResult .import-question { margin-bottom: 1.5em; }
     #importHtmlResult .import-answer { margin-left: 2em; }
     #importHtmlResult .import-answer-correct { color: #198754; font-weight: bold; }
+    #importHtmlResult .import-duplicate { color: #c00; }
     #importHtmlResult { font-size:1.05em; }
     .question-list-section { display: none; margin-top: 24px;}
     .question-list-scroll { max-height: 430px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; }
@@ -166,10 +167,8 @@
   </div>
 </div>
 <script type="module">
-// (Để file JS riêng sẽ rõ ràng hơn, nhưng nếu bạn muốn nhúng trực tiếp thì giữ nguyên cấu trúc script này.)
-// Nếu bạn muốn nhận tối ưu JS code hoặc tách file, hãy yêu cầu thêm nhé!
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -228,7 +227,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let allSubjects = {};
   let currentEditQid = null;
 
-  // ==== Auth ====
   onAuthStateChanged(auth, (user) => { if (!user) location.href = "admin"; });
   document.getElementById("logoutBtn").addEventListener("click", () => { signOut(auth).then(() => { location.href = "admin"; }); });
 
@@ -360,6 +358,18 @@ document.addEventListener("DOMContentLoaded", () => {
     importHtmlInput.disabled = !subjectDropdownImport.value;
   });
 
+  // ==== Kiểm tra trùng câu hỏi ====
+  async function isDuplicatedQuestion({mon_hoc_id, noi_dung, dap_an_dung, lua_chon}) {
+    const querySnap = await getDocs(query(collection(db, "cau_hoi"), where("mon_hoc_id", "==", mon_hoc_id)));
+    for(const docSnap of querySnap.docs) {
+      const data = docSnap.data();
+      if((data.noi_dung||"").trim() === noi_dung.trim() && (data.dap_an_dung||"") === dap_an_dung && (data.lua_chon?.[dap_an_dung]||"") === lua_chon?.[dap_an_dung]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // ==== Thêm thủ công ====
   questionForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -371,32 +381,41 @@ document.addEventListener("DOMContentLoaded", () => {
     const answerD = document.getElementById("answerD").value.trim();
     const correctAnswer = document.getElementById("correctAnswerDropdown").value;
     if (!subjectId || !questionText || !answerA || !answerB || !answerC || !answerD || !correctAnswer) return;
+
+    // Kiểm tra trùng
+    const lua_chon = {a: answerA, b: answerB, c: answerC, d: answerD};
+    if(await isDuplicatedQuestion({mon_hoc_id:subjectId, noi_dung:questionText, dap_an_dung:correctAnswer, lua_chon})) {
+      alert("Câu hỏi này đã tồn tại trong môn học với đáp án đúng giống nhau!");
+      return;
+    }
+
     await addDoc(collection(db, "cau_hoi"), {
       mon_hoc_id: subjectId,
       noi_dung: questionText,
       noi_dung_img: "",
-      lua_chon: {
-        a: answerA, aImg:"",
-        b: answerB, bImg:"",
-        c: answerC, cImg:"",
-        d: answerD, dImg:""
-      },
+      lua_chon,
       dap_an_dung: correctAnswer
     });
     questionForm.reset();
   });
 
   // ==== Parse HTML Moodle quiz khi import ====
-  importHtmlInput.addEventListener("change", function(e) {
+  importHtmlInput.addEventListener("change", async function(e) {
     const file = e.target.files[0];
     if (!file) return;
+    const mon_hoc_id = subjectDropdownImport.value;
+    if (!mon_hoc_id) {
+      alert("Vui lòng chọn môn học để kiểm tra trùng lặp!");
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = function(event) {
+    reader.onload = async function(event) {
       const html = event.target.result;
       const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
+      const docx = parser.parseFromString(html, "text/html");
       importedQuestions = [];
-      doc.querySelectorAll('.que').forEach(q => {
+      let rawQuestions = [];
+      docx.querySelectorAll('.que').forEach(q => {
         let questionText = q.querySelector('.qtext')?.innerText.trim() || '';
         const answerNodes = q.querySelectorAll('.answer > div');
         const answers = [];
@@ -431,19 +450,44 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         }
 
-        importedQuestions.push({ questionText, answers, correct, correctIdx, correctKey });
+        rawQuestions.push({
+          questionText, answers,
+          correct, correctIdx, correctKey,
+          lua_chon: {
+            a: answers[0]||"", b: answers[1]||"", c: answers[2]||"", d: answers[3]||""
+          }
+        });
       });
+
+      // Kiểm tra trùng lặp hàng loạt
+      let duplicateFlags = [];
+      for (let q of rawQuestions) {
+        let isDup = false;
+        if(q.correctKey && q.questionText) {
+          isDup = await isDuplicatedQuestion({
+            mon_hoc_id,
+            noi_dung: q.questionText,
+            dap_an_dung: q.correctKey,
+            lua_chon: q.lua_chon
+          });
+        }
+        duplicateFlags.push(isDup);
+      }
+
+      importedQuestions = rawQuestions.map((q, idx) => ({...q, duplicate: duplicateFlags[idx]}));
 
       // Hiển thị kết quả
       let htmlResult = `<div class="fw-bold mb-2">Kết quả trích xuất (${importedQuestions.length} câu):</div>`;
       importedQuestions.forEach((q, idx) => {
-        htmlResult += `<div class="import-question">
+        htmlResult += `<div class="import-question${q.duplicate ? ' import-duplicate' : ''}">
           <span>${q.questionText}</span><br>`;
         q.answers.forEach((a,i) => {
           htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
             ${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}
           </div>`;
         });
+        if(q.duplicate)
+          htmlResult += `<span class="import-duplicate">[Trùng] Câu hỏi này sẽ không được lưu!</span>`;
         htmlResult += `</div>`;
       });
       importHtmlResult.innerHTML = htmlResult;
@@ -453,28 +497,24 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsText(file);
   });
 
-  // ===== Lưu vào DB khi bấm nút =====
+  // ===== Lưu vào DB khi bấm nút (chỉ lưu các câu không trùng) =====
   saveImportBtn.onclick = async function() {
     const mon_hoc_id = subjectDropdownImport.value;
     if (!mon_hoc_id) { alert("Vui lòng chọn môn học để lưu!"); return; }
     if (!importedQuestions.length) { alert("Chưa có dữ liệu để lưu!"); return; }
     saveImportBtn.disabled = true;
-    let success = 0, fail = 0;
+    let success = 0, fail = 0, skip = 0;
     for (let q of importedQuestions) {
+      if(q.duplicate) { skip++; continue; }
       await addDoc(collection(db, "cau_hoi"), {
         mon_hoc_id,
         noi_dung: q.questionText,
         noi_dung_img: "",
-        lua_chon: {
-          a: q.answers[0]||"", aImg:"",
-          b: q.answers[1]||"", bImg:"",
-          c: q.answers[2]||"", cImg:"",
-          d: q.answers[3]||"", dImg:""
-        },
+        lua_chon: q.lua_chon,
         dap_an_dung: q.correctKey
       }).then(()=>success++).catch(()=>fail++);
     }
-    alert(`Đã lưu ${success} câu hỏi${fail>0?`, lỗi ${fail} câu`:''}.`);
+    alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
     saveImportBtn.disabled = false;
   };
 
@@ -566,7 +606,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if(!mon_hoc_id||!noi_dung||!a||!b||!c||!d||!dap_an_dung) return;
     await updateDoc(doc(db,"cau_hoi",currentEditQid),{
       mon_hoc_id, noi_dung, noi_dung_img: "",
-      lua_chon: {a:a,aImg:"",b:b,bImg:"",c:c,cImg:"",d:d,dImg:""},
+      lua_chon: {a:a,aImg:"",b:b,bImg:"",c:cImg:"",d:d,dImg:""},
       dap_an_dung
     });
     editQuestionModal.style.display = "none";
