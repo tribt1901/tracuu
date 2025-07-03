@@ -10,20 +10,6 @@
     body { padding-top: 70px; }
     .answer-correct { background-color: #e6ffe6; font-weight: bold; color: green; }
     .question-img, .answer-img { max-height: 80px; margin: 6px 0 6px 16px; display: block; }
-
-    /* Custom scroll for select dropdown */
-    /* This will only affect the dropdown in Chrome/Edge/Opera */
-    select.form-select {
-      overflow-y: auto !important;
-    }
-    /* For Firefox, the dropdown is handled by the system, but set size if needed */
-
-    /* Add a custom class to wrap the select for better control */
-    .custom-select-wrapper {
-      position: relative;
-    }
-
-    /* Optional: Force a fixed height for the dropdown using size attribute in HTML */
   </style>
 </head>
 <body class="bg-light">
@@ -53,13 +39,7 @@
       <form id="searchForm">
         <div class="mb-3">
           <label class="form-label">Chọn môn học</label>
-          <div class="custom-select-wrapper">
-            <!-- 
-              Thêm thuộc tính size="8" để hiện 8 dòng, khi bấm vào sẽ có thanh cuộn nếu nhiều hơn.
-              Nếu không muốn luôn hiện dropdown lớn, thì chỉ cần CSS đã đủ cho Chrome/Edge.
-            -->
-            <select id="subjectSelect" class="form-select" size="8" style="max-height:240px; overflow-y:auto;"></select>
-          </div>
+          <select id="subjectSelect" class="form-select"></select>
         </div>
         <div class="mb-3">
           <label class="form-label">Từ khóa</label>
