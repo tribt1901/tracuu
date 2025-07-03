@@ -2,148 +2,144 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8"/>
-  <title>Upload Dữ liệu</title>
+  <title>Upload Dữ Liệu</title>
   <meta content="width=device-width, initial-scale=1" name="viewport"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <style>
     body { padding-top: 70px; }
-    .mode-section { display: none; }
-    .top-btn-bar {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .top-btn-bar .btn { margin-bottom: 0 !important;}
-    .top-btn-bar .ms-auto { margin-left: auto !important;}
-    .import-question-list { max-height: 250px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; }
-    .img-preview img { max-height: 60px; max-width: 100%; margin-right: 8px; vertical-align: middle;}
-    .img-preview .btn-delete-img { margin-left: 6px; margin-top: 0;}
-    .thumb-inline {
-      max-width: 32px;
-      max-height: 32px;
-      vertical-align: middle;
-      margin-left: 6px;
-      border-radius: 4px;
-      object-fit: contain;
-      box-shadow: 0 0 2px #aaa;
+    .section { display: none; }
+    #subjectList {max-height: 300px;overflow-y: auto;border: 1px solid #ddd;border-radius: 5px;padding: 10px 5px;background: #fafbfc;}
+    .fw-medium { font-weight: 500; }
+    .img-preview, .img-preview-ans { max-width: 120px; max-height: 70px; display: inline-block; margin-top: 6px; vertical-align: middle;}
+    .img-preview-ans { max-width: 70px; max-height: 40px; }
+    .img-upload-btn { margin-top: 3px; }
+    .remove-img-btn { margin-left: 6px; color: red; border: none; background: none; }
+    .subject-scroll-select {
+      max-height: 240px !important;
+      overflow-y: auto !important;
     }
     @media (max-width: 600px) {
-      .import-question-list { max-height: 150px; }
+      .section { max-height: 320px; }
     }
   </style>
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
-  <script src="https://apis.google.com/js/api.js"></script>
+  <link rel="icon" href="data:,">
+  <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
   <div class="container-fluid">
-    <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
-    <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link text-white" href="/upload.html">Upload</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
-      </ul>
-    </div>
+    <a class="navbar-brand text-white" href="#">📥 Upload Dữ Liệu</a>
   </div>
 </nav>
 <div class="container py-4">
-  <h3 class="mb-4">Upload Dữ liệu</h3>
-  <div class="mb-3">
-    <label class="form-label fw-bold">Bạn muốn upload gì?</label>
-    <select id="uploadTypeSelect" class="form-select" style="max-width:380px;">
-      <option value="">-- Chọn loại upload --</option>
-      <option value="decuong">Upload Đề cương</option>
-      <option value="cauhoi">Upload Câu hỏi</option>
-    </select>
-  </div>
-
-  <!-- Upload Đề cương -->
-  <div class="mode-section" id="decuongSection">
-    <h5 class="mb-3">Upload Đề cương môn học</h5>
-    <form id="decuongForm">
-      <div class="mb-2">
-        <label for="decuongSubject" class="form-label">Chọn môn học</label>
-        <select id="decuongSubject" class="form-select" required style="max-width:380px;"></select>
-      </div>
-      <div class="mb-2">
-        <label for="decuongFile" class="form-label">Chọn file đề cương (PDF, DOCX, v.v.)</label>
-        <input type="file" id="decuongFile" accept=".pdf,.doc,.docx,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.jpg,.png,.jpeg" class="form-control" required>
-      </div>
-      <button class="btn btn-success" type="submit">Upload</button>
-      <span id="decuongStatus" class="ms-3"></span>
-    </form>
-  </div>
-
-  <!-- Upload Câu hỏi -->
-  <div class="mode-section" id="cauhoiSection">
+  <h3 class="mb-4">Chọn loại upload:</h3>
+  <select class="form-select mb-4" id="uploadType">
+    <option value="question">Upload Câu hỏi</option>
+    <option value="outline">Upload Đề cương</option>
+  </select>
+  <!-- Upload Câu hỏi Section -->
+  <div id="uploadQuestionSection" class="section">
     <h5 class="mb-3">Upload Câu hỏi</h5>
     <div class="mb-3">
-      <button class="btn btn-primary me-2" id="importHtmlBtn">Nhập từ file HTML</button>
-      <button class="btn btn-success" id="manualBtn">Thêm thủ công</button>
+      <label class="form-label">Chọn môn học</label>
+      <select class="form-select subject-scroll-select" id="subjectDropdownQ"></select>
     </div>
-
-    <!-- Import HTML -->
-    <div id="importHtmlSection" style="display:none;">
-      <form id="importHtmlForm">
-        <div class="mb-2">
-          <label for="importSubject" class="form-label">Chọn môn học</label>
-          <select id="importSubject" class="form-select" required style="max-width:380px;"></select>
-        </div>
-        <div class="mb-2">
-          <label for="importHtmlInput" class="form-label">Chọn file HTML export từ Moodle</label>
-          <input type="file" id="importHtmlInput" accept=".html,.htm" class="form-control" required style="max-width:380px;">
-        </div>
-        <button class="btn btn-success" type="submit">Xem trước & Import</button>
-        <span id="importStatus" class="ms-3"></span>
-      </form>
-      <div id="importPreview" class="import-question-list mt-3"></div>
+    <div class="mb-3">
+      <label class="form-label">Chọn cách nhập</label>
+      <select class="form-select" id="questionInputType">
+        <option value="html">Nhập từ file HTML của Moodle</option>
+        <option value="manual">Thêm thủ công</option>
+      </select>
     </div>
-
-    <!-- Nhập thủ công -->
-    <div id="manualSection" style="display:none;">
-      <form id="manualForm">
-        <div class="mb-2">
-          <label for="manualSubject" class="form-label">Chọn môn học</label>
-          <select id="manualSubject" class="form-select" required style="max-width:380px;"></select>
+    <div class="mb-3">
+      <label class="form-label">Nhập mã bảo mật</label>
+      <input class="form-control" type="password" id="securityCodeQ" placeholder="Mã bảo mật">
+      <div id="securityQError" class="text-danger mt-1" style="display:none;">Mã bảo mật không đúng.</div>
+    </div>
+    <!-- Nhập từ HTML -->
+    <div id="questionHtmlSection" style="display:none;">
+      <div class="mb-2">
+        <input type="file" id="importHtmlInputQ" accept=".html,.htm" class="form-control" style="max-width:350px;">
+      </div>
+      <div id="importHtmlResultQ" style="margin-top:16px"></div>
+      <button class="btn btn-success mt-2" id="saveImportBtnQ" style="display:none;">💾 Lưu vào CSDL</button>
+    </div>
+    <!-- Thêm thủ công -->
+    <div id="questionManualSection" style="display:none;">
+      <form id="manualFormQ" autocomplete="off">
+        <textarea class="form-control mb-2" id="questionTextQ" placeholder="Nội dung câu hỏi (hỗ trợ MathJax)" required rows="3"></textarea>
+        <div>
+          <input type="file" accept="image/*" id="questionImageInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:260px;">
+          <img id="questionImgPreviewQ" class="img-preview" style="display:none"/>
+          <button type="button" class="remove-img-btn" id="removeQuestionImgBtnQ" style="display:none;">✖</button>
         </div>
-        <div class="mb-2">
-          <textarea id="manualQuestion" class="form-control" rows="3" placeholder="Nhập nội dung câu hỏi" required></textarea>
+        <div class="answer-input-group mb-2">
+          <label for="answerAQ" class="form-label mb-1">Đáp án a</label>
+          <input class="form-control" id="answerAQ" placeholder="Đáp án a" required type="text"/>
+          <input type="file" accept="image/*" id="answerAImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
+          <img id="answerAImgPreviewQ" class="img-preview-ans" style="display:none"/>
+          <button type="button" class="remove-img-btn" id="removeAImgBtnQ" style="display:none;">✖</button>
         </div>
-        <div class="mb-2">
-          <label class="form-label">Các đáp án</label>
-          <input class="form-control mb-1" id="manualA" placeholder="Đáp án a" required>
-          <input class="form-control mb-1" id="manualB" placeholder="Đáp án b" required>
-          <input class="form-control mb-1" id="manualC" placeholder="Đáp án c" required>
-          <input class="form-control mb-1" id="manualD" placeholder="Đáp án d" required>
+        <div class="answer-input-group mb-2">
+          <label for="answerBQ" class="form-label mb-1">Đáp án b</label>
+          <input class="form-control" id="answerBQ" placeholder="Đáp án b" required type="text"/>
+          <input type="file" accept="image/*" id="answerBImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
+          <img id="answerBImgPreviewQ" class="img-preview-ans" style="display:none"/>
+          <button type="button" class="remove-img-btn" id="removeBImgBtnQ" style="display:none;">✖</button>
         </div>
-        <div class="mb-2">
-          <label class="form-label">Đáp án đúng</label>
-          <select id="manualCorrect" class="form-select" required>
-            <option value="">Chọn đáp án đúng</option>
-            <option value="a">a</option>
-            <option value="b">b</option>
-            <option value="c">c</option>
-            <option value="d">d</option>
-          </select>
+        <div class="answer-input-group mb-2">
+          <label for="answerCQ" class="form-label mb-1">Đáp án c</label>
+          <input class="form-control" id="answerCQ" placeholder="Đáp án c" required type="text"/>
+          <input type="file" accept="image/*" id="answerCImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
+          <img id="answerCImgPreviewQ" class="img-preview-ans" style="display:none"/>
+          <button type="button" class="remove-img-btn" id="removeCImgBtnQ" style="display:none;">✖</button>
         </div>
-        <button class="btn btn-success" type="submit">Thêm câu hỏi</button>
-        <span id="manualStatus" class="ms-3"></span>
+        <div class="answer-input-group mb-2">
+          <label for="answerDQ" class="form-label mb-1">Đáp án d</label>
+          <input class="form-control" id="answerDQ" placeholder="Đáp án d" required type="text"/>
+          <input type="file" accept="image/*" id="answerDImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
+          <img id="answerDImgPreviewQ" class="img-preview-ans" style="display:none"/>
+          <button type="button" class="remove-img-btn" id="removeDImgBtnQ" style="display:none;">✖</button>
+        </div>
+        <select class="form-select mb-2" id="correctAnswerDropdownQ" required>
+          <option value="">Chọn đáp án đúng</option>
+          <option value="a">a</option>
+          <option value="b">b</option>
+          <option value="c">c</option>
+          <option value="d">d</option>
+        </select>
+        <button type="submit" class="btn btn-success" id="submitQuestionBtnQ">Thêm câu hỏi</button>
       </form>
     </div>
   </div>
+  <!-- Upload Đề cương Section -->
+  <div id="uploadOutlineSection" class="section">
+    <h5 class="mb-3">Upload Đề cương</h5>
+    <div class="mb-3">
+      <label class="form-label">Nhập mã bảo mật</label>
+      <input class="form-control" type="password" id="securityCodeOutline" placeholder="Mã bảo mật">
+      <div id="securityOutlineError" class="text-danger mt-1" style="display:none;">Mã bảo mật không đúng.</div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Chọn môn học</label>
+      <select class="form-select subject-scroll-select" id="subjectDropdownO"></select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Tài liệu này của? (Không bắt buộc)</label>
+      <input class="form-control" type="text" id="ownerOutline" placeholder="Tên người/nhóm/bộ môn...">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Chọn file đề cương</label>
+      <input type="file" class="form-control" id="outlineFileInput" accept=".pdf,.doc,.docx,.txt,.html,.htm,.zip">
+    </div>
+    <button class="btn btn-success" id="submitOutlineBtn">Upload</button>
+    <div id="outlineUploadResult" class="mt-2"></div>
+  </div>
 </div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-<script>
-// ==== Firebase Config ====
 const firebaseConfig = {
   apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
   authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -153,195 +149,304 @@ const firebaseConfig = {
   appId: "1:593568604435:web:9a5145457a8ee734143ae6",
   measurementId: "G-R0M6Y502NP"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-const storage = firebase.storage();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// ==== UI Control ====
-const uploadTypeSelect = document.getElementById('uploadTypeSelect');
-const decuongSection = document.getElementById('decuongSection');
-const cauhoiSection = document.getElementById('cauhoiSection');
-const importHtmlSection = document.getElementById('importHtmlSection');
-const manualSection = document.getElementById('manualSection');
-const decuongSubject = document.getElementById('decuongSubject');
-const importSubject = document.getElementById('importSubject');
-const manualSubject = document.getElementById('manualSubject');
-const decuongStatus = document.getElementById('decuongStatus');
-const importStatus = document.getElementById('importStatus');
-const manualStatus = document.getElementById('manualStatus');
-const importPreview = document.getElementById('importPreview');
+const SECURITY_CODE = "123456"; // THAY bằng mã thực tế
 
-// ==== Hiển thị giao diện ====
-uploadTypeSelect.onchange = () => {
-  Array.from(document.getElementsByClassName('mode-section')).forEach(e => e.style.display = 'none');
-  if(uploadTypeSelect.value === 'decuong') {
-    decuongSection.style.display = 'block';
-    loadSubjectsToDropdown(decuongSubject);
-  }
-  if(uploadTypeSelect.value === 'cauhoi') {
-    cauhoiSection.style.display = 'block';
-    loadSubjectsToDropdown(importSubject);
-    loadSubjectsToDropdown(manualSubject);
-    importHtmlSection.style.display = 'none';
-    manualSection.style.display = 'none';
-  }
-};
-
-// ==== Upload Đề cương lên Google Drive (qua Cloud Function proxy hoặc trực tiếp nếu public) ====
-// YÊU CẦU: Bạn cần cấu hình backend (Firebase Cloud Function) nhận file rồi upload lên Drive và trả về link.
-// Ở đây code demo upload lên Firebase Storage thay vì Google Drive, bạn cần thay endpoint nếu có function riêng.
-document.getElementById('decuongForm').onsubmit = async function(e) {
-  e.preventDefault();
-  decuongStatus.textContent = 'Đang upload...';
-  const subjectId = decuongSubject.value;
-  const file = document.getElementById('decuongFile').files[0];
-  if(!subjectId || !file) { decuongStatus.textContent = 'Vui lòng chọn môn học và file.'; return; }
-  try {
-    // Giả sử bạn dùng Firebase Storage (bạn cần chỉnh lại nếu có Cloud Function proxy Google Drive)
-    const ref = storage.ref(`decuong/${subjectId}/${Date.now()}_${file.name}`);
-    await ref.put(file);
-    const url = await ref.getDownloadURL();
-    await db.collection("decuong").add({
-      mon_hoc_id: subjectId,
-      file_url: url,
-      file_name: file.name,
-      uploaded_at: new Date()
-    });
-    decuongStatus.textContent = 'Tải lên thành công!';
-    document.getElementById('decuongForm').reset();
-  } catch (err) {
-    decuongStatus.textContent = 'Lỗi upload file!';
-  }
-};
-
-// ==== Upload Câu hỏi: import HTML hoặc nhập thủ công ====
-document.getElementById('importHtmlBtn').onclick = () => {
-  importHtmlSection.style.display = 'block';
-  manualSection.style.display = 'none';
-  importPreview.innerHTML = '';
-  importStatus.textContent = '';
-};
-document.getElementById('manualBtn').onclick = () => {
-  manualSection.style.display = 'block';
-  importHtmlSection.style.display = 'none';
-  manualStatus.textContent = '';
-};
-
-async function loadSubjectsToDropdown(sel) {
-  sel.innerHTML = '<option value="">-- Chọn môn học --</option>';
-  const snap = await db.collection('mon_hoc').get();
-  snap.forEach(docSnap => {
-    const d = docSnap.data();
-    const opt = document.createElement('option');
-    opt.value = docSnap.id;
-    opt.textContent = d.ten_mon;
-    sel.appendChild(opt);
-  });
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.style.display = "none");
+  document.getElementById(id).style.display = "block";
 }
 
-// ==== Import file HTML Moodle ====
-document.getElementById('importHtmlForm').onsubmit = async function(e) {
-  e.preventDefault();
-  importPreview.innerHTML = '';
-  importStatus.textContent = 'Đang xử lý file...';
-  const subjectId = importSubject.value;
-  const file = document.getElementById('importHtmlInput').files[0];
-  if(!subjectId || !file) { importStatus.textContent = 'Chưa chọn môn học hoặc file!'; return; }
-  // Đọc file HTML và trích xuất câu hỏi (giả định định dạng giống các bản trước)
+async function loadSubjectsDropdown(domId) {
+  const select = document.getElementById(domId);
+  select.innerHTML = '';
+  const snapshot = await getDocs(collection(db, "mon_hoc"));
+  snapshot.forEach(docSnap => {
+    const option = document.createElement("option");
+    option.value = docSnap.id;
+    option.textContent = docSnap.data().ten_mon;
+    select.appendChild(option);
+  });
+}
+async function getQuestionSetForSubject(mon_hoc_id) {
+  const querySnap = await getDocs(query(collection(db, "cau_hoi"), where("mon_hoc_id", "==", mon_hoc_id)));
+  const existSet = [];
+  querySnap.forEach(docSnap => {
+    const data = docSnap.data();
+    existSet.push({
+      noi_dung: (data.noi_dung || '').trim(),
+      dap_an_dung: data.dap_an_dung,
+      dap_an: (data.lua_chon && data.lua_chon[data.dap_an_dung]) ? data.lua_chon[data.dap_an_dung] : ''
+    });
+  });
+  return existSet;
+}
+function isDuplicateInSet(question, existSet) {
+  return existSet.some(
+    x =>
+      x.noi_dung === question.noi_dung.trim() &&
+      x.dap_an_dung === question.dap_an_dung &&
+      x.dap_an === question.lua_chon[question.dap_an_dung]
+  );
+}
+
+// UI switching
+const uploadType = document.getElementById("uploadType");
+uploadType.addEventListener("change", () => {
+  if (uploadType.value === "question") {
+    showSection("uploadQuestionSection");
+    loadSubjectsDropdown("subjectDropdownQ");
+  } else {
+    showSection("uploadOutlineSection");
+    loadSubjectsDropdown("subjectDropdownO");
+  }
+});
+uploadType.dispatchEvent(new Event("change"));
+
+// Question input type switching
+const questionInputType = document.getElementById("questionInputType");
+questionInputType.addEventListener("change", () => {
+  document.getElementById("questionHtmlSection").style.display = questionInputType.value === "html" ? "block" : "none";
+  document.getElementById("questionManualSection").style.display = questionInputType.value === "manual" ? "block" : "none";
+});
+questionInputType.dispatchEvent(new Event("change"));
+
+// Upload Câu hỏi - nhập từ file HTML
+let importedQuestionsQ = [];
+document.getElementById("importHtmlInputQ").addEventListener("change", async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const mon_hoc_id = document.getElementById("subjectDropdownQ").value;
+  if (!mon_hoc_id) { alert("Vui lòng chọn môn học"); return; }
+  const existSet = await getQuestionSetForSubject(mon_hoc_id);
   const reader = new FileReader();
-  reader.onload = async function(event) {
+  reader.onload = function(event) {
     const html = event.target.result;
-    let blocks = html.split(/\n\s*\n/).filter(x=>x.trim());
-    let questions = [];
-    for (let block of blocks) {
-      let lines = block.split('\n').map(x=>x.trim()).filter(x=>x);
-      if (lines.length < 2) continue;
-      let questionText = lines[0];
-      let answers = [];
-      let correctIdx = -1;
-      for (let i=1; i<lines.length; ++i) {
-        let ansLine = lines[i];
-        let match = ansLine.match(/^([a-d])\.\s*(.*)$/i);
-        if (match) {
-          let ansText = match[2].replace(/<[^>]+>/g,"").replace(/\(Đáp án đúng\)/i,"").replace(/\s*$/, "");
-          answers.push(ansText);
-          if (ansLine.toLowerCase().includes("đáp án đúng")) correctIdx = answers.length-1;
-        }
-      }
-      if (answers.length===4 && correctIdx!==-1) {
-        questions.push({ questionText, answers, correctIdx });
-      }
-    }
-    // Xem trước
-    let htmlResult = `<div class="fw-bold mb-2">Kết quả (${questions.length} câu):</div>`;
-    questions.forEach((q, idx) => {
-      htmlResult += `<div class="border rounded p-2 mb-2"><b>Câu hỏi:</b> ${q.questionText}<br>`;
-      q.answers.forEach((a,i) => {
-        htmlResult += `<div class="${i===q.correctIdx?"fw-bold text-success":""}">${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}</div>`;
+    const parser = new DOMParser();
+    const docx = parser.parseFromString(html, "text/html");
+    importedQuestionsQ = [];
+    let rawQuestions = [];
+    docx.querySelectorAll('.que').forEach(q => {
+      let questionText = q.querySelector('.qtext')?.innerText.trim() || '';
+      const answerNodes = q.querySelectorAll('.answer > div');
+      const answers = [];
+      answerNodes.forEach((ans, idx) => {
+        let ansText = ans.querySelector('.flex-fill, div.ml-1')?.innerText.trim() || '';
+        answers.push(ansText);
       });
+      let correct = '';
+      let correctIdx = -1;
+      let correctKey = '';
+      let rightAnswerText = q.querySelector('.rightanswer')?.innerText || '';
+      let match = rightAnswerText.match(/The correct answer is: (.+)$/);
+      if (match) {
+        let correctValue = match[1].trim();
+        correctIdx = answers.findIndex(a =>
+          a.trim().toLowerCase() === correctValue.trim().toLowerCase()
+          || a.trim().toLowerCase().includes(correctValue.trim().toLowerCase())
+          || correctValue.trim().toLowerCase().includes(a.trim().toLowerCase())
+        );
+        correctKey = ['a','b','c','d'][correctIdx] || '';
+        correct = answers[correctIdx] || '';
+      } else {
+        answerNodes.forEach((ans, idx) => {
+          if (ans.classList.contains('correct')) {
+            correct = answers[idx];
+            correctIdx = idx;
+            correctKey = ['a','b','c','d'][correctIdx] || '';
+          }
+        });
+      }
+      rawQuestions.push({
+        questionText, answers,
+        correct, correctIdx, correctKey,
+        lua_chon: {
+          a: answers[0]||"", b: answers[1]||"", c: answers[2]||"", d: answers[3]||""
+        }
+      });
+    });
+    importedQuestionsQ = rawQuestions.map(q => ({
+      ...q,
+      duplicate: q.correctKey && q.questionText
+        ? isDuplicateInSet({
+            noi_dung: q.questionText,
+            dap_an_dung: q.correctKey,
+            lua_chon: q.lua_chon
+          }, existSet)
+        : false
+    }));
+    let htmlResult = `<div class="fw-bold mb-2">Kết quả trích xuất (${importedQuestionsQ.length} câu):</div>`;
+    importedQuestionsQ.forEach((q, idx) => {
+      htmlResult += `<div class="import-question${q.duplicate ? ' text-danger' : ''}">
+        <span>${q.questionText}</span><br>`;
+      q.answers.forEach((a,i) => {
+        htmlResult += `<div class="import-answer${i===q.correctIdx?' text-success fw-bold':''}">
+          ${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}
+        </div>`;
+      });
+      if(q.duplicate)
+        htmlResult += `<span class="text-danger">[Trùng] Câu hỏi này sẽ không được lưu!</span>`;
       htmlResult += `</div>`;
     });
-    importPreview.innerHTML = htmlResult;
-    importStatus.textContent = questions.length ? 'Xem trước thành công! Đang lưu vào CSDL...':'Không trích xuất được câu hỏi!';
-    // Lưu vào Firestore
-    let success = 0, fail = 0;
-    for (let q of questions) {
-      let correctKey = ['a','b','c','d'][q.correctIdx] || '';
-      try {
-        await db.collection("cau_hoi").add({
-          mon_hoc_id: subjectId,
-          noi_dung: q.questionText,
-          noi_dung_img: "",
-          lua_chon: {
-            a: q.answers[0]||"", aImg:"",
-            b: q.answers[1]||"", bImg:"",
-            c: q.answers[2]||"", cImg:"",
-            d: q.answers[3]||"", dImg:""
-          },
-          dap_an_dung: correctKey
-        });
-        success++;
-      } catch {
-        fail++;
-      }
-    }
-    importStatus.textContent = `Đã lưu ${success} câu hỏi. ${fail ? 'Lỗi: '+fail : ''}`;
+    document.getElementById("importHtmlResultQ").innerHTML = htmlResult;
+    document.getElementById("saveImportBtnQ").style.display = importedQuestionsQ.length>0 ? "inline-block" : "none";
+    if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
   }
   reader.readAsText(file);
-};
-
-// ==== Thêm thủ công câu hỏi ====
-document.getElementById('manualForm').onsubmit = async function(e) {
-  e.preventDefault();
-  manualStatus.textContent = 'Đang lưu...';
-  const subjectId = manualSubject.value;
-  const question = document.getElementById('manualQuestion').value.trim();
-  const a = document.getElementById('manualA').value.trim();
-  const b = document.getElementById('manualB').value.trim();
-  const c = document.getElementById('manualC').value.trim();
-  const d = document.getElementById('manualD').value.trim();
-  const correct = document.getElementById('manualCorrect').value;
-  if(!subjectId || !question || !a || !b || !c || !d || !correct) { manualStatus.textContent = 'Điền đủ thông tin!'; return; }
-  try {
-    await db.collection("cau_hoi").add({
-      mon_hoc_id: subjectId,
-      noi_dung: question,
-      noi_dung_img: "",
-      lua_chon: { a, aImg:"", b, bImg:"", c, cImg:"", d, dImg:"" },
-      dap_an_dung: correct
-    });
-    manualStatus.textContent = 'Thêm thành công!';
-    document.getElementById('manualForm').reset();
-  } catch {
-    manualStatus.textContent = 'Lỗi!';
-  }
-};
-
-// ==== Check xác thực ====
-auth.onAuthStateChanged(function(user){
-  if(!user) location.href = 'admin.html';
 });
+document.getElementById("saveImportBtnQ").onclick = async function() {
+  // Check security code
+  const code = document.getElementById("securityCodeQ").value;
+  if (code !== SECURITY_CODE) {
+    document.getElementById("securityQError").style.display = "block";
+    return;
+  } else {
+    document.getElementById("securityQError").style.display = "none";
+  }
+  const mon_hoc_id = document.getElementById("subjectDropdownQ").value;
+  if (!mon_hoc_id) { alert("Vui lòng chọn môn học để lưu!"); return; }
+  if (!importedQuestionsQ.length) { alert("Chưa có dữ liệu để lưu!"); return; }
+  document.getElementById("saveImportBtnQ").disabled = true;
+  let success = 0, fail = 0, skip = 0;
+  for (let q of importedQuestionsQ) {
+    if(q.duplicate) { skip++; continue; }
+    await addDoc(collection(db, "cau_hoi"), {
+      mon_hoc_id,
+      noi_dung: q.questionText,
+      noi_dung_img: "",
+      lua_chon: q.lua_chon,
+      dap_an_dung: q.correctKey
+    }).then(()=>success++).catch(()=>fail++);
+  }
+  alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
+  document.getElementById("saveImportBtnQ").disabled = false;
+};
+
+// Upload Câu hỏi - thêm thủ công
+let questionImgFileQ = null, answerAImgFileQ = null, answerBImgFileQ = null, answerCImgFileQ = null, answerDImgFileQ = null;
+let questionImgUrlQ = "", answerAImgUrlQ = "", answerBImgUrlQ = "", answerCImgUrlQ = "", answerDImgUrlQ = "";
+
+function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
+  input.addEventListener("change", function() {
+    if(this.files && this.files[0]) {
+      setFile(this.files[0]);
+      preview.src = URL.createObjectURL(this.files[0]);
+      preview.style.display = "";
+      removeBtn.style.display = "";
+      setUrl("");
+    }
+  });
+  removeBtn.addEventListener("click", function() {
+    setFile(null);
+    preview.src = "";
+    preview.style.display = "none";
+    removeBtn.style.display = "none";
+    input.value = "";
+    setUrl("");
+  });
+}
+handleImgInput(questionImageInputQ, questionImgPreviewQ, removeQuestionImgBtnQ, f=>questionImgFileQ=f, url=>questionImgUrlQ=url);
+handleImgInput(answerAImgInputQ, answerAImgPreviewQ, removeAImgBtnQ, f=>answerAImgFileQ=f, url=>answerAImgUrlQ=url);
+handleImgInput(answerBImgInputQ, answerBImgPreviewQ, removeBImgBtnQ, f=>answerBImgFileQ=f, url=>answerBImgUrlQ=url);
+handleImgInput(answerCImgInputQ, answerCImgPreviewQ, removeCImgBtnQ, f=>answerCImgFileQ=f, url=>answerCImgUrlQ=url);
+handleImgInput(answerDImgInputQ, answerDImgPreviewQ, removeDImgBtnQ, f=>answerDImgFileQ=f, url=>answerDImgUrlQ=url);
+
+async function uploadToDrive(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch('https://tracuu-app.hugo.io.vn/api/upload', { method: 'POST', body: formData });
+  if (!response.ok) throw new Error('Upload ảnh thất bại!');
+  const result = await response.json();
+  return result.url;
+}
+
+document.getElementById("manualFormQ").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  // Check security code
+  const code = document.getElementById("securityCodeQ").value;
+  if (code !== SECURITY_CODE) {
+    document.getElementById("securityQError").style.display = "block";
+    return;
+  } else {
+    document.getElementById("securityQError").style.display = "none";
+  }
+  const subjectId = document.getElementById("subjectDropdownQ").value;
+  const qText = questionTextQ.value.trim();
+  const a = answerAQ.value.trim();
+  const b = answerBQ.value.trim();
+  const c = answerCQ.value.trim();
+  const d = answerDQ.value.trim();
+  const correct = correctAnswerDropdownQ.value;
+  if (!subjectId || !qText || !a || !b || !c || !d || !correct) return;
+  let qImg = questionImgUrlQ;
+  let aImg = answerAImgUrlQ;
+  let bImg = answerBImgUrlQ;
+  let cImg = answerCImgUrlQ;
+  let dImg = answerDImgUrlQ;
+  if (questionImgFileQ) qImg = await uploadToDrive(questionImgFileQ);
+  if (answerAImgFileQ) aImg = await uploadToDrive(answerAImgFileQ);
+  if (answerBImgFileQ) bImg = await uploadToDrive(answerBImgFileQ);
+  if (answerCImgFileQ) cImg = await uploadToDrive(answerCImgFileQ);
+  if (answerDImgFileQ) dImg = await uploadToDrive(answerDImgFileQ);
+  const existSet = await getQuestionSetForSubject(subjectId);
+  const lua_chon = {a, aImg: aImg || "", b, bImg: bImg || "", c, cImg: cImg || "", d, dImg: dImg || ""};
+  if (isDuplicateInSet({noi_dung: qText, dap_an_dung: correct, lua_chon}, existSet)) {
+    alert("Câu hỏi này đã tồn tại trong môn học với đáp án đúng giống nhau!");
+    return;
+  }
+  await addDoc(collection(db, "cau_hoi"), {
+    mon_hoc_id: subjectId,
+    noi_dung: qText,
+    noi_dung_img: qImg || "",
+    lua_chon,
+    dap_an_dung: correct
+  });
+  this.reset();
+  [questionImgPreviewQ, removeQuestionImgBtnQ, answerAImgPreviewQ, removeAImgBtnQ, answerBImgPreviewQ, removeBImgBtnQ, answerCImgPreviewQ, removeCImgBtnQ, answerDImgPreviewQ, removeDImgBtnQ].forEach(el => { el.style.display = "none"; });
+  questionImgFileQ = answerAImgFileQ = answerBImgFileQ = answerCImgFileQ = answerDImgFileQ = null;
+  questionImgUrlQ = answerAImgUrlQ = answerBImgUrlQ = answerCImgUrlQ = answerDImgUrlQ = "";
+  questionImageInputQ.value = answerAImgInputQ.value = answerBImgInputQ.value = answerCImgInputQ.value = answerDImgInputQ.value = "";
+  alert("Đã thêm câu hỏi thành công!");
+});
+
+// Security code errors hide on input
+document.getElementById("securityCodeQ").addEventListener("input", ()=>document.getElementById("securityQError").style.display="none");
+document.getElementById("securityCodeOutline").addEventListener("input", ()=>document.getElementById("securityOutlineError").style.display="none");
+
+// Upload Đề cương
+document.getElementById("submitOutlineBtn").addEventListener("click", async function() {
+  const code = document.getElementById("securityCodeOutline").value;
+  if (code !== SECURITY_CODE) {
+    document.getElementById("securityOutlineError").style.display = "block";
+    return;
+  } else {
+    document.getElementById("securityOutlineError").style.display = "none";
+  }
+  const subjectId = document.getElementById("subjectDropdownO").value;
+  const owner = document.getElementById("ownerOutline").value.trim();
+  const fileInput = document.getElementById("outlineFileInput");
+  const resultDiv = document.getElementById("outlineUploadResult");
+  if (!subjectId) { resultDiv.innerHTML = '<span class="text-danger">Vui lòng chọn môn học!</span>'; return; }
+  if (!fileInput.files[0]) { resultDiv.innerHTML = '<span class="text-danger">Vui lòng chọn file!</span>'; return; }
+  resultDiv.innerHTML = "Đang upload file...";
+  try {
+    const url = await uploadToDrive(fileInput.files[0]);
+    await addDoc(collection(db, "de_cuong"), {
+      mon_hoc_id: subjectId,
+      file_url: url,
+      owner: owner,
+      upload_time: new Date().toISOString()
+    });
+    resultDiv.innerHTML = '<span class="text-success">Upload thành công!</span>';
+    fileInput.value = "";
+    document.getElementById("ownerOutline").value = "";
+  } catch (e) {
+    resultDiv.innerHTML = '<span class="text-danger">Upload thất bại!</span>';
+  }
+});
+
 </script>
 </body>
 </html>
