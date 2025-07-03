@@ -31,6 +31,14 @@
     #importHtmlResultQ .import-answer-correct { color: #198754; font-weight: bold; }
     #importHtmlResultQ .import-duplicate { color: #c00; }
     #importHtmlResultQ { font-size:1.05em; }
+    .top-btn-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .top-btn-bar .btn { margin-bottom: 0 !important;}
+    .top-btn-bar .ms-auto { margin-left: auto !important;}
     @media (max-width: 600px) {
       .section { max-height: 320px; }
       #importHtmlResultQContainer { max-height: 210px;}
@@ -57,6 +65,9 @@
     </div>
   </nav>
   <div class="container py-4">
+    <div class="top-btn-bar" id="backButtonBar" style="display:none;">
+      <button class="btn btn-secondary" id="backToChoiceBtn">← Quay lại</button>
+    </div>
     <h3 class="mb-4">Chọn loại upload:</h3>
     <select class="form-select mb-4" id="uploadType">
       <option value="question">Upload Câu hỏi</option>
@@ -65,18 +76,20 @@
     <!-- Upload Câu hỏi Section -->
     <div id="uploadQuestionSection" class="section">
       <h5 class="mb-3">Upload Câu hỏi</h5>
-      <div class="mb-3">
-        <label class="form-label">Chọn cách nhập</label>
-        <select class="form-select" id="questionInputType">
-          <option value="">-- Chọn phương thức nhập --</option>
-          <option value="html">Nhập từ file HTML của Moodle</option>
-          <option value="manual">Thêm thủ công</option>
-        </select>
-      </div>
-      <div id="questionSecuritySection" class="mb-3" style="display:none;">
-        <label class="form-label">Nhập mã bảo mật</label>
-        <input class="form-control" type="password" id="securityCodeQ" placeholder="Mã bảo mật">
-        <div id="securityQError" class="text-danger mt-1" style="display:none;">Mã bảo mật không đúng.</div>
+      <div id="uploadQuestionChoice">
+        <div class="mb-3">
+          <label class="form-label">Chọn cách nhập</label>
+          <select class="form-select" id="questionInputType">
+            <option value="">-- Chọn phương thức nhập --</option>
+            <option value="html">Nhập từ file HTML của Moodle</option>
+            <option value="manual">Thêm thủ công</option>
+          </select>
+        </div>
+        <div id="questionSecuritySection" class="mb-3" style="display:none;">
+          <label class="form-label">Nhập mã bảo mật</label>
+          <input class="form-control" type="password" id="securityCodeQ" placeholder="Mã bảo mật">
+          <div id="securityQError" class="text-danger mt-1" style="display:none;">Mã bảo mật không đúng.</div>
+        </div>
       </div>
       <div id="questionMainSection" style="display:none;">
         <div class="mb-3">
@@ -174,6 +187,12 @@ function showSection(id) {
   if(section) section.style.display = "block";
 }
 
+// Quản lý nút quay lại
+function showBackButton(show) {
+  document.getElementById("backButtonBar").style.display = show ? "flex" : "none";
+}
+
+// Tái sử dụng các phần đã có
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -244,13 +263,17 @@ uploadType.addEventListener("change", () => {
     document.getElementById("questionInputType").value = "";
     document.getElementById("questionSecuritySection").style.display = "none";
     document.getElementById("questionMainSection").style.display = "none";
+    document.getElementById("uploadQuestionChoice").style.display = "block";
+    showBackButton(false);
   } else {
     showSection("uploadOutlineSection");
     loadSubjectsDropdown("subjectDropdownO");
+    showBackButton(false);
   }
 });
 uploadType.dispatchEvent(new Event("change"));
 
+// Xử lý giao diện cho loại nhập câu hỏi
 const questionInputType = document.getElementById("questionInputType");
 questionInputType.addEventListener("change", () => {
   const method = questionInputType.value;
@@ -265,6 +288,7 @@ questionInputType.addEventListener("change", () => {
   document.getElementById("questionMainSection").style.display = "none";
 });
 
+// Show main form sau khi nhập đúng mã bảo mật, bật nút quay lại
 document.getElementById("securityCodeQ").addEventListener("blur", async function() {
   if (SECURITY_CODE === null) await fetchSecurityCode();
   const code = this.value;
@@ -280,12 +304,16 @@ document.getElementById("securityCodeQ").addEventListener("blur", async function
       document.getElementById("questionHtmlSection").style.display = "none";
       document.getElementById("questionManualSection").style.display = "block";
     }
+    // Ẩn block chọn phương thức nhập, hiện nút quay lại
+    document.getElementById("uploadQuestionChoice").style.display = "none";
+    showBackButton(true);
   } else {
     document.getElementById("questionQError").style.display = "none";
     document.getElementById("questionMainSection").style.display = "none";
     if (code) document.getElementById("securityQError").style.display = "block";
   }
 });
+// Khi đổi lại phương thức nhập, reset mã bảo mật, hide back button
 questionInputType.addEventListener("change", function() {
   document.getElementById("securityCodeQ").value = "";
   document.getElementById("securityQError").style.display = "none";
@@ -301,6 +329,16 @@ questionInputType.addEventListener("change", function() {
     document.getElementById("questionManualSection").style.display = "none";
   }
 });
+
+// Nút quay lại về giao diện chọn phương thức nhập
+document.getElementById("backToChoiceBtn").onclick = function() {
+  document.getElementById("questionMainSection").style.display = "none";
+  document.getElementById("uploadQuestionChoice").style.display = "block";
+  showBackButton(false);
+  document.getElementById("securityCodeQ").value = "";
+  document.getElementById("securityQError").style.display = "none";
+  document.getElementById("questionInputType").focus();
+}
 
 // Upload Câu hỏi - nhập từ file HTML
 let importedQuestionsQ = [];
