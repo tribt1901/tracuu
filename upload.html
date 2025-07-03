@@ -8,35 +8,33 @@
   <style>
     .mode-section { display: none; }
     body { padding-top: 70px; }
-    #subjectList {max-height: 300px;overflow-y: auto;border: 1px solid #ddd;border-radius: 5px;padding: 10px 5px;background: #fafbfc;}
-    #importHtmlResultContainer, #syllabusListContainer { max-height: 350px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 5px; padding: 12px;}
-    #importHtmlResult .import-question { margin-bottom: 1.5em; }
-    #importHtmlResult .import-answer { margin-left: 2em; }
-    #importHtmlResult .import-answer-correct { color: #198754; font-weight: bold; }
-    #importHtmlResult .import-duplicate { color: #c00; }
-    #importHtmlResult { font-size:1.05em; }
+    #importHtmlResultContainer { max-height: 350px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 5px; padding: 12px;}
     .img-preview, .img-preview-ans { max-width: 120px; max-height: 70px; display: inline-block; margin-top: 6px; vertical-align: middle;}
     .img-preview-ans { max-width: 70px; max-height: 40px; }
     .img-upload-btn { margin-top: 3px; }
     .remove-img-btn { margin-left: 6px; color: red; border: none; background: none; }
-    .search-bar { margin-bottom: 16px; }
-    .fw-medium { font-weight: 500; }
-    .edit-form { background: #f4f7fa; padding: 16px; border-radius: 8px; margin-bottom: 24px;}
-    .edit-form .form-control { margin-bottom: 8px;}
     .subject-scroll-select { max-height: 240px !important; overflow-y: auto !important; }
     @media (max-width: 600px) {
-      #importHtmlResultContainer, #syllabusListContainer { max-height: 210px;}
+      #importHtmlResultContainer { max-height: 210px;}
     }
-    .syllabus-file-list { margin-top: 12px; }
-    .syllabus-file-item { border-bottom: 1px solid #e0e0e0; padding: 8px 0;}
   </style>
   <link rel="icon" href="data:,">
   <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
+  <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
   <div class="container-fluid">
-    <a class="navbar-brand text-white" href="/">📥 Upload Dữ Liệu</a>
+    <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
+    <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
+      </ul>
+    </div>
   </div>
 </nav>
 <div class="container py-4">
@@ -45,15 +43,22 @@
     <option value="question">Upload Câu hỏi</option>
     <option value="syllabus">Upload Đề cương</option>
   </select>
+
   <!-- Upload Câu hỏi section -->
   <div class="mode-section" id="uploadQuestionSection">
-    <div class="mb-4" style="max-width:350px;">
-      <input type="password" class="form-control mb-2" id="questionSecurityCode" placeholder="Nhập mã bảo mật để thao tác">
-      <div id="questionSecurityCodeStatus" style="font-size:0.95em;" class="mb-2"></div>
-    </div>
     <div id="questionUploadChoice" style="max-width:360px;">
-      <button class="btn btn-primary me-2" id="questionImportHtmlBtn" disabled>Nhập từ file HTML Moodle</button>
-      <button class="btn btn-success" id="questionManualBtn" disabled>Thêm thủ công</button>
+      <button class="btn btn-primary me-2" id="questionImportHtmlBtn">Nhập từ file HTML Moodle</button>
+      <button class="btn btn-success" id="questionManualBtn">Thêm thủ công</button>
+    </div>
+    <!-- Security modal -->
+    <div class="modal" id="questionSecurityModal" tabindex="-1" style="display:none; background:rgba(0,0,0,0.2); position:fixed; left:0;top:0;width:100vw;height:100vh;z-index:2000;align-items:center;justify-content:center;">
+      <div style="background:#fff;max-width:360px;padding:24px 16px;margin:auto;border-radius:8px;position:relative;">
+        <h5 class="mb-2">Nhập mã bảo mật</h5>
+        <input type="password" class="form-control mb-2" id="questionSecurityCode" placeholder="Nhập mã bảo mật">
+        <div id="questionSecurityCodeStatus" style="font-size:0.95em;" class="mb-2"></div>
+        <button class="btn btn-primary" id="questionSecuritySubmitBtn">Xác nhận</button>
+        <button class="btn btn-link" id="questionSecurityCancelBtn" style="position:absolute;top:5px;right:10px;">×</button>
+      </div>
     </div>
     <!-- Import HTML section -->
     <div id="importHtmlSection" style="display:none;">
@@ -119,29 +124,13 @@
       </form>
     </div>
   </div>
-  <!-- Upload Đề cương section -->
-  <div class="mode-section" id="uploadSyllabusSection">
-    <div style="max-width:350px;">
-      <input type="password" class="form-control mb-2" id="syllabusSecurityCode" placeholder="Nhập mã bảo mật để thao tác">
-      <div id="syllabusSecurityCodeStatus" style="font-size:0.95em;" class="mb-2"></div>
-    </div>
-    <form id="syllabusForm" style="max-width:400px;">
-      <select class="form-select mb-2 subject-scroll-select" id="syllabusSubjectDropdown" required></select>
-      <input type="text" class="form-control mb-2" id="syllabusOwner" placeholder="Tài liệu này của ai? (Không bắt buộc)">
-      <input type="file" id="syllabusFileInput" class="form-control mb-2" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.txt,.jpg,.jpeg,.png,.gif,.bmp,.csv,.odt,.ods,.odp,.rtf,.html,.htm,.md,.json,.xml,.yml,.yaml" required>
-      <button type="submit" class="btn btn-success" id="syllabusSubmitBtn" disabled>Upload Đề cương</button>
-    </form>
-    <div id="syllabusListContainer" style="margin-top:24px;display:none;">
-      <div class="syllabus-file-list" id="syllabusFileList"></div>
-    </div>
-  </div>
+  <!-- Upload Đề cương section: bạn có thể thêm mới nếu muốn -->
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
+import { getFirestore, collection, addDoc, getDocs, query, where, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 document.addEventListener("DOMContentLoaded", () => {
-  // ==== Firebase config (use your real config) ====
+  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
     authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -154,28 +143,104 @@ document.addEventListener("DOMContentLoaded", () => {
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // ==== Security code check ====
-  async function verifySecurityCode(inputCode) {
-    if (!inputCode.trim()) return false;
-    // Security code is stored in a Firestore collection "security_code" with fields { code: "xxxx", type: "question" | "syllabus" }
-    const snapshot = await getDocs(collection(db, "security_code"));
-    let found = false;
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      if (data.code === inputCode.trim()) found = data.type;
-    });
-    return found;
-  }
+  // ==== UI logic ====
+  const uploadTypeSelect = document.getElementById("uploadTypeSelect");
+  const uploadQuestionSection = document.getElementById("uploadQuestionSection");
+  uploadTypeSelect.addEventListener("change", () => {
+    document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
+    if (uploadTypeSelect.value === "question") {
+      uploadQuestionSection.style.display = "block";
+    }
+  });
+  uploadTypeSelect.dispatchEvent(new Event("change"));
 
-  // ==== Upload to Drive via Vercel server ====
-  async function uploadToDrive(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await fetch('https://tracuu-app.hugo.io.vn/api/upload', { method: 'POST', body: formData });
-    if (!response.ok) throw new Error('Upload ảnh/thư mục thất bại!');
-    const result = await response.json();
-    return result.url;
+  // ==== Security modal logic ====
+  let securityOK = false;
+  function showSecurityModal(cb) {
+    securityOK = false;
+    document.getElementById("questionSecurityCode").value = "";
+    document.getElementById("questionSecurityCodeStatus").textContent = "";
+    document.getElementById("questionSecurityModal").style.display = "flex";
+    document.getElementById("questionSecurityCode").focus();
+    cb && (window._secCallback = cb);
   }
+  function hideSecurityModal() {
+    document.getElementById("questionSecurityModal").style.display = "none";
+    window._secCallback = null;
+  }
+  // Validate security code
+  async function verifySecurityCode(inputCode) {
+    // Lấy từ Firestore: collection: config, doc: security_code, field: code
+    const docRef = doc(db, "config", "security_code");
+    const snap = await getDocs(collection(db, "config"));
+    let ok = false;
+    for (const d of snap.docs) {
+      if (d.id === "security_code" && d.data().code === inputCode.trim()) ok = true;
+    }
+    return ok;
+  }
+  document.getElementById("questionSecuritySubmitBtn").onclick = async function() {
+    const val = document.getElementById("questionSecurityCode").value.trim();
+    document.getElementById("questionSecurityCodeStatus").textContent = "Đang kiểm tra...";
+    if (!val) return;
+    const ok = await verifySecurityCode(val);
+    if (ok) {
+      securityOK = true;
+      document.getElementById("questionSecurityCodeStatus").innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
+      setTimeout(() => {
+        hideSecurityModal();
+        if (window._secCallback) window._secCallback(true);
+      }, 400);
+    } else {
+      document.getElementById("questionSecurityCodeStatus").innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
+      securityOK = false;
+    }
+  };
+  document.getElementById("questionSecurityCancelBtn").onclick = function() {
+    hideSecurityModal();
+    if (window._secCallback) window._secCallback(false);
+  };
+
+  // ==== Button events: kiểm tra mã trước khi show import/manual ====
+  document.getElementById("questionImportHtmlBtn").onclick = () => {
+    showSecurityModal((ok) => {
+      if (ok) {
+        document.getElementById("questionUploadChoice").style.display = "none";
+        importHtmlSection.style.display = "block";
+        manualQuestionSection.style.display = "none";
+      }
+    });
+  };
+  document.getElementById("questionManualBtn").onclick = () => {
+    showSecurityModal((ok) => {
+      if (ok) {
+        document.getElementById("questionUploadChoice").style.display = "none";
+        importHtmlSection.style.display = "none";
+        manualQuestionSection.style.display = "block";
+      }
+    });
+  };
+  backToQuestionChoiceBtn.onclick = backToQuestionChoiceBtn2.onclick = () => {
+    document.getElementById("questionUploadChoice").style.display = "block";
+    importHtmlSection.style.display = "none";
+    manualQuestionSection.style.display = "none";
+  };
+
+  // ==== Load Subjects vào Dropdown ====
+  async function loadSubjectsToDropdown(dropdown, allowEmpty = false) {
+    dropdown.innerHTML = allowEmpty ? `<option value="">-- Chọn môn học --</option>` : "";
+    const snapshot = await getDocs(collection(db, "mon_hoc"));
+    snapshot.forEach(docSnap => {
+      const option = document.createElement("option");
+      option.value = docSnap.id;
+      option.textContent = docSnap.data().ten_mon;
+      dropdown.appendChild(option);
+    });
+  }
+  loadSubjectsToDropdown(document.getElementById("subjectDropdownImport"), true);
+  loadSubjectsToDropdown(document.getElementById("subjectDropdownManual"));
+
+  // ==== Ảnh Google Drive helper ====
   function getDisplayableImgUrl(url) {
     if (!url) return "";
     let m = url.match(/https:\/\/drive\.google\.com\/file\/d\/([^/]+)/);
@@ -191,95 +256,19 @@ document.addEventListener("DOMContentLoaded", () => {
     return url;
   }
 
-  // ==== Load Subjects ====
-  async function loadSubjectsToDropdown(dropdown, allowEmpty = false) {
-    dropdown.innerHTML = allowEmpty ? `<option value="">-- Chọn môn học --</option>` : "";
-    const snapshot = await getDocs(collection(db, "mon_hoc"));
-    snapshot.forEach(docSnap => {
-      const option = document.createElement("option");
-      option.value = docSnap.id;
-      option.textContent = docSnap.data().ten_mon;
-      dropdown.appendChild(option);
-    });
+  // ==== Upload ảnh/file lên Vercel server ====
+  async function uploadToDrive(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch('https://tracuu-app.hugo.io.vn/api/upload', { method: 'POST', body: formData });
+    if (!response.ok) throw new Error('Upload ảnh/thư mục thất bại!');
+    const result = await response.json();
+    return result.url;
   }
 
-  // ==== UI logic ====
-  const uploadTypeSelect = document.getElementById("uploadTypeSelect");
-  const uploadQuestionSection = document.getElementById("uploadQuestionSection");
-  const uploadSyllabusSection = document.getElementById("uploadSyllabusSection");
-
-  uploadTypeSelect.addEventListener("change", () => {
-    document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
-    if (uploadTypeSelect.value === "question") {
-      uploadQuestionSection.style.display = "block";
-      document.getElementById("questionSecurityCode").focus();
-    } else {
-      uploadSyllabusSection.style.display = "block";
-      document.getElementById("syllabusSecurityCode").focus();
-      loadSubjectsToDropdown(document.getElementById("syllabusSubjectDropdown"));
-      loadSyllabusList();
-    }
-  });
-  // Default show question section
-  uploadTypeSelect.dispatchEvent(new Event("change"));
-
-  // ==== Security code for Question ====
-  let isQuestionSecOK = false;
-  let isSyllabusSecOK = false;
-  let allowedQuestion = false;
-  let allowedSyllabus = false;
-  document.getElementById("questionSecurityCode").addEventListener("input", async function() {
-    const val = this.value.trim();
-    document.getElementById("questionSecurityCodeStatus").textContent = "Đang kiểm tra...";
-    isQuestionSecOK = false;
-    allowedQuestion = false;
-    document.getElementById("questionImportHtmlBtn").disabled = true;
-    document.getElementById("questionManualBtn").disabled = true;
-    if (val.length < 3) {
-      document.getElementById("questionSecurityCodeStatus").textContent = "";
-      return;
-    }
-    const ok = await verifySecurityCode(val);
-    if (ok === "question") {
-      isQuestionSecOK = true;
-      allowedQuestion = true;
-      document.getElementById("questionSecurityCodeStatus").innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
-      document.getElementById("questionImportHtmlBtn").disabled = false;
-      document.getElementById("questionManualBtn").disabled = false;
-      loadSubjectsToDropdown(document.getElementById("subjectDropdownImport"), true);
-      loadSubjectsToDropdown(document.getElementById("subjectDropdownManual"));
-    } else {
-      document.getElementById("questionSecurityCodeStatus").innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
-    }
-  });
-  // ==== Security code for Syllabus ====
-  document.getElementById("syllabusSecurityCode").addEventListener("input", async function() {
-    const val = this.value.trim();
-    document.getElementById("syllabusSecurityCodeStatus").textContent = "Đang kiểm tra...";
-    isSyllabusSecOK = false;
-    allowedSyllabus = false;
-    document.getElementById("syllabusSubmitBtn").disabled = true;
-    if (val.length < 3) {
-      document.getElementById("syllabusSecurityCodeStatus").textContent = "";
-      return;
-    }
-    const ok = await verifySecurityCode(val);
-    if (ok === "syllabus") {
-      isSyllabusSecOK = true;
-      allowedSyllabus = true;
-      document.getElementById("syllabusSecurityCodeStatus").innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
-      document.getElementById("syllabusSubmitBtn").disabled = false;
-    } else {
-      document.getElementById("syllabusSecurityCodeStatus").innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
-    }
-  });
-
-  // ==== Upload Câu hỏi logic ====
-  let importedQuestions = [];
-  let allQuestionsForSubject = [];
+  // ==== Ảnh Preview cho thêm thủ công ====
   let manualQImgFile = null, manualAImgFiles = [null, null, null, null];
   let manualQImgUrl = "", manualAImgUrls = ["","","",""];
-  // Preview ảnh helper
   function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
     input.addEventListener("change", function() {
       if(this.files && this.files[0]) {
@@ -320,38 +309,9 @@ document.addEventListener("DOMContentLoaded", () => {
     f=>manualAImgFiles[3]=f, url=>manualAImgUrls[3]=url
   );
 
-  // Choice navigation
-  questionImportHtmlBtn.onclick = () => {
-    document.getElementById("questionUploadChoice").style.display = "none";
-    importHtmlSection.style.display = "block";
-    manualQuestionSection.style.display = "none";
-    importHtmlResult.innerHTML = "";
-    importHtmlInput.value = "";
-    saveImportBtn.style.display = "none";
-    subjectDropdownImport.value = "";
-    importHtmlInput.disabled = true;
-  };
-  questionManualBtn.onclick = () => {
-    document.getElementById("questionUploadChoice").style.display = "none";
-    importHtmlSection.style.display = "none";
-    manualQuestionSection.style.display = "block";
-    manualQuestionForm.reset();
-    [manualQuestionImgPreview, manualRemoveQuestionImgBtn,
-      manualAnswerAImgPreview, manualRemoveAImgBtn,
-      manualAnswerBImgPreview, manualRemoveBImgBtn,
-      manualAnswerCImgPreview, manualRemoveCImgBtn,
-      manualAnswerDImgPreview, manualRemoveDImgBtn
-    ].forEach(el => { el.style.display = "none"; });
-    manualQImgFile = null; manualAImgFiles = [null,null,null,null];
-    manualQImgUrl = ""; manualAImgUrls = ["","","",""];
-  };
-  backToQuestionChoiceBtn.onclick = backToQuestionChoiceBtn2.onclick = () => {
-    document.getElementById("questionUploadChoice").style.display = "block";
-    importHtmlSection.style.display = "none";
-    manualQuestionSection.style.display = "none";
-  };
-
-  // ==== Load all questions for duplicate check ====
+  // ==== Import HTML: kiểm tra trùng ====
+  let importedQuestions = [];
+  let allQuestionsForSubject = [];
   async function loadQuestionsForSubject(mon_hoc_id) {
     const qs = [];
     if(!mon_hoc_id) return [];
@@ -395,7 +355,6 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Vui lòng chọn môn học để kiểm tra trùng lặp!");
       return;
     }
-    if (!allowedQuestion) { alert("Chưa xác thực mã bảo mật!"); return; }
     const existSet = allQuestionsForSubject;
     const reader = new FileReader();
     reader.onload = async function(event) {
@@ -492,10 +451,9 @@ document.addEventListener("DOMContentLoaded", () => {
     saveImportBtn.disabled = false;
   };
 
-  // ==== Manual Question Add ====
+  // ==== Thêm thủ công ====
   document.getElementById("manualQuestionForm").addEventListener("submit", async function(e) {
     e.preventDefault();
-    if (!allowedQuestion) { alert("Chưa xác thực mã bảo mật!"); return; }
     const subjectId = subjectDropdownManual.value;
     const qText = manualQuestionText.value.trim();
     const a = manualAnswerA.value.trim();
@@ -538,42 +496,5 @@ document.addEventListener("DOMContentLoaded", () => {
     manualQImgUrl = ""; manualAImgUrls = ["","","",""];
     alert("Đã thêm câu hỏi!");
   });
-
-  // ==== Syllabus upload logic ====
-  async function loadSyllabusList() {
-    // Load danh sách tài liệu đã upload (nếu muốn)
-    // Gợi ý: lấy tất cả từ bảng 'syllabus' (nếu tồn tại)
-    // Bổ sung nếu muốn hiển thị
-    // const listContainer = document.getElementById("syllabusListContainer");
-    // listContainer.style.display = "none";
-  }
-  document.getElementById("syllabusForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
-    if (!allowedSyllabus) { alert("Chưa xác thực mã bảo mật!"); return; }
-    const subjectId = syllabusSubjectDropdown.value;
-    const owner = syllabusOwner.value.trim();
-    const file = syllabusFileInput.files[0];
-    if (!subjectId || !file) { alert("Điền đầy đủ thông tin và chọn file!"); return; }
-    syllabusSubmitBtn.disabled = true;
-    try {
-      const url = await uploadToDrive(file);
-      await addDoc(collection(db, "syllabus"), {
-        mon_hoc_id: subjectId,
-        owner: owner,
-        file_url: url,
-        file_name: file.name,
-        uploaded_at: (new Date()).toISOString()
-      });
-      syllabusForm.reset();
-      alert("Đã upload đề cương!");
-      loadSyllabusList();
-    } catch (e) {
-      alert("Upload thất bại: " + e);
-    }
-    syllabusSubmitBtn.disabled = false;
-  });
-
 });
 </script>
-</body>
-</html>
