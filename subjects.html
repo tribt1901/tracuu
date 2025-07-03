@@ -86,7 +86,6 @@
     <option value="syllabus">Quản trị Đề cương</option>
     <option value="question">Quản trị Câu hỏi</option>
   </select>
-  <!-- Quản trị Môn học -->
   <div class="mode-section" id="subjectSection">
     <h4>➕ Thêm môn học</h4>
     <form class="mb-3" id="subjectForm">
@@ -110,20 +109,6 @@
     </div>
     <div class="syllabus-list-scroll">
       <div id="syllabusListView"></div>
-    </div>
-    <!-- Modal sửa đề cương -->
-    <div id="editSyllabusModal" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,.2);align-items:center;justify-content:center;">
-      <div style="background:#fff;max-width:480px;width:96%;margin:auto;box-shadow:0 4px 32px #0002;padding:20px;position:relative;">
-        <button id="closeEditSyllabusModal" style="position:absolute;top:6px;right:12px;border:none;background:none;font-size:22px;">×</button>
-        <h5>Sửa đề cương</h5>
-        <form id="editSyllabusForm" class="edit-form">
-          <select class="form-select subject-scroll-select" id="editSyllabusSubjectDropdown" required></select>
-          <input type="text" class="form-control" id="editSyllabusOwner" placeholder="Tài liệu này của ai? (Không bắt buộc)">
-          <input type="file" class="form-control mb-2" id="editSyllabusFileInput">
-          <div id="currentFileName" class="mb-2"></div>
-          <button type="submit" class="btn btn-success mt-2">Lưu thay đổi</button>
-        </form>
-      </div>
     </div>
   </div>
   <!-- Quản trị Câu hỏi -->
@@ -209,78 +194,13 @@
       </div>
       <div class="question-list-scroll"><div id="questionListView"></div></div>
     </div>
-    <!-- Modal sửa câu hỏi -->
-    <div id="editQuestionModal" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,.2);align-items:center;justify-content:center;">
-      <div style="background:#fff;max-width:480px;width:96%;margin:auto;box-shadow:0 4px 32px #0002;padding:20px;position:relative;">
-        <button id="closeEditModal" style="position:absolute;top:6px;right:12px;border:none;background:none;font-size:22px;">×</button>
-        <h5>Sửa câu hỏi</h5>
-        <form id="editForm" class="edit-form">
-          <select class="form-select subject-scroll-select" id="editSubjectDropdown"></select>
-          <textarea class="form-control" id="editQuestionText" required rows="3"></textarea>
-          <input type="file" accept="image/*" id="editQuestionImageInput" class="form-control form-control-sm img-upload-btn" style="max-width:240px;">
-          <img id="editQuestionImgPreview" class="img-preview" style="display:none"/>
-          <button type="button" class="remove-img-btn" id="editRemoveQuestionImgBtn" style="display:none;">✖</button>
-          <div class="mb-2 mt-2">
-            <label>Đáp án a</label>
-            <input class="form-control" id="editAnswerA" placeholder="Đáp án a" required type="text"/>
-            <input type="file" accept="image/*" id="editAnswerAImgInput" class="form-control form-control-sm img-upload-btn" style="max-width:180px;">
-            <img id="editAnswerAImgPreview" class="img-preview-ans" style="display:none"/>
-            <button type="button" class="remove-img-btn" id="editRemoveAImgBtn" style="display:none;">✖</button>
-          </div>
-          <div class="mb-2">
-            <label>Đáp án b</label>
-            <input class="form-control" id="editAnswerB" placeholder="Đáp án b" required type="text"/>
-            <input type="file" accept="image/*" id="editAnswerBImgInput" class="form-control form-control-sm img-upload-btn" style="max-width:180px;">
-            <img id="editAnswerBImgPreview" class="img-preview-ans" style="display:none"/>
-            <button type="button" class="remove-img-btn" id="editRemoveBImgBtn" style="display:none;">✖</button>
-          </div>
-          <div class="mb-2">
-            <label>Đáp án c</label>
-            <input class="form-control" id="editAnswerC" placeholder="Đáp án c" required type="text"/>
-            <input type="file" accept="image/*" id="editAnswerCImgInput" class="form-control form-control-sm img-upload-btn" style="max-width:180px;">
-            <img id="editAnswerCImgPreview" class="img-preview-ans" style="display:none"/>
-            <button type="button" class="remove-img-btn" id="editRemoveCImgBtn" style="display:none;">✖</button>
-          </div>
-          <div class="mb-2">
-            <label>Đáp án d</label>
-            <input class="form-control" id="editAnswerD" placeholder="Đáp án d" required type="text"/>
-            <input type="file" accept="image/*" id="editAnswerDImgInput" class="form-control form-control-sm img-upload-btn" style="max-width:180px;">
-            <img id="editAnswerDImgPreview" class="img-preview-ans" style="display:none"/>
-            <button type="button" class="remove-img-btn" id="editRemoveDImgBtn" style="display:none;">✖</button>
-          </div>
-          <select class="form-select" id="editCorrectAnswerDropdown" required>
-            <option value="">Chọn đáp án đúng</option>
-            <option value="a">a</option>
-            <option value="b">b</option>
-            <option value="c">c</option>
-            <option value="d">d</option>
-          </select>
-          <button type="submit" class="btn btn-success mt-2">Lưu thay đổi</button>
-        </form>
-      </div>
-    </div>
   </div>
 </div>
 <script type="module">
-// ==== Firebase import ====
+// ==== Firebase config ====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-// ==== MathJax extract helper ====
-function extractWithMathJax(elem) {
-  if (!elem) return "";
-  let clone = elem.cloneNode(true);
-  clone.querySelectorAll('script[type="math/tex"]').forEach(script => {
-    const latex = script.textContent.trim();
-    const span = document.createElement("span");
-    span.textContent = "$" + latex + "$";
-    script.parentNode.replaceChild(span, script);
-  });
-  return clone.innerHTML.trim();
-}
-
-// ==== Firebase config, global vars ====
 const firebaseConfig = {
   apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
   authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -294,23 +214,34 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// ==== Đăng xuất ====
 onAuthStateChanged(auth, (user) => { if (!user) location.href = "admin"; });
 document.getElementById("logoutBtn").addEventListener("click", () => { signOut(auth).then(() => { location.href = "admin"; }); });
+
+// ==== MathJax helper ====
+function extractWithMathJax(elem) {
+  if (!elem) return "";
+  let clone = elem.cloneNode(true);
+  clone.querySelectorAll('script[type="math/tex"]').forEach(script => {
+    const latex = script.textContent.trim();
+    const span = document.createElement("span");
+    span.textContent = "$" + latex + "$";
+    script.parentNode.replaceChild(span, script);
+  });
+  return clone.innerHTML.trim();
+}
 
 // ==== CRUD Môn học ====
 const subjectForm = document.getElementById('subjectForm');
 const subjectName = document.getElementById('subjectName');
 const subjectList = document.getElementById('subjectList');
-const syllabusSubjectFilterDropdown = document.getElementById('syllabusSubjectFilterDropdown');
-const editSyllabusSubjectDropdown = document.getElementById('editSyllabusSubjectDropdown');
-
 subjectForm.addEventListener("submit", async e => {
   e.preventDefault();
   if (!subjectName.value.trim()) return;
   await addDoc(collection(db, "mon_hoc"), { ten_mon: subjectName.value.trim() });
   subjectForm.reset();
   loadSubjects();
-  loadSyllabusSubjectDropdowns();
+  loadSubjectsDropdownImport();
 });
 async function loadSubjects() {
   subjectList.innerHTML = "";
@@ -326,60 +257,89 @@ async function loadSubjects() {
       </div>`;
     div.querySelector(".btn-warning").onclick = async () => {
       const newName = prompt("Nhập tên mới:", data.ten_mon);
-      if (newName) { await updateDoc(doc(db, "mon_hoc", docSnap.id), { ten_mon: newName }); loadSubjects(); loadSyllabusSubjectDropdowns(); }
+      if (newName) { await updateDoc(doc(db, "mon_hoc", docSnap.id), { ten_mon: newName }); loadSubjects(); loadSubjectsDropdownImport(); }
     };
     div.querySelector(".btn-danger").onclick = async () => {
-      if (confirm("Bạn có chắc muốn xóa môn học này?")) { await deleteDoc(doc(db, "mon_hoc", docSnap.id)); loadSubjects(); loadSyllabusSubjectDropdowns(); }
+      if (confirm("Bạn có chắc muốn xóa môn học này?")) { await deleteDoc(doc(db, "mon_hoc", docSnap.id)); loadSubjects(); loadSubjectsDropdownImport(); }
     };
     subjectList.appendChild(div);
   });
 }
-async function loadSyllabusSubjectDropdowns() {
+async function loadSubjectsDropdownImport() {
+  const subjectDropdownImport = document.getElementById("subjectDropdownImport");
+  subjectDropdownImport.innerHTML = `<option value="">-- Chọn môn học để lưu --</option>`;
   const snapshot = await getDocs(collection(db, "mon_hoc"));
-  syllabusSubjectFilterDropdown.innerHTML = `<option value="">Tất cả môn học</option>`;
   snapshot.forEach(docSnap => {
     const option = document.createElement("option");
     option.value = docSnap.id;
     option.textContent = docSnap.data().ten_mon;
-    syllabusSubjectFilterDropdown.appendChild(option);
+    subjectDropdownImport.appendChild(option);
   });
-  editSyllabusSubjectDropdown.innerHTML = "";
+}
+loadSubjects();
+loadSubjectsDropdownImport();
+
+// ==== CRUD Đề cương (bản rút gọn, chỉ hiển thị danh sách) ====
+const syllabusListView = document.getElementById('syllabusListView');
+const syllabusSubjectFilterDropdown = document.getElementById('syllabusSubjectFilterDropdown');
+const syllabusSearchInput = document.getElementById('syllabusSearchInput');
+let allSyllabusRaw = [];
+async function refreshSyllabusList() {
+  const snapshot = await getDocs(collection(db, "syllabus"));
+  allSyllabusRaw = [];
   snapshot.forEach(docSnap => {
-    const option = document.createElement("option");
-    option.value = docSnap.id;
-    option.textContent = docSnap.data().ten_mon;
-    editSyllabusSubjectDropdown.appendChild(option);
+    const data = docSnap.data();
+    data.id = docSnap.id;
+    allSyllabusRaw.push(data);
   });
+  renderSyllabusList();
 }
-
-// ==== Mode switching ====
-const modeSelect = document.getElementById('modeSelect');
-const subjectSection = document.getElementById('subjectSection');
-const syllabusSection = document.getElementById('syllabusSection');
-const questionSection = document.getElementById('questionSection');
-const backToChoice1 = document.getElementById('backToChoice1');
-const backToChoice2 = document.getElementById('backToChoice2');
-const backToChoice3 = document.getElementById('backToChoice3');
-function showChoice() {
-  document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
-  if (modeSelect.value === "subject") {
-    subjectSection.style.display = "block";
-    loadSubjects();
-  } else if (modeSelect.value === "syllabus") {
-    syllabusSection.style.display = "block";
-    // Bạn cần viết thêm hàm refreshSyllabusList nếu muốn hiển thị danh sách đề cương
-  } else if (modeSelect.value === "question") {
-    questionSection.style.display = "block";
-    // Bạn cần viết thêm hàm hiển thị các phần quản lý câu hỏi ở đây
-  }
-  backToChoice1.classList.add("d-none");
-  backToChoice2.classList.add("d-none");
-  backToChoice3.classList.add("d-none");
+function renderSyllabusList() {
+  const filterSubject = syllabusSubjectFilterDropdown.value;
+  const searchVal = syllabusSearchInput.value.trim().toLowerCase();
+  let filtered = allSyllabusRaw;
+  if (filterSubject) filtered = filtered.filter(s => s.mon_hoc_id === filterSubject);
+  if (searchVal) filtered = filtered.filter(s =>
+    (s.file_name||"").toLowerCase().includes(searchVal) ||
+    (s.owner||"").toLowerCase().includes(searchVal)
+  );
+  let html = "";
+  filtered.forEach(s => {
+    html += `<div class="syllabus-list-item">
+      <div><b>Môn học:</b> ${s.mon_hoc_id}</div>
+      <div><b>Tên file:</b> ${s.file_name || ""}</div>
+      <div><b>Chủ sở hữu:</b> ${s.owner || ""}</div>
+      <div><b>Ngày upload:</b> ${s.uploaded_at ? (new Date(s.uploaded_at)).toLocaleString() : ""}</div>
+    </div>`;
+  });
+  syllabusListView.innerHTML = html || "<div>Không có đề cương nào phù hợp.</div>";
 }
-modeSelect.addEventListener("change", showChoice);
-backToChoice1.onclick = backToChoice2.onclick = backToChoice3.onclick = () => { showChoice(); };
+syllabusSearchInput.addEventListener("input", renderSyllabusList);
+syllabusSubjectFilterDropdown.addEventListener("change", renderSyllabusList);
+refreshSyllabusList();
 
-// ==== Import HTML Moodle với MathJax fix (bản rút gọn, chỉ import - bạn tự bổ sung lưu vào Firestore) ====
+// ==== CRUD CÂU HỎI (chỉ demo: import HTML Moodle) ====
+function isDuplicateInSet(question, existSet) {
+  return existSet.some(
+    x =>
+      x.noi_dung === question.noi_dung.trim() &&
+      x.dap_an_dung === question.dap_an_dung &&
+      x.dap_an === question.lua_chon[question.dap_an_dung]
+  );
+}
+async function getQuestionSetForSubject(mon_hoc_id) {
+  const querySnap = await getDocs(query(collection(db, "cau_hoi"), where("mon_hoc_id", "==", mon_hoc_id)));
+  const existSet = [];
+  querySnap.forEach(docSnap => {
+    const data = docSnap.data();
+    existSet.push({
+      noi_dung: (data.noi_dung || '').trim(),
+      dap_an_dung: data.dap_an_dung,
+      dap_an: (data.lua_chon && data.lua_chon[data.dap_an_dung]) ? data.lua_chon[data.dap_an_dung] : ''
+    });
+  });
+  return existSet;
+}
 const subjectDropdownImport = document.getElementById('subjectDropdownImport');
 const importHtmlInput = document.getElementById('importHtmlInput');
 const importHtmlResult = document.getElementById('importHtmlResult');
@@ -398,9 +358,9 @@ importHtmlInput.addEventListener("change", async function(e) {
     alert("Vui lòng chọn môn học để kiểm tra trùng lặp!");
     return;
   }
-  // ... bạn nên viết thêm kiểm tra trùng câu hỏi nếu cần ...
+  const existSet = await getQuestionSetForSubject(mon_hoc_id);
   const reader = new FileReader();
-  reader.onload = function(event) {
+  reader.onload = async function(event) {
     const html = event.target.result;
     const parser = new DOMParser();
     const docx = parser.parseFromString(html, "text/html");
@@ -447,7 +407,13 @@ importHtmlInput.addEventListener("change", async function(e) {
     });
     importedQuestions = rawQuestions.map(q => ({
       ...q,
-      duplicate: false // fix: check duplicate logic nếu có
+      duplicate: q.correctKey && q.questionText
+        ? isDuplicateInSet({
+            noi_dung: q.questionText,
+            dap_an_dung: q.correctKey,
+            lua_chon: q.lua_chon
+          }, existSet)
+        : false
     }));
     let htmlResult = `<div class="fw-bold mb-2">Kết quả trích xuất (${importedQuestions.length} câu):</div>`;
     importedQuestions.forEach((q, idx) => {
@@ -470,6 +436,51 @@ importHtmlInput.addEventListener("change", async function(e) {
   }
   reader.readAsText(file);
 });
+saveImportBtn.onclick = async function() {
+  const mon_hoc_id = window._importedMonHocId;
+  const importedQuestions = window._importedQuestions || [];
+  if (!mon_hoc_id) { alert("Vui lòng chọn môn học để lưu!"); return; }
+  if (!importedQuestions.length) { alert("Chưa có dữ liệu để lưu!"); return; }
+  saveImportBtn.disabled = true;
+  let success = 0, fail = 0, skip = 0;
+  for (let q of importedQuestions) {
+    if(q.duplicate) { skip++; continue; }
+    await addDoc(collection(db, "cau_hoi"), {
+      mon_hoc_id,
+      noi_dung: q.questionText,
+      noi_dung_img: "",
+      lua_chon: q.lua_chon,
+      dap_an_dung: q.correctKey
+    }).then(()=>success++).catch(()=>fail++);
+  }
+  alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
+  saveImportBtn.disabled = false;
+};
+
+// ==== Chuyển mode giao diện ====
+function showChoice() {
+  document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
+  if (modeSelect.value === "subject") {
+    subjectSection.style.display = "block";
+    loadSubjects();
+  } else if (modeSelect.value === "syllabus") {
+    syllabusSection.style.display = "block";
+    refreshSyllabusList();
+  } else if (modeSelect.value === "question") {
+    questionSection.style.display = "block";
+  }
+  backToChoice1.classList.add("d-none");
+  backToChoice2.classList.add("d-none");
+  backToChoice3.classList.add("d-none");
+}
+const modeSelect = document.getElementById('modeSelect');
+const subjectSection = document.getElementById('subjectSection');
+const syllabusSection = document.getElementById('syllabusSection');
+const questionSection = document.getElementById('questionSection');
+const backToChoice1 = document.getElementById('backToChoice1');
+const backToChoice2 = document.getElementById('backToChoice2');
+const backToChoice3 = document.getElementById('backToChoice3');
+modeSelect.addEventListener("change", showChoice);
 showChoice();
 </script>
 </body>
