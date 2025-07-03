@@ -41,75 +41,78 @@
   <div id="uploadQuestionSection" class="section">
     <h5 class="mb-3">Upload Câu hỏi</h5>
     <div class="mb-3">
-      <label class="form-label">Chọn môn học</label>
-      <select class="form-select subject-scroll-select" id="subjectDropdownQ"></select>
-    </div>
-    <div class="mb-3">
       <label class="form-label">Chọn cách nhập</label>
       <select class="form-select" id="questionInputType">
+        <option value="">-- Chọn phương thức nhập --</option>
         <option value="html">Nhập từ file HTML của Moodle</option>
         <option value="manual">Thêm thủ công</option>
       </select>
     </div>
-    <div class="mb-3">
+    <div id="questionSecuritySection" class="mb-3" style="display:none;">
       <label class="form-label">Nhập mã bảo mật</label>
       <input class="form-control" type="password" id="securityCodeQ" placeholder="Mã bảo mật">
       <div id="securityQError" class="text-danger mt-1" style="display:none;">Mã bảo mật không đúng.</div>
     </div>
-    <!-- Nhập từ HTML -->
-    <div id="questionHtmlSection" style="display:none;">
-      <div class="mb-2">
-        <input type="file" id="importHtmlInputQ" accept=".html,.htm" class="form-control" style="max-width:350px;">
+    <div id="questionMainSection" style="display:none;">
+      <div class="mb-3">
+        <label class="form-label">Chọn môn học</label>
+        <select class="form-select subject-scroll-select" id="subjectDropdownQ"></select>
       </div>
-      <div id="importHtmlResultQ" style="margin-top:16px"></div>
-      <button class="btn btn-success mt-2" id="saveImportBtnQ" style="display:none;">💾 Lưu vào CSDL</button>
-    </div>
-    <!-- Thêm thủ công -->
-    <div id="questionManualSection" style="display:none;">
-      <form id="manualFormQ" autocomplete="off">
-        <textarea class="form-control mb-2" id="questionTextQ" placeholder="Nội dung câu hỏi (hỗ trợ MathJax)" required rows="3"></textarea>
-        <div>
-          <input type="file" accept="image/*" id="questionImageInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:260px;">
-          <img id="questionImgPreviewQ" class="img-preview" style="display:none"/>
-          <button type="button" class="remove-img-btn" id="removeQuestionImgBtnQ" style="display:none;">✖</button>
+      <!-- Nhập từ HTML -->
+      <div id="questionHtmlSection" style="display:none;">
+        <div class="mb-2">
+          <input type="file" id="importHtmlInputQ" accept=".html,.htm" class="form-control" style="max-width:350px;">
         </div>
-        <div class="answer-input-group mb-2">
-          <label for="answerAQ" class="form-label mb-1">Đáp án a</label>
-          <input class="form-control" id="answerAQ" placeholder="Đáp án a" required type="text"/>
-          <input type="file" accept="image/*" id="answerAImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
-          <img id="answerAImgPreviewQ" class="img-preview-ans" style="display:none"/>
-          <button type="button" class="remove-img-btn" id="removeAImgBtnQ" style="display:none;">✖</button>
-        </div>
-        <div class="answer-input-group mb-2">
-          <label for="answerBQ" class="form-label mb-1">Đáp án b</label>
-          <input class="form-control" id="answerBQ" placeholder="Đáp án b" required type="text"/>
-          <input type="file" accept="image/*" id="answerBImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
-          <img id="answerBImgPreviewQ" class="img-preview-ans" style="display:none"/>
-          <button type="button" class="remove-img-btn" id="removeBImgBtnQ" style="display:none;">✖</button>
-        </div>
-        <div class="answer-input-group mb-2">
-          <label for="answerCQ" class="form-label mb-1">Đáp án c</label>
-          <input class="form-control" id="answerCQ" placeholder="Đáp án c" required type="text"/>
-          <input type="file" accept="image/*" id="answerCImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
-          <img id="answerCImgPreviewQ" class="img-preview-ans" style="display:none"/>
-          <button type="button" class="remove-img-btn" id="removeCImgBtnQ" style="display:none;">✖</button>
-        </div>
-        <div class="answer-input-group mb-2">
-          <label for="answerDQ" class="form-label mb-1">Đáp án d</label>
-          <input class="form-control" id="answerDQ" placeholder="Đáp án d" required type="text"/>
-          <input type="file" accept="image/*" id="answerDImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
-          <img id="answerDImgPreviewQ" class="img-preview-ans" style="display:none"/>
-          <button type="button" class="remove-img-btn" id="removeDImgBtnQ" style="display:none;">✖</button>
-        </div>
-        <select class="form-select mb-2" id="correctAnswerDropdownQ" required>
-          <option value="">Chọn đáp án đúng</option>
-          <option value="a">a</option>
-          <option value="b">b</option>
-          <option value="c">c</option>
-          <option value="d">d</option>
-        </select>
-        <button type="submit" class="btn btn-success" id="submitQuestionBtnQ">Thêm câu hỏi</button>
-      </form>
+        <div id="importHtmlResultQ" style="margin-top:16px"></div>
+        <button class="btn btn-success mt-2" id="saveImportBtnQ" style="display:none;">💾 Lưu vào CSDL</button>
+      </div>
+      <!-- Thêm thủ công -->
+      <div id="questionManualSection" style="display:none;">
+        <form id="manualFormQ" autocomplete="off">
+          <textarea class="form-control mb-2" id="questionTextQ" placeholder="Nội dung câu hỏi (hỗ trợ MathJax)" required rows="3"></textarea>
+          <div>
+            <input type="file" accept="image/*" id="questionImageInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:260px;">
+            <img id="questionImgPreviewQ" class="img-preview" style="display:none"/>
+            <button type="button" class="remove-img-btn" id="removeQuestionImgBtnQ" style="display:none;">✖</button>
+          </div>
+          <div class="answer-input-group mb-2">
+            <label for="answerAQ" class="form-label mb-1">Đáp án a</label>
+            <input class="form-control" id="answerAQ" placeholder="Đáp án a" required type="text"/>
+            <input type="file" accept="image/*" id="answerAImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
+            <img id="answerAImgPreviewQ" class="img-preview-ans" style="display:none"/>
+            <button type="button" class="remove-img-btn" id="removeAImgBtnQ" style="display:none;">✖</button>
+          </div>
+          <div class="answer-input-group mb-2">
+            <label for="answerBQ" class="form-label mb-1">Đáp án b</label>
+            <input class="form-control" id="answerBQ" placeholder="Đáp án b" required type="text"/>
+            <input type="file" accept="image/*" id="answerBImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
+            <img id="answerBImgPreviewQ" class="img-preview-ans" style="display:none"/>
+            <button type="button" class="remove-img-btn" id="removeBImgBtnQ" style="display:none;">✖</button>
+          </div>
+          <div class="answer-input-group mb-2">
+            <label for="answerCQ" class="form-label mb-1">Đáp án c</label>
+            <input class="form-control" id="answerCQ" placeholder="Đáp án c" required type="text"/>
+            <input type="file" accept="image/*" id="answerCImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
+            <img id="answerCImgPreviewQ" class="img-preview-ans" style="display:none"/>
+            <button type="button" class="remove-img-btn" id="removeCImgBtnQ" style="display:none;">✖</button>
+          </div>
+          <div class="answer-input-group mb-2">
+            <label for="answerDQ" class="form-label mb-1">Đáp án d</label>
+            <input class="form-control" id="answerDQ" placeholder="Đáp án d" required type="text"/>
+            <input type="file" accept="image/*" id="answerDImgInputQ" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
+            <img id="answerDImgPreviewQ" class="img-preview-ans" style="display:none"/>
+            <button type="button" class="remove-img-btn" id="removeDImgBtnQ" style="display:none;">✖</button>
+          </div>
+          <select class="form-select mb-2" id="correctAnswerDropdownQ" required>
+            <option value="">Chọn đáp án đúng</option>
+            <option value="a">a</option>
+            <option value="b">b</option>
+            <option value="c">c</option>
+            <option value="d">d</option>
+          </select>
+          <button type="submit" class="btn btn-success" id="submitQuestionBtnQ">Thêm câu hỏi</button>
+        </form>
+      </div>
     </div>
   </div>
   <!-- Upload Đề cương Section -->
@@ -138,7 +141,7 @@
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
@@ -152,7 +155,20 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const SECURITY_CODE = "123456"; // THAY bằng mã thực tế
+// Lấy mã bảo mật từ Firestore
+let SECURITY_CODE = null;
+async function fetchSecurityCode() {
+  try {
+    const docRef = doc(db, "config", "security_code");
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      SECURITY_CODE = docSnap.data().code;
+    }
+  } catch (e) {
+    SECURITY_CODE = null;
+  }
+}
+await fetchSecurityCode();
 
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.style.display = "none");
@@ -197,7 +213,10 @@ const uploadType = document.getElementById("uploadType");
 uploadType.addEventListener("change", () => {
   if (uploadType.value === "question") {
     showSection("uploadQuestionSection");
-    loadSubjectsDropdown("subjectDropdownQ");
+    // Ẩn các section nhập tiếp theo cho đến khi chọn phương thức nhập
+    document.getElementById("questionInputType").value = "";
+    document.getElementById("questionSecuritySection").style.display = "none";
+    document.getElementById("questionMainSection").style.display = "none";
   } else {
     showSection("uploadOutlineSection");
     loadSubjectsDropdown("subjectDropdownO");
@@ -205,13 +224,59 @@ uploadType.addEventListener("change", () => {
 });
 uploadType.dispatchEvent(new Event("change"));
 
-// Question input type switching
+// Ẩn/hiện các block nhập sau khi chọn phương thức nhập
 const questionInputType = document.getElementById("questionInputType");
 questionInputType.addEventListener("change", () => {
-  document.getElementById("questionHtmlSection").style.display = questionInputType.value === "html" ? "block" : "none";
-  document.getElementById("questionManualSection").style.display = questionInputType.value === "manual" ? "block" : "none";
+  const method = questionInputType.value;
+  if (method) {
+    document.getElementById("questionSecuritySection").style.display = "block";
+  } else {
+    document.getElementById("questionSecuritySection").style.display = "none";
+    document.getElementById("questionMainSection").style.display = "none";
+  }
+  document.getElementById("securityQError").style.display = "none";
+  document.getElementById("securityCodeQ").value = "";
+  document.getElementById("questionMainSection").style.display = "none";
 });
-questionInputType.dispatchEvent(new Event("change"));
+
+// Khi nhập mã bảo mật xong, nếu đúng thì hiện các nội dung nhập tiếp theo
+document.getElementById("securityCodeQ").addEventListener("blur", async function() {
+  if (SECURITY_CODE === null) await fetchSecurityCode();
+  const code = this.value;
+  if (!questionInputType.value) return;
+  if (code === SECURITY_CODE) {
+    document.getElementById("securityQError").style.display = "none";
+    document.getElementById("questionMainSection").style.display = "block";
+    loadSubjectsDropdown("subjectDropdownQ");
+    if (questionInputType.value === "html") {
+      document.getElementById("questionHtmlSection").style.display = "block";
+      document.getElementById("questionManualSection").style.display = "none";
+    } else if (questionInputType.value === "manual") {
+      document.getElementById("questionHtmlSection").style.display = "none";
+      document.getElementById("questionManualSection").style.display = "block";
+    }
+  } else {
+    document.getElementById("questionQError").style.display = "none";
+    document.getElementById("questionMainSection").style.display = "none";
+    if (code) document.getElementById("securityQError").style.display = "block";
+  }
+});
+// Khi thay đổi phương thức nhập thì reset lại phần nhập mã bảo mật và nội dung tiếp theo
+questionInputType.addEventListener("change", function() {
+  document.getElementById("securityCodeQ").value = "";
+  document.getElementById("securityQError").style.display = "none";
+  document.getElementById("questionMainSection").style.display = "none";
+  if (this.value === "html") {
+    document.getElementById("questionHtmlSection").style.display = "block";
+    document.getElementById("questionManualSection").style.display = "none";
+  } else if (this.value === "manual") {
+    document.getElementById("questionHtmlSection").style.display = "none";
+    document.getElementById("questionManualSection").style.display = "block";
+  } else {
+    document.getElementById("questionHtmlSection").style.display = "none";
+    document.getElementById("questionManualSection").style.display = "none";
+  }
+});
 
 // Upload Câu hỏi - nhập từ file HTML
 let importedQuestionsQ = [];
@@ -297,7 +362,7 @@ document.getElementById("importHtmlInputQ").addEventListener("change", async fun
   reader.readAsText(file);
 });
 document.getElementById("saveImportBtnQ").onclick = async function() {
-  // Check security code
+  if (SECURITY_CODE === null) await fetchSecurityCode();
   const code = document.getElementById("securityCodeQ").value;
   if (code !== SECURITY_CODE) {
     document.getElementById("securityQError").style.display = "block";
@@ -364,7 +429,7 @@ async function uploadToDrive(file) {
 
 document.getElementById("manualFormQ").addEventListener("submit", async function(e) {
   e.preventDefault();
-  // Check security code
+  if (SECURITY_CODE === null) await fetchSecurityCode();
   const code = document.getElementById("securityCodeQ").value;
   if (code !== SECURITY_CODE) {
     document.getElementById("securityQError").style.display = "block";
@@ -417,6 +482,7 @@ document.getElementById("securityCodeOutline").addEventListener("input", ()=>doc
 
 // Upload Đề cương
 document.getElementById("submitOutlineBtn").addEventListener("click", async function() {
+  if (SECURITY_CODE === null) await fetchSecurityCode();
   const code = document.getElementById("securityCodeOutline").value;
   if (code !== SECURITY_CODE) {
     document.getElementById("securityOutlineError").style.display = "block";
@@ -446,7 +512,6 @@ document.getElementById("submitOutlineBtn").addEventListener("click", async func
     resultDiv.innerHTML = '<span class="text-danger">Upload thất bại!</span>';
   }
 });
-
 </script>
 </body>
 </html>
