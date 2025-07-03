@@ -95,6 +95,12 @@
     });
   }
 
+  // ---- Hàm lấy từ đầu tiên của câu hỏi ----
+  function firstWord(str) {
+    if(!str) return "";
+    return str.trim().split(/\s+/)[0] || "";
+  }
+
   // ---- Xuất TXT: mỗi dòng 1 câu hỏi, đáp án đúng ----
   async function exportTXT(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
@@ -102,17 +108,16 @@
       alert("Không có dữ liệu câu hỏi cho môn này.");
       return;
     }
-    // Sắp xếp theo chữ cái đầu (a-z)
-    const alphabet = "abcdefghijklmnopqrstuvwxyz";
-    const rows = questions.map((item, idx) => ({
-      letter: alphabet[idx % 26],
+    // Sắp xếp theo STT (từ đầu tiên a-z)
+    const rows = questions.map(item => ({
+      stt: firstWord(item.noi_dung),
       question: item.noi_dung,
       answer: item.lua_chon?.[item.dap_an_dung] || ""
-    })).sort((a, b) => a.letter.localeCompare(b.letter));
+    })).sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
 
     let content = `Đề cương môn: ${subjectName}\n\n`;
     rows.forEach(row => {
-      content += `${row.letter}. ${row.question}\nĐáp án đúng: ${row.answer}\n\n`;
+      content += `STT: ${row.stt}\nCâu hỏi: ${row.question}\nĐáp án đúng: ${row.answer}\n\n`;
     });
 
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
@@ -126,24 +131,23 @@
       alert("Không có dữ liệu câu hỏi cho môn này.");
       return;
     }
-    const alphabet = "abcdefghijklmnopqrstuvwxyz";
-    let rows = questions.map((item, idx) => ({
-      letter: alphabet[idx % 26],
+    let rows = questions.map(item => ({
+      stt: firstWord(item.noi_dung),
       question: item.noi_dung,
       answer: item.lua_chon?.[item.dap_an_dung] || ""
     }));
-    // Sắp xếp theo chữ cái đầu (a-z)
-    rows.sort((a, b) => a.letter.localeCompare(b.letter));
+    // Sắp xếp theo STT (từ đầu tiên a-z, có hỗ trợ tiếng Việt)
+    rows.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
 
     // Tạo body bảng PDF
     const body = [
       [
-        { text: "Từ đầu tiên", style: "tableHeader", alignment: "center" },
+        { text: "STT", style: "tableHeader", alignment: "center" },
         { text: "Câu hỏi", style: "tableHeader", alignment: "center" },
         { text: "Đáp án đúng", style: "tableHeader", alignment: "center" }
       ],
       ...rows.map(row => [
-        { text: row.letter, alignment: "center" },
+        { text: row.stt, alignment: "center" },
         row.question,
         row.answer
       ])
