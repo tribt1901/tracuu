@@ -10,7 +10,6 @@
     #logoutBtn { margin: 1rem 0; }
     body { padding-top: 70px; }
     #subjectList {max-height: 300px;overflow-y: auto;border: 1px solid #ddd;border-radius: 5px;padding: 10px 5px;background: #fafbfc;}
-    .btn-delete-img { margin-left: 10px; margin-top: 5px; }
     #importHtmlResultContainer { max-height: 400px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 5px; padding: 12px;}
     #importHtmlResult .import-question { margin-bottom: 1.5em; }
     #importHtmlResult .import-answer { margin-left: 2em; }
@@ -358,19 +357,30 @@ document.addEventListener("DOMContentLoaded", () => {
     importHtmlInput.disabled = !subjectDropdownImport.value;
   });
 
-  // ==== Kiểm tra trùng câu hỏi ====
-  async function isDuplicatedQuestion({mon_hoc_id, noi_dung, dap_an_dung, lua_chon}) {
+  // ==== Lấy tất cả câu hỏi của môn học để kiểm tra trùng lặp (tối ưu) ====
+  async function getQuestionSetForSubject(mon_hoc_id) {
     const querySnap = await getDocs(query(collection(db, "cau_hoi"), where("mon_hoc_id", "==", mon_hoc_id)));
-    for(const docSnap of querySnap.docs) {
+    const existSet = [];
+    querySnap.forEach(docSnap => {
       const data = docSnap.data();
-      if((data.noi_dung||"").trim() === noi_dung.trim() && (data.dap_an_dung||"") === dap_an_dung && (data.lua_chon?.[dap_an_dung]||"") === lua_chon?.[dap_an_dung]) {
-        return true;
-      }
-    }
-    return false;
+      existSet.push({
+        noi_dung: (data.noi_dung || '').trim(),
+        dap_an_dung: data.dap_an_dung,
+        dap_an: (data.lua_chon && data.lua_chon[data.dap_an_dung]) ? data.lua_chon[data.dap_an_dung] : ''
+      });
+    });
+    return existSet;
+  }
+  function isDuplicateInSet(question, existSet) {
+    return existSet.some(
+      x =>
+        x.noi_dung === question.noi_dung.trim() &&
+        x.dap_an_dung === question.dap_an_dung &&
+        x.dap_an === question.lua_chon[question.dap_an_dung]
+    );
   }
 
-  // ==== Thêm thủ công ====
+  // ==== Thêm thủ công (tối ưu kiểm tra trùng) ====
   questionForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const subjectId = subjectDropdown.value;
@@ -381,14 +391,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const answerD = document.getElementById("answerD").value.trim();
     const correctAnswer = document.getElementById("correctAnswerDropdown").value;
     if (!subjectId || !questionText || !answerA || !answerB || !answerC || !answerD || !correctAnswer) return;
-
-    // Kiểm tra trùng
     const lua_chon = {a: answerA, b: answerB, c: answerC, d: answerD};
-    if(await isDuplicatedQuestion({mon_hoc_id:subjectId, noi_dung:questionText, dap_an_dung:correctAnswer, lua_chon})) {
+    const existSet = await getQuestionSetForSubject(subjectId);
+    if (isDuplicateInSet({noi_dung: questionText, dap_an_dung: correctAnswer, lua_chon}, existSet)) {
       alert("Câu hỏi này đã tồn tại trong môn học với đáp án đúng giống nhau!");
       return;
     }
-
     await addDoc(collection(db, "cau_hoi"), {
       mon_hoc_id: subjectId,
       noi_dung: questionText,
@@ -399,7 +407,7 @@ document.addEventListener("DOMContentLoaded", () => {
     questionForm.reset();
   });
 
-  // ==== Parse HTML Moodle quiz khi import ====
+  // ==== Parse HTML Moodle quiz khi import (tối ưu kiểm tra trùng) ====
   importHtmlInput.addEventListener("change", async function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -408,6 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Vui lòng chọn môn học để kiểm tra trùng lặp!");
       return;
     }
+    const existSet = await getQuestionSetForSubject(mon_hoc_id);
     const reader = new FileReader();
     reader.onload = async function(event) {
       const html = event.target.result;
@@ -440,7 +449,6 @@ document.addEventListener("DOMContentLoaded", () => {
           correctKey = ['a','b','c','d'][correctIdx] || '';
           correct = answers[correctIdx] || '';
         } else {
-          // fallback: lấy theo class .correct
           answerNodes.forEach((ans, idx) => {
             if (ans.classList.contains('correct')) {
               correct = answers[idx];
@@ -459,22 +467,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
 
-      // Kiểm tra trùng lặp hàng loạt
-      let duplicateFlags = [];
-      for (let q of rawQuestions) {
-        let isDup = false;
-        if(q.correctKey && q.questionText) {
-          isDup = await isDuplicatedQuestion({
-            mon_hoc_id,
-            noi_dung: q.questionText,
-            dap_an_dung: q.correctKey,
-            lua_chon: q.lua_chon
-          });
-        }
-        duplicateFlags.push(isDup);
-      }
-
-      importedQuestions = rawQuestions.map((q, idx) => ({...q, duplicate: duplicateFlags[idx]}));
+      importedQuestions = rawQuestions.map(q => ({
+        ...q,
+        duplicate: q.correctKey && q.questionText
+          ? isDuplicateInSet({
+              noi_dung: q.questionText,
+              dap_an_dung: q.correctKey,
+              lua_chon: q.lua_chon
+            }, existSet)
+          : false
+      }));
 
       // Hiển thị kết quả
       let htmlResult = `<div class="fw-bold mb-2">Kết quả trích xuất (${importedQuestions.length} câu):</div>`;
@@ -606,7 +608,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if(!mon_hoc_id||!noi_dung||!a||!b||!c||!d||!dap_an_dung) return;
     await updateDoc(doc(db,"cau_hoi",currentEditQid),{
       mon_hoc_id, noi_dung, noi_dung_img: "",
-      lua_chon: {a:a,aImg:"",b:b,bImg:"",c:cImg:"",d:d,dImg:""},
+      lua_chon: {a:a,aImg:"",b:b,bImg:"",c:c,cImg:"",d:d,dImg:""},
       dap_an_dung
     });
     editQuestionModal.style.display = "none";
