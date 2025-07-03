@@ -1,180 +1,128 @@
-<!doctype html>
-<html lang=vi>
+<!DOCTYPE html>
+<html lang="vi">
 <head>
-<meta charset=utf-8>
-<title>Quản trị hệ thống</title>
-<meta content="width=device-width,initial-scale=1" name=viewport>
-<link href=https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css rel=stylesheet>
-<style>.mode-section{display:none}#logoutBtn{margin:1rem 0}body{padding-top:70px}#subjectList{max-height:300px;overflow-y:auto;border:1px solid #ddd;border-radius:5px;padding:10px 5px;background:#fafbfc}#importHtmlResultContainer{max-height:400px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:5px;padding:12px}#importHtmlResult .import-question{margin-bottom:1.5em}#importHtmlResult .import-answer{margin-left:2em}#importHtmlResult .import-answer-correct{color:#198754;font-weight:700}#importHtmlResult .import-duplicate{color:#c00}#importHtmlResult{font-size:1.05em}.question-list-section{display:none;margin-top:24px}.question-list-scroll{max-height:430px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:5px;padding:10px}.question-list-item{border-bottom:1px solid #e0e0e0;padding:16px 0}.question-list-item:last-child{border-bottom:none}.question-list-answers{margin-left:1.5em;margin-top:8px}.question-list-answers .correct{color:#198754;font-weight:700}.question-list-answers .answer-item{margin-bottom:2px}.img-preview,.img-preview-ans{max-width:120px;max-height:70px;display:inline-block;margin-top:6px;vertical-align:middle}.img-preview-ans{max-width:70px;max-height:40px}.img-upload-btn{margin-top:3px}.remove-img-btn{margin-left:6px;color:red;border:none;background:0 0}.search-bar{margin-bottom:16px}.filter-bar{margin-bottom:16px;max-width:350px}.fw-medium{font-weight:500}.edit-form{background:#f4f7fa;padding:16px;border-radius:8px;margin-bottom:24px}.edit-form .form-control{margin-bottom:8px}@media (max-width:600px){.question-list-scroll{max-height:320px}#importHtmlResultContainer{max-height:210px}}.top-btn-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px}.top-btn-bar .btn{margin-bottom:0!important}.top-btn-bar .ms-auto{margin-left:auto!important}.subject-scroll-select{max-height:240px!important;overflow-y:auto!important}</style>
-<link rel=icon href=data:,>
-<script async id=MathJax-script src=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js></script>
+  <meta charset="utf-8"/>
+  <title>Quản trị hệ thống</title>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="icon" href="data:,">
+  <style>
+    .mode-section { display: none; }
+    #logoutBtn { margin: 1rem 0; }
+    body { padding-top: 70px; }
+    #subjectList {max-height: 300px;overflow-y: auto;border: 1px solid #ddd;border-radius: 5px;padding: 10px 5px;background: #fafbfc;}
+    #importHtmlResultContainer { max-height: 400px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 5px; padding: 12px;}
+    #importHtmlResult .import-question { margin-bottom: 1.5em; }
+    #importHtmlResult .import-answer { margin-left: 2em; }
+    #importHtmlResult .import-answer-correct { color: #198754; font-weight: bold; }
+    #importHtmlResult .import-duplicate { color: #c00; }
+    #importHtmlResult { font-size:1.05em; }
+    .question-list-section { display: none; margin-top: 24px;}
+    .question-list-scroll { max-height: 430px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; }
+    .question-list-item { border-bottom: 1px solid #e0e0e0; padding: 16px 0; }
+    .question-list-item:last-child { border-bottom: none; }
+    .question-list-answers { margin-left: 1.5em; margin-top: 8px;}
+    .question-list-answers .correct { color: #198754; font-weight: bold; }
+    .question-list-answers .answer-item { margin-bottom: 2px; }
+    .img-preview, .img-preview-ans { max-width: 120px; max-height: 70px; display: inline-block; margin-top: 6px; vertical-align: middle;}
+    .img-preview-ans { max-width: 70px; max-height: 40px; }
+    .img-upload-btn { margin-top: 3px; }
+    .remove-img-btn { margin-left: 6px; color: red; border: none; background: none; }
+    .search-bar { margin-bottom: 16px; }
+    .filter-bar { margin-bottom: 16px; max-width: 350px;}
+    .fw-medium { font-weight: 500; }
+    .edit-form { background: #f4f7fa; padding: 16px; border-radius: 8px; margin-bottom: 24px;}
+    .edit-form .form-control { margin-bottom: 8px;}
+    @media (max-width: 600px) {
+      .question-list-scroll { max-height: 320px; }
+      #importHtmlResultContainer { max-height: 210px;}
+      .syllabus-list-scroll { max-height: 210px;}
+    }
+    .top-btn-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .top-btn-bar .btn { margin-bottom: 0 !important;}
+    .top-btn-bar .ms-auto { margin-left: auto !important;}
+    .subject-scroll-select {
+      max-height: 240px !important;
+      overflow-y: auto !important;
+    }
+    /* Syllabus management styles */
+    .syllabus-list-section { display: none; margin-top: 24px;}
+    .syllabus-list-scroll { max-height: 430px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; }
+    .syllabus-list-item { border-bottom: 1px solid #e0e0e0; padding: 16px 0; }
+    .syllabus-list-item:last-child { border-bottom: none; }
+  </style>
+  <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style=background-color:#4caf50>
-<div class=container-fluid>
-<a class="navbar-brand text-white" href=/ >📘 Hệ thống tra cứu</a>
-<button class=navbar-toggler data-bs-target=#navbarNav data-bs-toggle=collapse type=button>
-<span class=navbar-toggler-icon></span>
-</button>
-<div class="collapse navbar-collapse" id=navbarNav>
-<ul class="navbar-nav ms-auto">
-<li class=nav-item><a class="nav-link text-white" href=/upload>Upload</a></li>
-<li class=nav-item><a class="nav-link text-white" href=/subjects>Môn học</a></li>
-<li class=nav-item><a class="nav-link text-white" href=/export>Tài liệu học ở đây nè!!!</a></li>
-</ul>
-</div>
-</div>
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
+  <div class="container-fluid">
+    <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
+    <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
+      </ul>
+    </div>
+  </div>
 </nav>
 <div class="container py-4">
-<div class=top-btn-bar>
-<button class="btn btn-secondary d-none" id=backToChoice1>← Quay lại</button>
-<button class="btn btn-secondary d-none" id=backToChoice2>← Quay lại</button>
-<button class="btn btn-secondary d-none" id=backToChoice3>← Quay lại</button>
-<button class="btn btn-sm btn-danger ms-auto" id=logoutBtn>🚪 Đăng xuất</button>
-</div>
-<h3 class=mb-4>Chọn chế độ quản trị:</h3>
-<select class="form-select mb-4 subject-scroll-select" id=modeSelect>
-<option value=subject>Quản trị Môn học</option>
-<option value=question>Quản trị Câu hỏi</option>
-</select>
-<div class=mode-section id=subjectSection>
-<h4>➕ Thêm môn học</h4>
-<form class=mb-3 id=subjectForm>
-<input class="form-control mb-2" id=subjectName placeholder="Tên môn học" required>
-<button class="btn btn-success">Thêm</button>
-</form>
-<div id=subjectList></div>
-</div>
-<div class=mode-section id=questionSection>
-<div class=mb-3 id=questionModeChoice>
-<button class="btn btn-primary me-2" id=importHtmlBtn>Nhập từ file HTML</button>
-<button class="btn btn-success me-2" id=manualBtn>Thêm thủ công</button>
-<button class="btn btn-outline-secondary" id=viewQuestionListBtn>Xem danh sách câu hỏi</button>
-</div>
-<div id=importHtmlSection style=display:none>
-<h5>Nhập câu hỏi từ file HTML Moodle</h5>
-<select class="form-select mb-2 subject-scroll-select" id=subjectDropdownImport style=max-width:350px>
-<option value="">-- Chọn môn học để lưu --</option>
-</select>
-<input type=file id=importHtmlInput accept=.html,.htm class="form-control mb-2" style=max-width:350px disabled>
-<div id=importHtmlResultContainer>
-<div id=importHtmlResult class=mt-3></div>
-</div>
-<button class="btn btn-success mt-2" id=saveImportBtn style=display:none>💾 Lưu vào CSDL</button>
-</div>
-<div id=manualSection style=display:none>
-<h5>Thêm câu hỏi thủ công</h5>
-<form id=questionForm autocomplete=off>
-<select class="form-select mb-2 subject-scroll-select" id=subjectDropdown></select>
-<textarea class="form-control mb-2" id=questionText placeholder="Nội dung câu hỏi (hỗ trợ MathJax)" required rows=3></textarea>
-<div>
-<input type=file accept=image/* id=questionImageInput class="form-control form-control-sm img-upload-btn" style=max-width:260px>
-<img id=questionImgPreview class=img-preview style=display:none>
-<button type=button class=remove-img-btn id=removeQuestionImgBtn style=display:none>✖</button>
-</div>
-<div class="answer-input-group mb-2">
-<label for=answerA class="form-label mb-1">Đáp án a</label>
-<input class=form-control id=answerA placeholder="Đáp án a" required>
-<input type=file accept=image/* id=answerAImgInput class="form-control form-control-sm img-upload-btn" style=max-width:220px>
-<img id=answerAImgPreview class=img-preview-ans style=display:none>
-<button type=button class=remove-img-btn id=removeAImgBtn style=display:none>✖</button>
-</div>
-<div class="answer-input-group mb-2">
-<label for=answerB class="form-label mb-1">Đáp án b</label>
-<input class=form-control id=answerB placeholder="Đáp án b" required>
-<input type=file accept=image/* id=answerBImgInput class="form-control form-control-sm img-upload-btn" style=max-width:220px>
-<img id=answerBImgPreview class=img-preview-ans style=display:none>
-<button type=button class=remove-img-btn id=removeBImgBtn style=display:none>✖</button>
-</div>
-<div class="answer-input-group mb-2">
-<label for=answerC class="form-label mb-1">Đáp án c</label>
-<input class=form-control id=answerC placeholder="Đáp án c" required>
-<input type=file accept=image/* id=answerCImgInput class="form-control form-control-sm img-upload-btn" style=max-width:220px>
-<img id=answerCImgPreview class=img-preview-ans style=display:none>
-<button type=button class=remove-img-btn id=removeCImgBtn style=display:none>✖</button>
-</div>
-<div class="answer-input-group mb-2">
-<label for=answerD class="form-label mb-1">Đáp án d</label>
-<input class=form-control id=answerD placeholder="Đáp án d" required>
-<input type=file accept=image/* id=answerDImgInput class="form-control form-control-sm img-upload-btn" style=max-width:220px>
-<img id=answerDImgPreview class=img-preview-ans style=display:none>
-<button type=button class=remove-img-btn id=removeDImgBtn style=display:none>✖</button>
-</div>
-<select class="form-select mb-2" id=correctAnswerDropdown required>
-<option value="">Chọn đáp án đúng</option>
-<option value=a>a</option>
-<option value=b>b</option>
-<option value=c>c</option>
-<option value=d>d</option>
-</select>
-<button type=submit class="btn btn-success" id=submitQuestionBtn>Thêm câu hỏi</button>
-<button type=button class="btn btn-primary d-none" id=updateQuestionBtn>Lưu sửa đổi</button>
-</form>
-</div>
-<div class=question-list-section id=questionListSection>
-<div class=row>
-<div class="col-md-6 search-bar">
-<input id=questionSearchInput class=form-control placeholder="Tìm kiếm nội dung câu hỏi...">
-</div>
-<div class="col-md-6 filter-bar">
-<select id=subjectFilterDropdown class="form-select subject-scroll-select">
-<option value="">Tất cả môn học</option>
-</select>
-</div>
-</div>
-<div class=question-list-scroll><div id=questionListView></div></div>
-</div>
-<div id=editQuestionModal style=display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,.2);align-items:center;justify-content:center>
-<div style="background:#fff;max-width:480px;width:96%;margin:auto;box-shadow:0 4px 32px #0002;padding:20px;position:relative">
-<button id=closeEditModal style="position:absolute;top:6px;right:12px;border:none;background:0 0;font-size:22px">×</button>
-<h5>Sửa câu hỏi</h5>
-<form id=editForm class=edit-form>
-<select class="form-select subject-scroll-select" id=editSubjectDropdown></select>
-<textarea class=form-control id=editQuestionText required rows=3></textarea>
-<input type=file accept=image/* id=editQuestionImageInput class="form-control form-control-sm img-upload-btn" style=max-width:240px>
-<img id=editQuestionImgPreview class=img-preview style=display:none>
-<button type=button class=remove-img-btn id=editRemoveQuestionImgBtn style=display:none>✖</button>
-<div class="mb-2 mt-2">
-<label>Đáp án a</label>
-<input class=form-control id=editAnswerA placeholder="Đáp án a" required>
-<input type=file accept=image/* id=editAnswerAImgInput class="form-control form-control-sm img-upload-btn" style=max-width:180px>
-<img id=editAnswerAImgPreview class=img-preview-ans style=display:none>
-<button type=button class=remove-img-btn id=editRemoveAImgBtn style=display:none>✖</button>
-</div>
-<div class=mb-2>
-<label>Đáp án b</label>
-<input class=form-control id=editAnswerB placeholder="Đáp án b" required>
-<input type=file accept=image/* id=editAnswerBImgInput class="form-control form-control-sm img-upload-btn" style=max-width:180px>
-<img id=editAnswerBImgPreview class=img-preview-ans style=display:none>
-<button type=button class=remove-img-btn id=editRemoveBImgBtn style=display:none>✖</button>
-</div>
-<div class=mb-2>
-<label>Đáp án c</label>
-<input class=form-control id=editAnswerC placeholder="Đáp án c" required>
-<input type=file accept=image/* id=editAnswerCImgInput class="form-control form-control-sm img-upload-btn" style=max-width:180px>
-<img id=editAnswerCImgPreview class=img-preview-ans style=display:none>
-<button type=button class=remove-img-btn id=editRemoveCImgBtn style=display:none>✖</button>
-</div>
-<div class=mb-2>
-<label>Đáp án d</label>
-<input class=form-control id=editAnswerD placeholder="Đáp án d" required>
-<input type=file accept=image/* id=editAnswerDImgInput class="form-control form-control-sm img-upload-btn" style=max-width:180px>
-<img id=editAnswerDImgPreview class=img-preview-ans style=display:none>
-<button type=button class=remove-img-btn id=editRemoveDImgBtn style=display:none>✖</button>
-</div>
-<select class=form-select id=editCorrectAnswerDropdown required>
-<option value="">Chọn đáp án đúng</option>
-<option value=a>a</option>
-<option value=b>b</option>
-<option value=c>c</option>
-<option value=d>d</option>
-</select>
-<button type=submit class="btn btn-success mt-2">Lưu thay đổi</button>
-</form>
-</div>
-</div>
-</div>
-</div>
-<script type=module>import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";import{getFirestore,collection,addDoc,getDocs,updateDoc,deleteDoc,doc,query,where}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";import{getAuth,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";document.addEventListener("DOMContentLoaded",(()=>{let e=[],t=[],n=null;function o(e){if(!e)return"";let t=e.match(/https:\/\/drive\.google\.com\/file\/d\/([^/]+)/);if(t)return"https://drive.google.com/thumbnail?id="+t[1];if(t=e.match(/https:\/\/drive\.google\.com\/open\?id=([^&]+)/),t)return"https://drive.google.com/thumbnail?id="+t[1];if(t=e.match(/https:\/\/drive\.google\.com\/thumbnail\?id=([^&]+)/),t)return e;if(e.includes("drive.google.com/uc?export=view&id=")){return"https://drive.google.com/thumbnail?id="+e.split("id=")[1]}return e}const i=initializeApp({apiKey:"AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",authDomain:"tracuu-d3ee9.firebaseapp.com",projectId:"tracuu-d3ee9",storageBucket:"tracuu-d3ee9.appspot.com",messagingSenderId:"593568604435",appId:"1:593568604435:web:9a5145457a8ee734143ae6",measurementId:"G-R0M6Y502NP"}),a=getFirestore(i),s=getAuth(i);async function c(e){const t=new FormData;t.append("file",e);const n=await fetch("https://tracuu-app.hugo.io.vn/api/upload",{method:"POST",body:t});if(!n.ok)throw new Error("Upload ảnh thất bại!");return(await n.json()).url}function r(e,t,n,o,i){e.addEventListener("change",(function(){this.files&&this.files[0]&&(o(this.files[0]),t.src=URL.createObjectURL(this.files[0]),t.style.display="",n.style.display="",i(""))})),n.addEventListener("click",(function(){o(null),t.src="",t.style.display="none",n.style.display="none",e.value="",i("")}))}onAuthStateChanged(s,(e=>{e||(location.href="admin")})),document.getElementById("logoutBtn").addEventListener("click",(()=>{signOut(s).then((()=>{location.href="admin"}))}));let d=null,l=null,u=null,m=null,p=null,g="",w="",h="",v="",I="";r(questionImageInput,questionImgPreview,removeQuestionImgBtn,(e=>d=e),(e=>g=e)),r(answerAImgInput,answerAImgPreview,removeAImgBtn,(e=>l=e),(e=>w=e)),r(answerBImgInput,answerBImgPreview,removeBImgBtn,(e=>u=e),(e=>h=e)),r(answerCImgInput,answerCImgPreview,removeCImgBtn,(e=>m=e),(e=>v=e)),r(answerDImgInput,answerDImgPreview,removeDImgBtn,(e=>p=e),(e=>I=e));let y=null,_=null,b=null,f=null,A=null,C="",D="",B="",L="",q="";async function x(){subjectList.innerHTML="";(await getDocs(collection(a,"mon_hoc"))).forEach((e=>{const t=e.data(),n=document.createElement("div");n.className="d-flex justify-content-between align-items-center border p-2 mb-2",n.innerHTML=`<span>${t.ten_mon}</span>\n        <div>\n          <button class="btn btn-sm btn-warning me-2">Sửa</button>\n          <button class="btn btn-sm btn-danger">Xóa</button>\n        </div>`,n.querySelector(".btn-warning").onclick=async()=>{const n=prompt("Nhập tên mới:",t.ten_mon);n&&(await updateDoc(doc(a,"mon_hoc",e.id),{ten_mon:n}),x())},n.querySelector(".btn-danger").onclick=async()=>{confirm("Bạn có chắc muốn xóa môn học này?")&&(await deleteDoc(doc(a,"mon_hoc",e.id)),x())},subjectList.appendChild(n)}))}function S(){questionModeChoice.style.display="block",importHtmlSection.style.display="none",manualSection.style.display="none",questionListSection.style.display="none",backToChoice1.classList.add("d-none"),backToChoice2.classList.add("d-none"),backToChoice3.classList.add("d-none")}async function k(t){const o=e.find((e=>e.id===t));function i(e,t,n){e?(t.src=e,t.style.display="",n.style.display=""):(t.style.display="none",n.style.display="none")}o&&(n=t,await async function(e){editSubjectDropdown.innerHTML="",(await getDocs(collection(a,"mon_hoc"))).forEach((t=>{const n=document.createElement("option");n.value=t.id,n.textContent=t.data().ten_mon,e&&e===t.id&&(n.selected=!0),editSubjectDropdown.appendChild(n)}))}(o.mon_hoc_id),editQuestionText.value=o.noi_dung||"",editAnswerA.value=o.lua_chon?.a||"",editAnswerB.value=o.lua_chon?.b||"",editAnswerC.value=o.lua_chon?.c||"",editAnswerD.value=o.lua_chon?.d||"",editCorrectAnswerDropdown.value=o.dap_an_dung||"",C=o.noi_dung_img||"",D=o.lua_chon?.aImg||"",B=o.lua_chon?.bImg||"",L=o.lua_chon?.cImg||"",q=o.lua_chon?.dImg||"",i(C,editQuestionImgPreview,editRemoveQuestionImgBtn),i(D,editAnswerAImgPreview,editRemoveAImgBtn),i(B,editAnswerBImgPreview,editRemoveBImgBtn),i(L,editAnswerCImgPreview,editRemoveCImgBtn),i(q,editAnswerDImgPreview,editRemoveDImgBtn),editQuestionModal.style.display="flex")}async function T(){await async function(){subjectFilterDropdown.innerHTML='<option value="">Tất cả môn học</option>',(await getDocs(collection(a,"mon_hoc"))).forEach((e=>{const t=document.createElement("option");t.value=e.id,t.textContent=e.data().ten_mon,subjectFilterDropdown.appendChild(t)}))}();const t=[];(await getDocs(collection(a,"cau_hoi"))).forEach((e=>{const n=e.data();n.id=e.id,t.push(n)})),e=t,j()}function j(){const t=questionSearchInput.value.trim().toLowerCase(),n=subjectFilterDropdown.value;let i=e;n&&(i=i.filter((e=>e.mon_hoc_id===n))),t&&(i=i.filter((e=>(e.noi_dung||"").toLowerCase().includes(t))));let s="";i.forEach((e=>{const t=o(e.noi_dung_img);s+=`\n        <div class="question-list-item">\n          <div><span class="fw-medium">Môn học:</span> ${(subjectFilterDropdown.querySelector(`[value="${e.mon_hoc_id}"]`)||{}).textContent||"Không rõ"}</div>\n          <div><span class="fw-medium">Câu hỏi:</span> <span class="mathjax-content">${e.noi_dung||""}</span></div>\n          ${e.noi_dung_img?`<div><img src="${t}" class="img-preview" style="max-width:200px;"/></div>`:""}\n          <div class="question-list-answers">\n            ${["a","b","c","d"].map((t=>{const n=e.dap_an_dung===t,i=e.lua_chon&&e.lua_chon[t]?e.lua_chon[t]:"",a=o(e.lua_chon&&e.lua_chon[t+"Img"]?e.lua_chon[t+"Img"]:"");return`<div class="answer-item${n?" correct":""}">\n                  ${t}. <span class="mathjax-content">${i}</span>\n                  ${a?`<img src="${a}" class="img-preview-ans" style="max-width:80px;"/>`:""}\n                </div>`})).join("")}\n          </div>\n          <div class="mt-2">\n            <button class="btn btn-sm btn-warning edit-btn" data-id="${e.id}">Sửa</button>\n            <button class="btn btn-sm btn-danger delete-btn" data-id="${e.id}">Xóa</button>\n          </div>\n        </div>\n      `})),questionListView.innerHTML=`<div>${s||"<div>Không có câu hỏi nào phù hợp.</div>"}</div>`,window.MathJax&&window.MathJax.typesetPromise&&MathJax.typesetPromise(Array.from(questionListView.querySelectorAll(".mathjax-content"))),questionListView.querySelectorAll(".edit-btn").forEach((e=>{e.onclick=()=>k(e.getAttribute("data-id"))})),questionListView.querySelectorAll(".delete-btn").forEach((e=>{e.onclick=async()=>{confirm("Bạn có chắc muốn xóa câu hỏi này?")&&(await deleteDoc(doc(a,"cau_hoi",e.getAttribute("data-id"))),await T())}}))}async function E(e){const t=await getDocs(query(collection(a,"cau_hoi"),where("mon_hoc_id","==",e))),n=[];return t.forEach((e=>{const t=e.data();n.push({noi_dung:(t.noi_dung||"").trim(),dap_an_dung:t.dap_an_dung,dap_an:t.lua_chon&&t.lua_chon[t.dap_an_dung]?t.lua_chon[t.dap_an_dung]:""})})),n}function P(e,t){return t.some((t=>t.noi_dung===e.noi_dung.trim()&&t.dap_an_dung===e.dap_an_dung&&t.dap_an===e.lua_chon[e.dap_an_dung]))}r(editQuestionImageInput,editQuestionImgPreview,editRemoveQuestionImgBtn,(e=>y=e),(e=>C=e)),r(editAnswerAImgInput,editAnswerAImgPreview,editRemoveAImgBtn,(e=>_=e),(e=>D=e)),r(editAnswerBImgInput,editAnswerBImgPreview,editRemoveBImgBtn,(e=>b=e),(e=>B=e)),r(editAnswerCImgInput,editAnswerCImgPreview,editRemoveCImgBtn,(e=>f=e),(e=>L=e)),r(editAnswerDImgInput,editAnswerDImgPreview,editRemoveDImgBtn,(e=>A=e),(e=>q=e)),subjectForm.addEventListener("submit",(async e=>{e.preventDefault(),subjectName.value.trim()&&(await addDoc(collection(a,"mon_hoc"),{ten_mon:subjectName.value.trim()}),subjectForm.reset(),x())})),modeSelect.addEventListener("change",(function(){document.querySelectorAll(".mode-section").forEach((e=>e.style.display="none")),"subject"===modeSelect.value?(subjectSection.style.display="block",x()):(questionSection.style.display="block",S(),async function(){subjectDropdown.innerHTML="",(await getDocs(collection(a,"mon_hoc"))).forEach((e=>{const t=document.createElement("option");t.value=e.id,t.textContent=e.data().ten_mon,subjectDropdown.appendChild(t)}))}())})),importHtmlBtn.onclick=()=>{questionModeChoice.style.display="none",importHtmlSection.style.display="block",manualSection.style.display="none",questionListSection.style.display="none",importHtmlResult.innerHTML="",importHtmlInput.value="",saveImportBtn.style.display="none",async function(){subjectDropdownImport.innerHTML='<option value="">-- Chọn môn học để lưu --</option>',(await getDocs(collection(a,"mon_hoc"))).forEach((e=>{const t=document.createElement("option");t.value=e.id,t.textContent=e.data().ten_mon,subjectDropdownImport.appendChild(t)}))}(),importHtmlInput.disabled=!0,backToChoice1.classList.remove("d-none"),backToChoice2.classList.add("d-none"),backToChoice3.classList.add("d-none")},manualBtn.onclick=()=>{questionModeChoice.style.display="none",importHtmlSection.style.display="none",manualSection.style.display="block",questionListSection.style.display="none",backToChoice2.classList.remove("d-none"),backToChoice1.classList.add("d-none"),backToChoice3.classList.add("d-none")},backToChoice1.onclick=backToChoice2.onclick=backToChoice3.onclick=()=>{S()},viewQuestionListBtn.onclick=async()=>{questionModeChoice.style.display="none",importHtmlSection.style.display="none",manualSection.style.display="none",questionListSection.style.display="block",await T(),backToChoice3.classList.remove("d-none"),backToChoice1.classList.add("d-none"),backToChoice2.classList.add("d-none")},questionForm.addEventListener("submit",(async e=>{e.preventDefault();const t=subjectDropdown.value,n=questionText.value.trim(),o=answerA.value.trim(),i=answerB.value.trim(),s=answerC.value.trim(),r=answerD.value.trim(),y=correctAnswerDropdown.value;if(!(t&&n&&o&&i&&s&&r&&y))return;let _=g,b=w,f=h,A=v,C=I;d&&(_=await c(d)),l&&(b=await c(l)),u&&(f=await c(u)),m&&(A=await c(m)),p&&(C=await c(p));const D={a:o,aImg:b||"",b:i,bImg:f||"",c:s,cImg:A||"",d:r,dImg:C||""};P({noi_dung:n,dap_an_dung:y,lua_chon:D},await E(t))?alert("Câu hỏi này đã tồn tại trong môn học với đáp án đúng giống nhau!"):(await addDoc(collection(a,"cau_hoi"),{mon_hoc_id:t,noi_dung:n,noi_dung_img:_||"",lua_chon:D,dap_an_dung:y}),questionForm.reset(),[questionImgPreview,removeQuestionImgBtn,answerAImgPreview,removeAImgBtn,answerBImgPreview,removeBImgBtn,answerCImgPreview,removeCImgBtn,answerDImgPreview,removeDImgBtn].forEach((e=>{e.style.display="none"})),d=l=u=m=p=null,g=w=h=v=I="",questionImageInput.value=answerAImgInput.value=answerBImgInput.value=answerCImgInput.value=answerDImgInput.value="")})),editForm.onsubmit=async function(e){e.preventDefault();const t=editSubjectDropdown.value,o=editQuestionText.value.trim(),i=editAnswerA.value.trim(),s=editAnswerB.value.trim(),r=editAnswerC.value.trim(),d=editAnswerD.value.trim(),l=editCorrectAnswerDropdown.value;if(!(t&&o&&i&&s&&r&&d&&l))return;let u=C,m=D,p=B,g=L,w=q;y&&(u=await c(y)),_&&(m=await c(_)),b&&(p=await c(b)),f&&(g=await c(f)),A&&(w=await c(A)),await updateDoc(doc(a,"cau_hoi",n),{mon_hoc_id:t,noi_dung:o,noi_dung_img:u||"",lua_chon:{a:i,aImg:m||"",b:s,bImg:p||"",c:r,cImg:g||"",d:d,dImg:w||""},dap_an_dung:l}),editQuestionModal.style.display="none",[editQuestionImgPreview,editRemoveQuestionImgBtn,editAnswerAImgPreview,editRemoveAImgBtn,editAnswerBImgPreview,editRemoveBImgBtn,editAnswerCImgPreview,editRemoveCImgBtn,editAnswerDImgPreview,editRemoveDImgBtn].forEach((e=>{e.style.display="none"})),y=_=b=f=A=null,C=D=B=L=q="",editQuestionImageInput.value=editAnswerAImgInput.value=editAnswerBImgInput.value=editAnswerCImgInput.value=editAnswerDImgInput.value="",await T()},window.showEditModal=k,closeEditModal.onclick=()=>{editQuestionModal.style.display="none"},questionSearchInput.addEventListener("input",j),subjectFilterDropdown.addEventListener("change",j),subjectDropdownImport.addEventListener("change",(function(){importHtmlInput.value="",importHtmlResult.innerHTML="",saveImportBtn.style.display="none",importHtmlInput.disabled=!subjectDropdownImport.value})),importHtmlInput.addEventListener("change",(async function(e){const n=e.target.files[0];if(!n)return;const o=subjectDropdownImport.value;if(!o)return void alert("Vui lòng chọn môn học để kiểm tra trùng lặp!");const i=await E(o),a=new FileReader;a.onload=async function(e){const n=e.target.result,o=(new DOMParser).parseFromString(n,"text/html");t=[];let a=[];o.querySelectorAll(".que").forEach((e=>{let t=e.querySelector(".qtext")?.innerText.trim()||"";const n=e.querySelectorAll(".answer > div"),o=[];n.forEach(((e,t)=>{let n=e.querySelector(".flex-fill, div.ml-1")?.innerText.trim()||"";o.push(n)}));let i="",s=-1,c="",r=(e.querySelector(".rightanswer")?.innerText||"").match(/The correct answer is: (.+)$/);if(r){let e=r[1].trim();s=o.findIndex((t=>t.trim().toLowerCase()===e.trim().toLowerCase()||t.trim().toLowerCase().includes(e.trim().toLowerCase())||e.trim().toLowerCase().includes(t.trim().toLowerCase()))),c=["a","b","c","d"][s]||"",i=o[s]||""}else n.forEach(((e,t)=>{e.classList.contains("correct")&&(i=o[t],s=t,c=["a","b","c","d"][s]||"")}));a.push({questionText:t,answers:o,correct:i,correctIdx:s,correctKey:c,lua_chon:{a:o[0]||"",b:o[1]||"",c:o[2]||"",d:o[3]||""}})})),t=a.map((e=>({...e,duplicate:!(!e.correctKey||!e.questionText)&&P({noi_dung:e.questionText,dap_an_dung:e.correctKey,lua_chon:e.lua_chon},i)})));let s=`<div class="fw-bold mb-2">Kết quả trích xuất (${t.length} câu):</div>`;t.forEach(((e,t)=>{s+=`<div class="import-question${e.duplicate?" import-duplicate":""}">\n          <span>${e.questionText}</span><br>`,e.answers.forEach(((t,n)=>{s+=`<div class="import-answer${n===e.correctIdx?" import-answer-correct":""}">\n            ${String.fromCharCode(97+n)}. ${t} ${n===e.correctIdx?"<span>(Đáp án đúng)</span>":""}\n          </div>`})),e.duplicate&&(s+='<span class="import-duplicate">[Trùng] Câu hỏi này sẽ không được lưu!</span>'),s+="</div>"})),importHtmlResult.innerHTML=s,saveImportBtn.style.display=t.length>0?"inline-block":"none",window.MathJax&&window.MathJax.typesetPromise&&MathJax.typesetPromise()},a.readAsText(n)})),saveImportBtn.onclick=async function(){const e=subjectDropdownImport.value;if(!e)return void alert("Vui lòng chọn môn học để lưu!");if(!t.length)return void alert("Chưa có dữ liệu để lưu!");saveImportBtn.disabled=!0;let n=0,o=0,i=0;for(let s of t)s.duplicate?i++:await addDoc(collection(a,"cau_hoi"),{mon_hoc_id:e,noi_dung:s.questionText,noi_dung_img:"",lua_chon:s.lua_chon,dap_an_dung:s.correctKey}).then((()=>n++)).catch((()=>o++));alert(`Đã lưu ${n} câu hỏi${i>0?`, bỏ qua ${i} câu trùng`:""}${o>0?`, lỗi ${o} câu`:""}.`),saveImportBtn.disabled=!1},modeSelect.dispatchEvent(new Event("change"))}))</script>
-</body>
-</html>
+  <div class="top-btn-bar">
+    <button class="btn btn-secondary d-none" id="backToChoice1">← Quay lại</button>
+    <button class="btn btn-secondary d-none" id="backToChoice2">← Quay lại</button>
+    <button class="btn btn-secondary d-none" id="backToChoice3">← Quay lại</button>
+    <button class="btn btn-sm btn-danger ms-auto" id="logoutBtn">🚪 Đăng xuất</button>
+  </div>
+  <h3 class="mb-4">Chọn chế độ quản trị:</h3>
+  <select class="form-select mb-4 subject-scroll-select" id="modeSelect">
+    <option value="subject">Quản trị Môn học</option>
+    <option value="syllabus">Quản trị Đề cương</option>
+    <option value="question">Quản trị Câu hỏi</option>
+  </select>
+  <div class="mode-section" id="subjectSection">
+    <h4>➕ Thêm môn học</h4>
+    <form class="mb-3" id="subjectForm">
+      <input class="form-control mb-2" id="subjectName" placeholder="Tên môn học" required type="text"/>
+      <button class="btn btn-success">Thêm</button>
+    </form>
+    <div id="subjectList"></div>
+  </div>
+  <!-- Quản lý Đề cương -->
+  <div class="mode-section syllabus-list-section" id="syllabusSection">
+    <h4 class="mb-3">Danh sách đề cương</h4>
+    <div class="mb-3 row">
+      <div class="col-md-6">
+        <select id="syllabusSubjectFilterDropdown" class="form-select subject-scroll-select mb-2">
+          <option value="">Tất cả môn học</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <input type="text" id="syllabusSearchInput" class="form-control mb-2" placeholder="Tìm kiếm tên file hoặc chủ sở hữu...">
+      </div>
+    </div>
+    <div class="syllabus-list-scroll">
+      <div id="syllabusListView"></div>
+    </div>
+    <!-- Modal sửa đề cương -->
+    <div id="editSyllabusModal" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,.2);align-items:center;justify-content:center;">
+      <div style="background:#fff;max-width:480px;width:96%;margin:auto;box-shadow:0 4px 32px #0002;padding:20px;position:relative;">
+        <button id="closeEditSyllabusModal" style="position:absolute;top:6px;right:12px;border:none;background:none;font-size:22px;">×</button>
+        <h5>Sửa đề cương</h5>
+        <form id="editSyllabusForm" class="edit-form">
+          <select class="form-select subject-scroll-select" id="editSyllabusSubjectDropdown" required></select>
+          <input type="text" class="form-control" id="editSyllabusOwner" placeholder="Tài liệu này của ai? (Không bắt buộc)">
+          <input type="file" class="form-control mb-2" id="editSyllabusFileInput">
+          <div id="currentFileName" class="mb-2"></div>
+          <button type="submit" class="btn btn-success mt-2">Lưu thay đổi</button>
+        </form>
+      </div>
+    </div>
+  </div>
