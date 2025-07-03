@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html lang="vi">
+<!-- ===== HEAD ===== -->
 <head>
   <meta charset="utf-8"/>
   <title>Upload Dữ Liệu</title>
@@ -37,6 +40,7 @@
   <link rel="icon" href="data:,">
   <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
+<!-- ===== BODY ===== -->
 <body>
   <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
     <div class="container-fluid">
@@ -165,6 +169,7 @@
     </div>
   </div>
 </body>
+<!-- ===== SCRIPT ===== -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -181,6 +186,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// ----------- Mã bảo mật -----------
 let SECURITY_CODE = null;
 async function fetchSecurityCode() {
   try {
@@ -195,10 +201,7 @@ async function fetchSecurityCode() {
 }
 await fetchSecurityCode();
 
-function showSection(id) {
-  document.querySelectorAll('.section').forEach(s => s.style.display = "none");
-  document.getElementById(id).style.display = "block";
-}
+// ----------- Môn học -----------
 async function loadSubjectsDropdown(domId) {
   const select = document.getElementById(domId);
   select.innerHTML = '';
@@ -232,7 +235,7 @@ function isDuplicateInSet(question, existSet) {
   );
 }
 
-// UI switching
+// -------------- UI -----------
 const uploadType = document.getElementById("uploadType");
 uploadType.addEventListener("change", () => {
   if (uploadType.value === "question") {
@@ -298,7 +301,7 @@ questionInputType.addEventListener("change", function() {
   }
 });
 
-// Upload Câu hỏi - nhập từ file HTML
+// ----------- IMPORT HTML ---------
 let importedQuestionsQ = [];
 document.getElementById("importHtmlInputQ").addEventListener("change", async function(e) {
   const file = e.target.files[0];
@@ -409,7 +412,7 @@ document.getElementById("saveImportBtnQ").onclick = async function() {
   document.getElementById("saveImportBtnQ").disabled = false;
 };
 
-// Upload Câu hỏi - thêm thủ công
+// ----------- UPLOAD THỦ CÔNG -----------
 let questionImgFileQ = null, answerAImgFileQ = null, answerBImgFileQ = null, answerCImgFileQ = null, answerDImgFileQ = null;
 let questionImgUrlQ = "", answerAImgUrlQ = "", answerBImgUrlQ = "", answerCImgUrlQ = "", answerDImgUrlQ = "";
 
@@ -417,26 +420,37 @@ function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
   input.addEventListener("change", function() {
     if(this.files && this.files[0]) {
       setFile(this.files[0]);
-      preview.src = URL.createObjectURL(this.files[0]);
-      preview.style.display = "";
-      removeBtn.style.display = "";
+      if (preview) {
+        preview.src = URL.createObjectURL(this.files[0]);
+        preview.style.display = "";
+      }
+      if (removeBtn) removeBtn.style.display = "";
       setUrl("");
     }
   });
-  removeBtn.addEventListener("click", function() {
-    setFile(null);
-    preview.src = "";
-    preview.style.display = "none";
-    removeBtn.style.display = "none";
-    input.value = "";
-    setUrl("");
-  });
+  if (removeBtn) {
+    removeBtn.addEventListener("click", function() {
+      setFile(null);
+      if (preview) {
+        preview.src = "";
+        preview.style.display = "none";
+      }
+      removeBtn.style.display = "none";
+      input.value = "";
+      setUrl("");
+    });
+  }
 }
-handleImgInput(questionImageInputQ, questionImgPreviewQ, removeQuestionImgBtnQ, f=>questionImgFileQ=f, url=>questionImgUrlQ=url);
-handleImgInput(answerAImgInputQ, answerAImgPreviewQ, removeAImgBtnQ, f=>answerAImgFileQ=f, url=>answerAImgUrlQ=url);
-handleImgInput(answerBImgInputQ, answerBImgPreviewQ, removeBImgBtnQ, f=>answerBImgFileQ=f, url=>answerBImgUrlQ=url);
-handleImgInput(answerCImgInputQ, answerCImgPreviewQ, removeCImgBtnQ, f=>answerCImgFileQ=f, url=>answerCImgUrlQ=url);
-handleImgInput(answerDImgInputQ, answerDImgPreviewQ, removeDImgBtnQ, f=>answerDImgFileQ=f, url=>answerDImgUrlQ=url);
+handleImgInput(
+  document.getElementById("questionImageInputQ"),
+  document.getElementById("questionImgPreviewQ"),
+  document.getElementById("removeQuestionImgBtnQ"),
+  f=>questionImgFileQ=f, url=>questionImgUrlQ=url
+);
+handleImgInput(document.getElementById("answerAImgInputQ"), document.getElementById("answerAImgPreviewQ"), document.getElementById("removeAImgBtnQ"), f=>answerAImgFileQ=f, url=>answerAImgUrlQ=url);
+handleImgInput(document.getElementById("answerBImgInputQ"), document.getElementById("answerBImgPreviewQ"), document.getElementById("removeBImgBtnQ"), f=>answerBImgFileQ=f, url=>answerBImgUrlQ=url);
+handleImgInput(document.getElementById("answerCImgInputQ"), document.getElementById("answerCImgPreviewQ"), document.getElementById("removeCImgBtnQ"), f=>answerCImgFileQ=f, url=>answerCImgUrlQ=url);
+handleImgInput(document.getElementById("answerDImgInputQ"), document.getElementById("answerDImgPreviewQ"), document.getElementById("removeDImgBtnQ"), f=>answerDImgFileQ=f, url=>answerDImgUrlQ=url);
 
 async function uploadToDrive(file) {
   const formData = new FormData();
@@ -489,18 +503,20 @@ document.getElementById("manualFormQ").addEventListener("submit", async function
     dap_an_dung: correct
   });
   this.reset();
-  [questionImgPreviewQ, removeQuestionImgBtnQ, answerAImgPreviewQ, removeAImgBtnQ, answerBImgPreviewQ, removeBImgBtnQ, answerCImgPreviewQ, removeCImgBtnQ, answerDImgPreviewQ, removeDImgBtnQ].forEach(el => { el.style.display = "none"; });
+  ["questionImgPreviewQ","removeQuestionImgBtnQ","answerAImgPreviewQ","removeAImgBtnQ","answerBImgPreviewQ","removeBImgBtnQ","answerCImgPreviewQ","removeCImgBtnQ","answerDImgPreviewQ","removeDImgBtnQ"].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
   questionImgFileQ = answerAImgFileQ = answerBImgFileQ = answerCImgFileQ = answerDImgFileQ = null;
   questionImgUrlQ = answerAImgUrlQ = answerBImgUrlQ = answerCImgUrlQ = answerDImgUrlQ = "";
-  questionImageInputQ.value = answerAImgInputQ.value = answerBImgInputQ.value = answerCImgInputQ.value = answerDImgInputQ.value = "";
+  ["questionImageInputQ","answerAImgInputQ","answerBImgInputQ","answerCImgInputQ","answerDImgInputQ"].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
   alert("Đã thêm câu hỏi thành công!");
 });
 
-// Security code errors hide on input
-document.getElementById("securityCodeQ").addEventListener("input", ()=>document.getElementById("securityQError").style.display="none");
-document.getElementById("securityCodeOutline").addEventListener("input", ()=>document.getElementById("securityOutlineError").style.display="none");
-
-// Upload Đề cương
+// ----------- ĐỀ CƯƠNG -----------
 document.getElementById("submitOutlineBtn").addEventListener("click", async function() {
   if (SECURITY_CODE === null) await fetchSecurityCode();
   const code = document.getElementById("securityCodeOutline").value;
@@ -532,4 +548,9 @@ document.getElementById("submitOutlineBtn").addEventListener("click", async func
     resultDiv.innerHTML = '<span class="text-danger">Upload thất bại!</span>';
   }
 });
+
+// ----------- Ẩn lỗi khi nhập lại -----------
+document.getElementById("securityCodeQ").addEventListener("input", ()=>document.getElementById("securityQError").style.display="none");
+document.getElementById("securityCodeOutline").addEventListener("input", ()=>document.getElementById("securityOutlineError").style.display="none");
 </script>
+</html>
