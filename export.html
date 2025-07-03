@@ -15,6 +15,7 @@
     .subject-btns .btn { margin-right: 6px; }
     .table-responsive { max-height: 500px; overflow-y: auto; }
     .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
+    .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
   </style>
 </head>
 <body class="bg-light">
@@ -88,7 +89,7 @@
       const div = document.createElement("div");
       div.className = "d-flex align-items-center justify-content-between border-bottom py-2";
       div.innerHTML = `
-        <span class="fw-bold">${subj.ten_mon}</span>
+        <span class="fw-bold"><span class="subject-title-icon">📘</span>${subj.ten_mon}</span>
         <div class="subject-btns">
           <button class="btn btn-sm btn-outline-secondary" data-type="txt" data-id="${subj.id}" data-name="${subj.ten_mon}">📝 TXT</button>
           <button class="btn btn-sm btn-outline-primary" data-type="pdf" data-id="${subj.id}" data-name="${subj.ten_mon}">📄 PDF</button>
@@ -185,7 +186,7 @@
         {
           table: {
             headerRows: 1,
-            widths: ["7%", "55%", "38%"],
+            widths: ["5%", "55%", "40%"],
             body: body
           }
         }
