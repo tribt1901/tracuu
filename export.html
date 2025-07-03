@@ -10,7 +10,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  <!-- MathJax CDN for rendering LaTeX -->
+  <!-- MathJax v3 for SVG rendering -->
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
   <style>
     body { padding-top: 70px; font-family: 'Roboto', Arial, sans-serif; }
@@ -130,6 +130,10 @@
     // Xử lý width cố định để pdfmake đẹp hơn
     svg.removeAttribute('height');
     svg.setAttribute('width', '120px');
+    // Đổi màu fill thành #000 để PDF không bị xám
+    svg.querySelectorAll('*').forEach(el => {
+      if (el.getAttribute('fill') === '#000000') el.setAttribute('fill', '#000');
+    });
     return svg.outerHTML;
   }
 
@@ -146,7 +150,7 @@
   // ---- Hàm thay thế các công thức $...$ hoặc $$...$$ bằng ảnh SVG (dùng cho PDF) ----
   async function processMathInText(text) {
     // Chỉ hỗ trợ công thức LaTeX dạng $...$ hoặc $$...$$
-    const regex = /\$\$?([^$]+)\$\$?/g;
+    const regex = /\$\$?([^\$]+)\$\$?/g;
     let lastIndex = 0;
     let match;
     const parts = [];
@@ -156,18 +160,23 @@
       }
       // match[1] là nội dung công thức
       const latex = match[1];
-      const svg = await latexToSVG(latex);
-      const dataUrl = await svgStringToDataURL(svg);
-      parts.push({ type: 'image', value: dataUrl });
+      try {
+        const svg = await latexToSVG(latex);
+        const dataUrl = await svgStringToDataURL(svg);
+        parts.push({ type: 'image', value: dataUrl });
+      } catch (err) {
+        // Nếu lỗi, vẫn xuất text công thức
+        parts.push({ type: 'text', value: '$' + latex + '$' });
+      }
       lastIndex = regex.lastIndex;
     }
     if (lastIndex < text.length) {
       parts.push({ type: 'text', value: text.slice(lastIndex) });
     }
-    // Chuyển thành array cho pdfmake: text/image
+    // Trả về mảng cho pdfmake: text/image
     return parts.map(p => {
       if (p.type === 'text') return p.value;
-      return { image: p.value, width: 80, margin: [0, 2, 0, 2] };
+      return { image: p.value, width: 100, margin: [0, 2, 0, 2] };
     });
   }
 
