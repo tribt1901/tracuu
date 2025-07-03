@@ -166,6 +166,8 @@
   </div>
 </div>
 <script type="module">
+// (Để file JS riêng sẽ rõ ràng hơn, nhưng nếu bạn muốn nhúng trực tiếp thì giữ nguyên cấu trúc script này.)
+// Nếu bạn muốn nhận tối ưu JS code hoặc tách file, hãy yêu cầu thêm nhé!
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -398,19 +400,40 @@ document.addEventListener("DOMContentLoaded", () => {
         let questionText = q.querySelector('.qtext')?.innerText.trim() || '';
         const answerNodes = q.querySelectorAll('.answer > div');
         const answers = [];
-        let correct = '';
-        let correctIdx = -1;
         answerNodes.forEach((ans, idx) => {
           let ansText = ans.querySelector('.flex-fill, div.ml-1')?.innerText.trim() || '';
           answers.push(ansText);
-          if (ans.classList.contains('correct')) {
-            correct = ansText;
-            correctIdx = idx;
-          }
         });
-        let correctKey = ['a','b','c','d'][correctIdx] || '';
+
+        // Lấy đáp án đúng ưu tiên từ .rightanswer
+        let correct = '';
+        let correctIdx = -1;
+        let correctKey = '';
+        let rightAnswerText = q.querySelector('.rightanswer')?.innerText || '';
+        let match = rightAnswerText.match(/The correct answer is: (.+)$/);
+        if (match) {
+          let correctValue = match[1].trim();
+          correctIdx = answers.findIndex(a =>
+            a.trim().toLowerCase() === correctValue.trim().toLowerCase()
+            || a.trim().toLowerCase().includes(correctValue.trim().toLowerCase())
+            || correctValue.trim().toLowerCase().includes(a.trim().toLowerCase())
+          );
+          correctKey = ['a','b','c','d'][correctIdx] || '';
+          correct = answers[correctIdx] || '';
+        } else {
+          // fallback: lấy theo class .correct
+          answerNodes.forEach((ans, idx) => {
+            if (ans.classList.contains('correct')) {
+              correct = answers[idx];
+              correctIdx = idx;
+              correctKey = ['a','b','c','d'][correctIdx] || '';
+            }
+          });
+        }
+
         importedQuestions.push({ questionText, answers, correct, correctIdx, correctKey });
       });
+
       // Hiển thị kết quả
       let htmlResult = `<div class="fw-bold mb-2">Kết quả trích xuất (${importedQuestions.length} câu):</div>`;
       importedQuestions.forEach((q, idx) => {
