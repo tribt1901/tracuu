@@ -180,21 +180,6 @@
     </div>
   </div>
 <script type="module">
-// Định nghĩa hàm showSection để tránh lỗi
-function showSection(id) {
-  document.querySelectorAll('.section').forEach(s => {
-    if (s) s.style.display = "none";
-  });
-  var section = document.getElementById(id);
-  if(section) section.style.display = "block";
-}
-
-// Quản lý nút quay lại
-function showBackButton(show) {
-  const backBar = document.getElementById("backButtonBar");
-  if (backBar) backBar.style.display = show ? "flex" : "none";
-}
-
 // Hàm an toàn để truy cập/ẩn/hiện phần tử
 function safeSetDisplay(id, display) {
   const el = document.getElementById(id);
@@ -207,6 +192,18 @@ function safeSetValue(id, val) {
 function safeSetFocus(id) {
   const el = document.getElementById(id);
   if (el) el.focus();
+}
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => {
+    if (s) s.style.display = "none";
+  });
+  var section = document.getElementById(id);
+  if(section) section.style.display = "block";
+}
+function showBackButton(show) {
+  const backBar = document.getElementById("backButtonBar");
+  if (backBar) backBar.style.display = show ? "flex" : "none";
 }
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -305,8 +302,8 @@ questionInputType.addEventListener("change", () => {
   safeSetDisplay("questionMainSection", "none");
 });
 
-// Show main form sau khi nhập đúng mã bảo mật, bật nút quay lại
-document.getElementById("securityCodeQ").addEventListener("blur", async function() {
+// Sử dụng sự kiện input thay vì blur để hiện giao diện ngay khi nhập đúng mã bảo mật
+document.getElementById("securityCodeQ").addEventListener("input", async function() {
   if (SECURITY_CODE === null) await fetchSecurityCode();
   const code = this.value;
   if (!questionInputType.value) return;
