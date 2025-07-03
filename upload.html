@@ -182,17 +182,33 @@
 <script type="module">
 // Định nghĩa hàm showSection để tránh lỗi
 function showSection(id) {
-  document.querySelectorAll('.section').forEach(s => s.style.display = "none");
+  document.querySelectorAll('.section').forEach(s => {
+    if (s) s.style.display = "none";
+  });
   var section = document.getElementById(id);
   if(section) section.style.display = "block";
 }
 
 // Quản lý nút quay lại
 function showBackButton(show) {
-  document.getElementById("backButtonBar").style.display = show ? "flex" : "none";
+  const backBar = document.getElementById("backButtonBar");
+  if (backBar) backBar.style.display = show ? "flex" : "none";
 }
 
-// Tái sử dụng các phần đã có
+// Hàm an toàn để truy cập/ẩn/hiện phần tử
+function safeSetDisplay(id, display) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = display;
+}
+function safeSetValue(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+function safeSetFocus(id) {
+  const el = document.getElementById(id);
+  if (el) el.focus();
+}
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -224,6 +240,7 @@ await fetchSecurityCode();
 
 async function loadSubjectsDropdown(domId) {
   const select = document.getElementById(domId);
+  if (!select) return;
   select.innerHTML = '';
   const snapshot = await getDocs(collection(db, "mon_hoc"));
   snapshot.forEach(docSnap => {
@@ -260,10 +277,10 @@ const uploadType = document.getElementById("uploadType");
 uploadType.addEventListener("change", () => {
   if (uploadType.value === "question") {
     showSection("uploadQuestionSection");
-    document.getElementById("questionInputType").value = "";
-    document.getElementById("questionSecuritySection").style.display = "none";
-    document.getElementById("questionMainSection").style.display = "none";
-    document.getElementById("uploadQuestionChoice").style.display = "block";
+    safeSetValue("questionInputType", "");
+    safeSetDisplay("questionSecuritySection", "none");
+    safeSetDisplay("questionMainSection", "none");
+    safeSetDisplay("uploadQuestionChoice", "block");
     showBackButton(false);
   } else {
     showSection("uploadOutlineSection");
@@ -278,14 +295,14 @@ const questionInputType = document.getElementById("questionInputType");
 questionInputType.addEventListener("change", () => {
   const method = questionInputType.value;
   if (method) {
-    document.getElementById("questionSecuritySection").style.display = "block";
+    safeSetDisplay("questionSecuritySection", "block");
   } else {
-    document.getElementById("questionSecuritySection").style.display = "none";
-    document.getElementById("questionMainSection").style.display = "none";
+    safeSetDisplay("questionSecuritySection", "none");
+    safeSetDisplay("questionMainSection", "none");
   }
-  document.getElementById("securityQError").style.display = "none";
-  document.getElementById("securityCodeQ").value = "";
-  document.getElementById("questionMainSection").style.display = "none";
+  safeSetDisplay("securityQError", "none");
+  safeSetValue("securityCodeQ", "");
+  safeSetDisplay("questionMainSection", "none");
 });
 
 // Show main form sau khi nhập đúng mã bảo mật, bật nút quay lại
@@ -294,50 +311,50 @@ document.getElementById("securityCodeQ").addEventListener("blur", async function
   const code = this.value;
   if (!questionInputType.value) return;
   if (code === SECURITY_CODE) {
-    document.getElementById("securityQError").style.display = "none";
-    document.getElementById("questionMainSection").style.display = "block";
+    safeSetDisplay("securityQError", "none");
+    safeSetDisplay("questionMainSection", "block");
     loadSubjectsDropdown("subjectDropdownQ");
     if (questionInputType.value === "html") {
-      document.getElementById("questionHtmlSection").style.display = "block";
-      document.getElementById("questionManualSection").style.display = "none";
+      safeSetDisplay("questionHtmlSection", "block");
+      safeSetDisplay("questionManualSection", "none");
     } else if (questionInputType.value === "manual") {
-      document.getElementById("questionHtmlSection").style.display = "none";
-      document.getElementById("questionManualSection").style.display = "block";
+      safeSetDisplay("questionHtmlSection", "none");
+      safeSetDisplay("questionManualSection", "block");
     }
     // Ẩn block chọn phương thức nhập, hiện nút quay lại
-    document.getElementById("uploadQuestionChoice").style.display = "none";
+    safeSetDisplay("uploadQuestionChoice", "none");
     showBackButton(true);
   } else {
-    document.getElementById("questionQError").style.display = "none";
-    document.getElementById("questionMainSection").style.display = "none";
-    if (code) document.getElementById("securityQError").style.display = "block";
+    safeSetDisplay("questionQError", "none");
+    safeSetDisplay("questionMainSection", "none");
+    if (code) safeSetDisplay("securityQError", "block");
   }
 });
 // Khi đổi lại phương thức nhập, reset mã bảo mật, hide back button
 questionInputType.addEventListener("change", function() {
-  document.getElementById("securityCodeQ").value = "";
-  document.getElementById("securityQError").style.display = "none";
-  document.getElementById("questionMainSection").style.display = "none";
+  safeSetValue("securityCodeQ", "");
+  safeSetDisplay("securityQError", "none");
+  safeSetDisplay("questionMainSection", "none");
   if (this.value === "html") {
-    document.getElementById("questionHtmlSection").style.display = "block";
-    document.getElementById("questionManualSection").style.display = "none";
+    safeSetDisplay("questionHtmlSection", "block");
+    safeSetDisplay("questionManualSection", "none");
   } else if (this.value === "manual") {
-    document.getElementById("questionHtmlSection").style.display = "none";
-    document.getElementById("questionManualSection").style.display = "block";
+    safeSetDisplay("questionHtmlSection", "none");
+    safeSetDisplay("questionManualSection", "block");
   } else {
-    document.getElementById("questionHtmlSection").style.display = "none";
-    document.getElementById("questionManualSection").style.display = "none";
+    safeSetDisplay("questionHtmlSection", "none");
+    safeSetDisplay("questionManualSection", "none");
   }
 });
 
 // Nút quay lại về giao diện chọn phương thức nhập
 document.getElementById("backToChoiceBtn").onclick = function() {
-  document.getElementById("questionMainSection").style.display = "none";
-  document.getElementById("uploadQuestionChoice").style.display = "block";
+  safeSetDisplay("questionMainSection", "none");
+  safeSetDisplay("uploadQuestionChoice", "block");
   showBackButton(false);
-  document.getElementById("securityCodeQ").value = "";
-  document.getElementById("securityQError").style.display = "none";
-  document.getElementById("questionInputType").focus();
+  safeSetValue("securityCodeQ", "");
+  safeSetDisplay("securityQError", "none");
+  safeSetFocus("questionInputType");
 }
 
 // Upload Câu hỏi - nhập từ file HTML
@@ -345,7 +362,7 @@ let importedQuestionsQ = [];
 document.getElementById("importHtmlInputQ").addEventListener("change", async function(e) {
   const file = e.target.files[0];
   if (!file) return;
-  const mon_hoc_id = document.getElementById("subjectDropdownQ").value;
+  const mon_hoc_id = document.getElementById("subjectDropdownQ")?.value;
   if (!mon_hoc_id) { alert("Vui lòng chọn môn học"); return; }
   const existSet = await getQuestionSetForSubject(mon_hoc_id);
   const reader = new FileReader();
@@ -417,25 +434,27 @@ document.getElementById("importHtmlInputQ").addEventListener("change", async fun
         htmlResult += `<span class="text-danger">[Trùng] Câu hỏi này sẽ không được lưu!</span>`;
       htmlResult += `</div>`;
     });
-    document.getElementById("importHtmlResultQ").innerHTML = htmlResult;
-    document.getElementById("saveImportBtnQ").style.display = importedQuestionsQ.length>0 ? "inline-block" : "none";
+    const importHtmlResultQ = document.getElementById("importHtmlResultQ");
+    if (importHtmlResultQ) importHtmlResultQ.innerHTML = htmlResult;
+    const saveImportBtnQ = document.getElementById("saveImportBtnQ");
+    if (saveImportBtnQ) saveImportBtnQ.style.display = importedQuestionsQ.length>0 ? "inline-block" : "none";
     if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
   }
   reader.readAsText(file);
 });
 document.getElementById("saveImportBtnQ").onclick = async function() {
   if (SECURITY_CODE === null) await fetchSecurityCode();
-  const code = document.getElementById("securityCodeQ").value;
+  const code = document.getElementById("securityCodeQ")?.value;
   if (code !== SECURITY_CODE) {
-    document.getElementById("securityQError").style.display = "block";
+    safeSetDisplay("securityQError", "block");
     return;
   } else {
-    document.getElementById("securityQError").style.display = "none";
+    safeSetDisplay("securityQError", "none");
   }
-  const mon_hoc_id = document.getElementById("subjectDropdownQ").value;
+  const mon_hoc_id = document.getElementById("subjectDropdownQ")?.value;
   if (!mon_hoc_id) { alert("Vui lòng chọn môn học để lưu!"); return; }
   if (!importedQuestionsQ.length) { alert("Chưa có dữ liệu để lưu!"); return; }
-  document.getElementById("saveImportBtnQ").disabled = true;
+  this.disabled = true;
   let success = 0, fail = 0, skip = 0;
   for (let q of importedQuestionsQ) {
     if(q.duplicate) { skip++; continue; }
@@ -448,7 +467,7 @@ document.getElementById("saveImportBtnQ").onclick = async function() {
     }).then(()=>success++).catch(()=>fail++);
   }
   alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
-  document.getElementById("saveImportBtnQ").disabled = false;
+  this.disabled = false;
 };
 
 // Upload Câu hỏi - thêm thủ công
@@ -456,6 +475,7 @@ let questionImgFileQ = null, answerAImgFileQ = null, answerBImgFileQ = null, ans
 let questionImgUrlQ = "", answerAImgUrlQ = "", answerBImgUrlQ = "", answerCImgUrlQ = "", answerDImgUrlQ = "";
 
 function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
+  if (!input) return;
   input.addEventListener("change", function() {
     if(this.files && this.files[0]) {
       setFile(this.files[0]);
@@ -503,20 +523,20 @@ async function uploadToDrive(file) {
 document.getElementById("manualFormQ").addEventListener("submit", async function(e) {
   e.preventDefault();
   if (SECURITY_CODE === null) await fetchSecurityCode();
-  const code = document.getElementById("securityCodeQ").value;
+  const code = document.getElementById("securityCodeQ")?.value;
   if (code !== SECURITY_CODE) {
-    document.getElementById("securityQError").style.display = "block";
+    safeSetDisplay("securityQError", "block");
     return;
   } else {
-    document.getElementById("securityQError").style.display = "none";
+    safeSetDisplay("securityQError", "none");
   }
-  const subjectId = document.getElementById("subjectDropdownQ").value;
-  const qText = questionTextQ.value.trim();
-  const a = answerAQ.value.trim();
-  const b = answerBQ.value.trim();
-  const c = answerCQ.value.trim();
-  const d = answerDQ.value.trim();
-  const correct = correctAnswerDropdownQ.value;
+  const subjectId = document.getElementById("subjectDropdownQ")?.value;
+  const qText = document.getElementById("questionTextQ")?.value.trim();
+  const a = document.getElementById("answerAQ")?.value.trim();
+  const b = document.getElementById("answerBQ")?.value.trim();
+  const c = document.getElementById("answerCQ")?.value.trim();
+  const d = document.getElementById("answerDQ")?.value.trim();
+  const correct = document.getElementById("correctAnswerDropdownQ")?.value;
   if (!subjectId || !qText || !a || !b || !c || !d || !correct) return;
   let qImg = questionImgUrlQ;
   let aImg = answerAImgUrlQ;
@@ -542,13 +562,22 @@ document.getElementById("manualFormQ").addEventListener("submit", async function
     dap_an_dung: correct
   });
   this.reset();
-  ["questionImgPreviewQ","removeQuestionImgBtnQ","answerAImgPreviewQ","removeAImgBtnQ","answerBImgPreviewQ","removeBImgBtnQ","answerCImgPreviewQ","removeCImgBtnQ","answerDImgPreviewQ","removeDImgBtnQ"].forEach(id=>{
+  [
+    "questionImgPreviewQ","removeQuestionImgBtnQ",
+    "answerAImgPreviewQ","removeAImgBtnQ",
+    "answerBImgPreviewQ","removeBImgBtnQ",
+    "answerCImgPreviewQ","removeCImgBtnQ",
+    "answerDImgPreviewQ","removeDImgBtnQ"
+  ].forEach(id=>{
     const el = document.getElementById(id);
     if (el) el.style.display = "none";
   });
   questionImgFileQ = answerAImgFileQ = answerBImgFileQ = answerCImgFileQ = answerDImgFileQ = null;
   questionImgUrlQ = answerAImgUrlQ = answerBImgUrlQ = answerCImgUrlQ = answerDImgUrlQ = "";
-  ["questionImageInputQ","answerAImgInputQ","answerBImgInputQ","answerCImgInputQ","answerDImgInputQ"].forEach(id=>{
+  [
+    "questionImageInputQ","answerAImgInputQ",
+    "answerBImgInputQ","answerCImgInputQ","answerDImgInputQ"
+  ].forEach(id=>{
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
@@ -556,26 +585,26 @@ document.getElementById("manualFormQ").addEventListener("submit", async function
 });
 
 // Security code errors hide on input
-document.getElementById("securityCodeQ").addEventListener("input", ()=>document.getElementById("securityQError").style.display="none");
-document.getElementById("securityCodeOutline").addEventListener("input", ()=>document.getElementById("securityOutlineError").style.display="none");
+document.getElementById("securityCodeQ").addEventListener("input", ()=>safeSetDisplay("securityQError","none"));
+document.getElementById("securityCodeOutline").addEventListener("input", ()=>safeSetDisplay("securityOutlineError","none"));
 
 // Upload Đề cương
 document.getElementById("submitOutlineBtn").addEventListener("click", async function() {
   if (SECURITY_CODE === null) await fetchSecurityCode();
-  const code = document.getElementById("securityCodeOutline").value;
+  const code = document.getElementById("securityCodeOutline")?.value;
   if (code !== SECURITY_CODE) {
-    document.getElementById("securityOutlineError").style.display = "block";
+    safeSetDisplay("securityOutlineError", "block");
     return;
   } else {
-    document.getElementById("securityOutlineError").style.display = "none";
+    safeSetDisplay("securityOutlineError", "none");
   }
-  const subjectId = document.getElementById("subjectDropdownO").value;
-  const owner = document.getElementById("ownerOutline").value.trim();
+  const subjectId = document.getElementById("subjectDropdownO")?.value;
+  const owner = document.getElementById("ownerOutline")?.value.trim();
   const fileInput = document.getElementById("outlineFileInput");
   const resultDiv = document.getElementById("outlineUploadResult");
-  if (!subjectId) { resultDiv.innerHTML = '<span class="text-danger">Vui lòng chọn môn học!</span>'; return; }
-  if (!fileInput.files[0]) { resultDiv.innerHTML = '<span class="text-danger">Vui lòng chọn file!</span>'; return; }
-  resultDiv.innerHTML = "Đang upload file...";
+  if (!subjectId) { if(resultDiv) resultDiv.innerHTML = '<span class="text-danger">Vui lòng chọn môn học!</span>'; return; }
+  if (!fileInput.files[0]) { if(resultDiv) resultDiv.innerHTML = '<span class="text-danger">Vui lòng chọn file!</span>'; return; }
+  if(resultDiv) resultDiv.innerHTML = "Đang upload file...";
   try {
     const url = await uploadToDrive(fileInput.files[0]);
     await addDoc(collection(db, "de_cuong"), {
@@ -584,11 +613,11 @@ document.getElementById("submitOutlineBtn").addEventListener("click", async func
       owner: owner,
       upload_time: new Date().toISOString()
     });
-    resultDiv.innerHTML = '<span class="text-success">Upload thành công!</span>';
+    if(resultDiv) resultDiv.innerHTML = '<span class="text-success">Upload thành công!</span>';
     fileInput.value = "";
-    document.getElementById("ownerOutline").value = "";
+    if(document.getElementById("ownerOutline")) document.getElementById("ownerOutline").value = "";
   } catch (e) {
-    resultDiv.innerHTML = '<span class="text-danger">Upload thất bại!</span>';
+    if(resultDiv) resultDiv.innerHTML = '<span class="text-danger">Upload thất bại!</span>';
   }
 });
 </script>
