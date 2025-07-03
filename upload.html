@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="vi">
-<!-- ===== HEAD ===== -->
 <head>
   <meta charset="utf-8"/>
   <title>Upload Dữ Liệu</title>
@@ -40,7 +39,6 @@
   <link rel="icon" href="data:,">
   <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
-<!-- ===== BODY ===== -->
 <body>
   <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
     <div class="container-fluid">
@@ -168,9 +166,14 @@
       <div id="outlineUploadResult" class="mt-2"></div>
     </div>
   </div>
-</body>
-<!-- ===== SCRIPT ===== -->
 <script type="module">
+// Định nghĩa hàm showSection để tránh lỗi
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.style.display = "none");
+  var section = document.getElementById(id);
+  if(section) section.style.display = "block";
+}
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -186,7 +189,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ----------- Mã bảo mật -----------
 let SECURITY_CODE = null;
 async function fetchSecurityCode() {
   try {
@@ -201,7 +203,6 @@ async function fetchSecurityCode() {
 }
 await fetchSecurityCode();
 
-// ----------- Môn học -----------
 async function loadSubjectsDropdown(domId) {
   const select = document.getElementById(domId);
   select.innerHTML = '';
@@ -235,7 +236,7 @@ function isDuplicateInSet(question, existSet) {
   );
 }
 
-// -------------- UI -----------
+// UI switching
 const uploadType = document.getElementById("uploadType");
 uploadType.addEventListener("change", () => {
   if (uploadType.value === "question") {
@@ -301,7 +302,7 @@ questionInputType.addEventListener("change", function() {
   }
 });
 
-// ----------- IMPORT HTML ---------
+// Upload Câu hỏi - nhập từ file HTML
 let importedQuestionsQ = [];
 document.getElementById("importHtmlInputQ").addEventListener("change", async function(e) {
   const file = e.target.files[0];
@@ -412,7 +413,7 @@ document.getElementById("saveImportBtnQ").onclick = async function() {
   document.getElementById("saveImportBtnQ").disabled = false;
 };
 
-// ----------- UPLOAD THỦ CÔNG -----------
+// Upload Câu hỏi - thêm thủ công
 let questionImgFileQ = null, answerAImgFileQ = null, answerBImgFileQ = null, answerCImgFileQ = null, answerDImgFileQ = null;
 let questionImgUrlQ = "", answerAImgUrlQ = "", answerBImgUrlQ = "", answerCImgUrlQ = "", answerDImgUrlQ = "";
 
@@ -516,7 +517,11 @@ document.getElementById("manualFormQ").addEventListener("submit", async function
   alert("Đã thêm câu hỏi thành công!");
 });
 
-// ----------- ĐỀ CƯƠNG -----------
+// Security code errors hide on input
+document.getElementById("securityCodeQ").addEventListener("input", ()=>document.getElementById("securityQError").style.display="none");
+document.getElementById("securityCodeOutline").addEventListener("input", ()=>document.getElementById("securityOutlineError").style.display="none");
+
+// Upload Đề cương
 document.getElementById("submitOutlineBtn").addEventListener("click", async function() {
   if (SECURITY_CODE === null) await fetchSecurityCode();
   const code = document.getElementById("securityCodeOutline").value;
@@ -548,9 +553,6 @@ document.getElementById("submitOutlineBtn").addEventListener("click", async func
     resultDiv.innerHTML = '<span class="text-danger">Upload thất bại!</span>';
   }
 });
-
-// ----------- Ẩn lỗi khi nhập lại -----------
-document.getElementById("securityCodeQ").addEventListener("input", ()=>document.getElementById("securityQError").style.display="none");
-document.getElementById("securityCodeOutline").addEventListener("input", ()=>document.getElementById("securityOutlineError").style.display="none");
 </script>
+</body>
 </html>
