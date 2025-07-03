@@ -4,7 +4,5 @@
   "dependencies": {
     "googleapis": "^105.0.0",
     "formidable": "^3.5.0",
-    "firebase-admin": "^11.11.1",
-    "pdfkit": "^0.16.0"
   }
 }
