@@ -26,9 +26,20 @@
   <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
+  <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
   <div class="container-fluid">
-    <a class="navbar-brand text-white" href="#">📥 Upload Dữ Liệu</a>
+    <a class="navbar-brand text-white" href="/">📥 Upload Dữ Liệu</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/outline">Đề Cương</a></li>
+      </ul>
+    </div>
   </div>
 </nav>
 <div class="container py-4">
@@ -60,14 +71,14 @@
       </div>
       <!-- Nhập từ HTML -->
       <div id="questionHtmlSection" style="display:none;">
-        <div class="mb-2">
-          <input type="file" id="importHtmlInputQ" accept=".html,.htm" class="form-control" style="max-width:350px;">
-        </div>
+        <h5 class="mb-2">Nhập câu hỏi từ file HTML Moodle</h5>
+        <input type="file" id="importHtmlInputQ" accept=".html,.htm" class="form-control mb-2" style="max-width:350px;">
         <div id="importHtmlResultQ" style="margin-top:16px"></div>
         <button class="btn btn-success mt-2" id="saveImportBtnQ" style="display:none;">💾 Lưu vào CSDL</button>
       </div>
       <!-- Thêm thủ công -->
       <div id="questionManualSection" style="display:none;">
+        <h5>Thêm câu hỏi thủ công</h5>
         <form id="manualFormQ" autocomplete="off">
           <textarea class="form-control mb-2" id="questionTextQ" placeholder="Nội dung câu hỏi (hỗ trợ MathJax)" required rows="3"></textarea>
           <div>
@@ -213,7 +224,6 @@ const uploadType = document.getElementById("uploadType");
 uploadType.addEventListener("change", () => {
   if (uploadType.value === "question") {
     showSection("uploadQuestionSection");
-    // Ẩn các section nhập tiếp theo cho đến khi chọn phương thức nhập
     document.getElementById("questionInputType").value = "";
     document.getElementById("questionSecuritySection").style.display = "none";
     document.getElementById("questionMainSection").style.display = "none";
@@ -261,7 +271,6 @@ document.getElementById("securityCodeQ").addEventListener("blur", async function
     if (code) document.getElementById("securityQError").style.display = "block";
   }
 });
-// Khi thay đổi phương thức nhập thì reset lại phần nhập mã bảo mật và nội dung tiếp theo
 questionInputType.addEventListener("change", function() {
   document.getElementById("securityCodeQ").value = "";
   document.getElementById("securityQError").style.display = "none";
