@@ -71,9 +71,13 @@
 
   <!-- Upload Câu hỏi section -->
   <div class="mode-section" id="uploadQuestionSection">
+    <div class="security-section">
+      <input type="password" class="form-control mb-1" id="questionSecurityCode" placeholder="Nhập mã bảo mật">
+      <div id="questionSecurityCodeStatus" style="font-size:0.95em;" class="mb-2"></div>
+    </div>
     <div id="questionUploadChoice" style="max-width:360px;">
-      <button class="btn btn-primary me-2" id="questionImportHtmlBtn">Nhập từ file HTML Moodle</button>
-      <button class="btn btn-success" id="questionManualBtn">Thêm thủ công</button>
+      <button class="btn btn-primary me-2" id="questionImportHtmlBtn" disabled>Nhập từ file HTML Moodle</button>
+      <button class="btn btn-success" id="questionManualBtn" disabled>Thêm thủ công</button>
     </div>
     <!-- Import HTML section -->
     <div id="importHtmlSection" style="display:none;">
@@ -162,6 +166,7 @@
   </div>
 </div>
 <script type="module">
+// Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 document.addEventListener("DOMContentLoaded", () => {
@@ -178,7 +183,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // ==== UI chuyển mode ====
+  // ==== DOM SELECTORS ====
+  // Câu hỏi
+  const manualQuestionImgPreview = document.getElementById("manualQuestionImgPreview");
+  const manualRemoveQuestionImgBtn = document.getElementById("manualRemoveQuestionImgBtn");
+  const manualAnswerAImgPreview = document.getElementById("manualAnswerAImgPreview");
+  const manualRemoveAImgBtn = document.getElementById("manualRemoveAImgBtn");
+  const manualAnswerBImgPreview = document.getElementById("manualAnswerBImgPreview");
+  const manualRemoveBImgBtn = document.getElementById("manualRemoveBImgBtn");
+  const manualAnswerCImgPreview = document.getElementById("manualAnswerCImgPreview");
+  const manualRemoveCImgBtn = document.getElementById("manualRemoveCImgBtn");
+  const manualAnswerDImgPreview = document.getElementById("manualAnswerDImgPreview");
+  const manualRemoveDImgBtn = document.getElementById("manualRemoveDImgBtn");
+  const manualQuestionImageInput = document.getElementById("manualQuestionImageInput");
+  const manualAnswerAImgInput = document.getElementById("manualAnswerAImgInput");
+  const manualAnswerBImgInput = document.getElementById("manualAnswerBImgInput");
+  const manualAnswerCImgInput = document.getElementById("manualAnswerCImgInput");
+  const manualAnswerDImgInput = document.getElementById("manualAnswerDImgInput");
+  const manualSubmitQuestionBtn = document.getElementById("manualSubmitQuestionBtn");
+
+  // ==== Chuyển mode ====
   const uploadTypeSelect = document.getElementById("uploadTypeSelect");
   const uploadQuestionSection = document.getElementById("uploadQuestionSection");
   const uploadSyllabusSection = document.getElementById("uploadSyllabusSection");
@@ -192,15 +216,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   uploadTypeSelect.dispatchEvent(new Event("change"));
 
-  // ==== Mã bảo mật Import HTML ====
-  let questionSecOKImport = false;
-  document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() {
+  // ==== Mã bảo mật cho Upload Câu hỏi ====
+  let questionSecOK = false;
+  document.getElementById("questionSecurityCode").addEventListener("input", async function() {
     const val = this.value.trim();
-    const statusEl = document.getElementById("questionSecurityCodeStatusImport");
-    statusEl.textContent = val ? "Đang kiểm tra..." : "";
-    questionSecOKImport = false;
-    importHtmlInput.disabled = true;
-    saveImportBtn.disabled = true;
+    document.getElementById("questionSecurityCodeStatus").textContent = val ? "Đang kiểm tra..." : "";
+    questionSecOK = false;
+    document.getElementById("questionImportHtmlBtn").disabled = true;
+    document.getElementById("questionManualBtn").disabled = true;
     if (!val) return;
     const snap = await getDocs(collection(db, "config"));
     let ok = false;
@@ -208,37 +231,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (d.id === "security_code" && d.data().code === val) ok = true;
     }
     if (ok) {
-      questionSecOKImport = true;
-      statusEl.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
-      importHtmlInput.disabled = false;
-      saveImportBtn.disabled = false;
+      questionSecOK = true;
+      document.getElementById("questionSecurityCodeStatus").innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
+      document.getElementById("questionImportHtmlBtn").disabled = false;
+      document.getElementById("questionManualBtn").disabled = false;
       loadSubjectsToDropdown(document.getElementById("subjectDropdownImport"), true);
-    } else {
-      statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
-    }
-  });
-
-  // ==== Mã bảo mật Manual ====
-  let questionSecOKManual = false;
-  document.getElementById("questionSecurityCodeManual").addEventListener("input", async function() {
-    const val = this.value.trim();
-    const statusEl = document.getElementById("questionSecurityCodeStatusManual");
-    statusEl.textContent = val ? "Đang kiểm tra..." : "";
-    questionSecOKManual = false;
-    manualSubmitQuestionBtn.disabled = true;
-    if (!val) return;
-    const snap = await getDocs(collection(db, "config"));
-    let ok = false;
-    for (const d of snap.docs) {
-      if (d.id === "security_code" && d.data().code === val) ok = true;
-    }
-    if (ok) {
-      questionSecOKManual = true;
-      statusEl.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
-      manualSubmitQuestionBtn.disabled = false;
       loadSubjectsToDropdown(document.getElementById("subjectDropdownManual"));
     } else {
-      statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
+      document.getElementById("questionSecurityCodeStatus").innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
     }
   });
 
@@ -408,6 +408,56 @@ document.addEventListener("DOMContentLoaded", () => {
     manualQuestionSection.style.display = "none";
   };
 
+  // ==== Import HTML: xác thực bảo mật riêng ====
+  let questionSecOKImport = false;
+  document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() {
+    const val = this.value.trim();
+    const statusEl = document.getElementById("questionSecurityCodeStatusImport");
+    statusEl.textContent = val ? "Đang kiểm tra..." : "";
+    questionSecOKImport = false;
+    importHtmlInput.disabled = true;
+    saveImportBtn.disabled = true;
+    if (!val) return;
+    const snap = await getDocs(collection(db, "config"));
+    let ok = false;
+    for (const d of snap.docs) {
+      if (d.id === "security_code" && d.data().code === val) ok = true;
+    }
+    if (ok) {
+      questionSecOKImport = true;
+      statusEl.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
+      importHtmlInput.disabled = false;
+      saveImportBtn.disabled = false;
+      loadSubjectsToDropdown(document.getElementById("subjectDropdownImport"), true);
+    } else {
+      statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
+    }
+  });
+
+  // ==== Manual: xác thực bảo mật riêng ====
+  let questionSecOKManual = false;
+  document.getElementById("questionSecurityCodeManual").addEventListener("input", async function() {
+    const val = this.value.trim();
+    const statusEl = document.getElementById("questionSecurityCodeStatusManual");
+    statusEl.textContent = val ? "Đang kiểm tra..." : "";
+    questionSecOKManual = false;
+    manualSubmitQuestionBtn.disabled = true;
+    if (!val) return;
+    const snap = await getDocs(collection(db, "config"));
+    let ok = false;
+    for (const d of snap.docs) {
+      if (d.id === "security_code" && d.data().code === val) ok = true;
+    }
+    if (ok) {
+      questionSecOKManual = true;
+      statusEl.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
+      manualSubmitQuestionBtn.disabled = false;
+      loadSubjectsToDropdown(document.getElementById("subjectDropdownManual"));
+    } else {
+      statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
+    }
+  });
+
   // ==== Import HTML ====
   subjectDropdownImport.addEventListener("change", async function() {
     importHtmlInput.value = "";
@@ -492,9 +542,9 @@ document.addEventListener("DOMContentLoaded", () => {
       let htmlResult = `<div class="fw-bold mb-2">Kết quả trích xuất (${importedQuestions.length} câu):</div>`;
       importedQuestions.forEach((q, idx) => {
         htmlResult += `<div class="import-question${q.duplicate ? ' import-duplicate' : ''}">
-          <div class="import-question-title">${q.questionText}</div>`;
+          <span class="import-question-title">${q.questionText}</span><br>`;
         q.answers.forEach((a,i) => {
-          htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}${q.duplicate?' import-duplicate':''}">
+          htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
             ${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}
           </div>`;
         });
