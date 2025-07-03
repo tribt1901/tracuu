@@ -4,13 +4,11 @@
   <meta charset="UTF-8">
   <title>Đề cương môn học</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Roboto font for both web and pdfmake -->
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { padding-top: 70px; font-family: 'Roboto', Arial, sans-serif; }
     .subject-btns .btn { margin-right: 6px; }
-    .table-responsive { max-height: 500px; overflow-y: auto; }
     .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
     .syllabus-list { margin-top: 10px; }
@@ -21,7 +19,6 @@
 </head>
 <body class="bg-light">
 
-<!-- Menu với nhiều mục -->
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
   <div class="container-fluid">
     <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
@@ -47,7 +44,6 @@
   </div>
 </div>
 
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -70,18 +66,20 @@
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
 
-  // ---- Hàm lấy danh sách đề cương của môn học ----
-  async function getSyllabusBySubject(subjectId) {
-    const qSnapshot = await db.collection("syllabus").where("mon_hoc_id", "==", subjectId).orderBy("uploaded_at", "desc").get();
-    return qSnapshot.docs.map(doc => doc.data());
+  // ---- Hàm lấy toàn bộ syllabus ----
+  async function getAllSyllabus() {
+    const snapshot = await db.collection("syllabus").get();
+    return snapshot.docs.map(doc => doc.data());
   }
 
   // ---- Hiển thị danh sách môn học ----
-  async function loadSubjects() {
+  let allSyllabus = [];
+  async function loadSubjectsAndSyllabus() {
     const subjectList = document.getElementById("subjectList");
     subjectList.innerHTML = "<div>Đang tải...</div>";
-    const subjects = await getSubjects();
-    if(subjects.length === 0) {
+    const [subjects, syllabus] = await Promise.all([getSubjects(), getAllSyllabus()]);
+    allSyllabus = syllabus; // Cache lại toàn bộ syllabus
+    if (subjects.length === 0) {
       subjectList.innerHTML = "<div>Không có dữ liệu môn học.</div>";
       return;
     }
@@ -96,7 +94,7 @@
         </div>
       `;
       // Sự kiện Download syllabus
-      div.querySelector("button").addEventListener("click", async function() {
+      div.querySelector("button").addEventListener("click", function() {
         const subjectId = this.getAttribute("data-id");
         const subjectName = this.getAttribute("data-name");
         // Nếu đã có danh sách thì toggle
@@ -111,8 +109,11 @@
         loadingList.innerHTML = "<div>Đang tải đề cương...</div>";
         div.appendChild(loadingList);
 
-        // Lấy syllabus
-        const syllabi = await getSyllabusBySubject(subjectId);
+        // Lọc syllabus đã cache
+        const syllabi = allSyllabus
+          .filter(sy => sy.mon_hoc_id === subjectId)
+          .sort((a, b) => (b.uploaded_at || "").localeCompare(a.uploaded_at || ""));
+
         loadingList.innerHTML = "";
         if (!syllabi.length) {
           loadingList.innerHTML = `<div class="text-danger">Chưa có đề cương nào cho môn <b>${subjectName}</b>.</div>`;
@@ -137,7 +138,7 @@
     });
   }
 
-  loadSubjects();
+  loadSubjectsAndSyllabus();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
