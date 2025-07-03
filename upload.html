@@ -14,10 +14,10 @@
     .img-upload-btn { margin-top: 3px; }
     .remove-img-btn { margin-left: 6px; color: red; border: none; background: none; }
     .subject-scroll-select { max-height: 240px !important; overflow-y: auto !important; }
+    .security-section {max-width: 360px; margin-bottom: 16px;}
     @media (max-width: 600px) {
       #importHtmlResultContainer { max-height: 210px;}
     }
-    .security-section {max-width: 360px; margin-bottom: 16px;}
     .import-duplicate .import-question-title,
     .import-duplicate .import-answer,
     .import-duplicate .import-duplicate-message {
@@ -85,7 +85,11 @@
       <div id="importHtmlResultContainer">
         <div id="importHtmlResult" class="mt-3"></div>
       </div>
-      <button class="btn btn-success mt-2" id="saveImportBtn" style="display:none;">💾 Lưu vào CSDL</button>
+      <div class="security-section" style="margin-top:10px;">
+        <input type="password" class="form-control mb-1" id="questionSecurityCodeImport" placeholder="Nhập mã bảo mật để lưu">
+        <div id="questionSecurityCodeStatusImport" style="font-size:0.95em;" class="mb-2"></div>
+      </div>
+      <button class="btn btn-success mt-2" id="saveImportBtn" style="display:none;" disabled>💾 Lưu vào CSDL</button>
       <button class="btn btn-secondary mt-2" id="backToQuestionChoiceBtn">← Quay lại</button>
     </div>
     <!-- Manual Add section -->
@@ -134,7 +138,11 @@
           <option value="c">c</option>
           <option value="d">d</option>
         </select>
-        <button type="submit" class="btn btn-success" id="manualSubmitQuestionBtn">Thêm câu hỏi</button>
+        <div class="security-section" style="margin-top:10px;">
+          <input type="password" class="form-control mb-1" id="questionSecurityCodeManual" placeholder="Nhập mã bảo mật để lưu">
+          <div id="questionSecurityCodeStatusManual" style="font-size:0.95em;" class="mb-2"></div>
+        </div>
+        <button type="submit" class="btn btn-success" id="manualSubmitQuestionBtn" disabled>Thêm câu hỏi</button>
         <button type="button" class="btn btn-secondary mt-2" id="backToQuestionChoiceBtn2">← Quay lại</button>
       </form>
     </div>
@@ -145,7 +153,11 @@
       <select class="form-select mb-2 subject-scroll-select" id="syllabusSubjectDropdown" required></select>
       <input type="text" class="form-control mb-2" id="syllabusOwner" placeholder="Tài liệu này của ai? (Không bắt buộc)">
       <input type="file" id="syllabusFileInput" class="form-control mb-2" required>
-      <button type="submit" class="btn btn-success" id="syllabusSubmitBtn">Upload Đề cương</button>
+      <div class="security-section" style="margin-top:10px;">
+        <input type="password" class="form-control mb-1" id="syllabusSecurityCode" placeholder="Nhập mã bảo mật để lưu">
+        <div id="syllabusSecurityCodeStatus" style="font-size:0.95em;" class="mb-2"></div>
+      </div>
+      <button type="submit" class="btn btn-success" id="syllabusSubmitBtn" disabled>Upload Đề cương</button>
     </form>
   </div>
 </div>
@@ -211,7 +223,6 @@ document.addEventListener("DOMContentLoaded", () => {
       dropdown.appendChild(option);
     });
   }
-  // Chỉ load khi hiện thực tế:
   loadSubjectsToDropdown(document.getElementById("subjectDropdownImport"), true);
   loadSubjectsToDropdown(document.getElementById("subjectDropdownManual"));
   loadSubjectsToDropdown(document.getElementById("syllabusSubjectDropdown"));
@@ -321,6 +332,9 @@ document.addEventListener("DOMContentLoaded", () => {
     saveImportBtn.style.display = "none";
     subjectDropdownImport.value = "";
     importHtmlInput.disabled = true;
+    document.getElementById("questionSecurityCodeImport").value = "";
+    document.getElementById("questionSecurityCodeStatusImport").innerHTML = "";
+    document.getElementById("saveImportBtn").disabled = true;
   };
   document.getElementById("questionManualBtn").onclick = () => {
     document.getElementById("questionUploadChoice").style.display = "none";
@@ -335,12 +349,82 @@ document.addEventListener("DOMContentLoaded", () => {
     ].forEach(el => { el.style.display = "none"; });
     manualQImgFile = null; manualAImgFiles = [null,null,null,null];
     manualQImgUrl = ""; manualAImgUrls = ["","","",""];
+    document.getElementById("questionSecurityCodeManual").value = "";
+    document.getElementById("questionSecurityCodeStatusManual").innerHTML = "";
+    manualSubmitQuestionBtn.disabled = true;
   };
   backToQuestionChoiceBtn.onclick = backToQuestionChoiceBtn2.onclick = () => {
     document.getElementById("questionUploadChoice").style.display = "block";
     importHtmlSection.style.display = "none";
     manualQuestionSection.style.display = "none";
   };
+
+  // ==== Import HTML: mã bảo mật từng form ====
+  let questionSecOKImport = false;
+  document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() {
+    const val = this.value.trim();
+    const statusEl = document.getElementById("questionSecurityCodeStatusImport");
+    statusEl.textContent = val ? "Đang kiểm tra..." : "";
+    questionSecOKImport = false;
+    saveImportBtn.disabled = true;
+    if (!val) return;
+    const snap = await getDocs(collection(db, "config"));
+    let ok = false;
+    for (const d of snap.docs) {
+      if (d.id === "security_code" && d.data().code === val) ok = true;
+    }
+    if (ok) {
+      questionSecOKImport = true;
+      statusEl.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
+      saveImportBtn.disabled = false;
+    } else {
+      statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
+    }
+  });
+  // ==== Mã bảo mật Manual ====
+  let questionSecOKManual = false;
+  document.getElementById("questionSecurityCodeManual").addEventListener("input", async function() {
+    const val = this.value.trim();
+    const statusEl = document.getElementById("questionSecurityCodeStatusManual");
+    statusEl.textContent = val ? "Đang kiểm tra..." : "";
+    questionSecOKManual = false;
+    manualSubmitQuestionBtn.disabled = true;
+    if (!val) return;
+    const snap = await getDocs(collection(db, "config"));
+    let ok = false;
+    for (const d of snap.docs) {
+      if (d.id === "security_code" && d.data().code === val) ok = true;
+    }
+    if (ok) {
+      questionSecOKManual = true;
+      statusEl.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
+      manualSubmitQuestionBtn.disabled = false;
+    } else {
+      statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
+    }
+  });
+  // ==== Mã bảo mật Đề cương ====
+  let syllabusSecOK = false;
+  document.getElementById("syllabusSecurityCode").addEventListener("input", async function() {
+    const val = this.value.trim();
+    const statusEl = document.getElementById("syllabusSecurityCodeStatus");
+    statusEl.textContent = val ? "Đang kiểm tra..." : "";
+    syllabusSecOK = false;
+    syllabusSubmitBtn.disabled = true;
+    if (!val) return;
+    const snap = await getDocs(collection(db, "config"));
+    let ok = false;
+    for (const d of snap.docs) {
+      if (d.id === "security_code" && d.data().code === val) ok = true;
+    }
+    if (ok) {
+      syllabusSecOK = true;
+      statusEl.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
+      syllabusSubmitBtn.disabled = false;
+    } else {
+      statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
+    }
+  });
 
   // ==== Import HTML ====
   subjectDropdownImport.addEventListener("change", async function() {
@@ -439,6 +523,7 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsText(file);
   });
   saveImportBtn.onclick = async function() {
+    if (!questionSecOKImport) { alert("Chưa xác thực mã bảo mật!"); return; }
     const mon_hoc_id = subjectDropdownImport.value;
     if (!mon_hoc_id) { alert("Vui lòng chọn môn học để lưu!"); return; }
     if (!importedQuestions.length) { alert("Chưa có dữ liệu để lưu!"); return; }
@@ -461,6 +546,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==== Thêm thủ công ====
   document.getElementById("manualQuestionForm").addEventListener("submit", async function(e) {
     e.preventDefault();
+    if (!questionSecOKManual) { alert("Chưa xác thực mã bảo mật!"); return; }
     const subjectId = subjectDropdownManual.value;
     const qText = manualQuestionText.value.trim();
     const a = manualAnswerA.value.trim();
@@ -507,6 +593,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==== Upload Đề cương ====
   document.getElementById("syllabusForm").addEventListener("submit", async function(e) {
     e.preventDefault();
+    if (!syllabusSecOK) { alert("Chưa xác thực mã bảo mật!"); return; }
     const subjectId = syllabusSubjectDropdown.value;
     const owner = syllabusOwner.value.trim();
     const file = syllabusFileInput.files[0];
