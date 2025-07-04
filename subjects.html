@@ -402,3 +402,98 @@ modeSelect.addEventListener("change", showChoice);
 backToChoice1.onclick = () => { showChoice(); };
 backToChoice2.onclick = () => { showChoice(); };
 backToChoice3.onclick = () => { showChoice(); };
+// ==== CRUD Đề cương ====
+const syllabusSearchInput = document.getElementById('syllabusSearchInput');
+const syllabusListView = document.getElementById('syllabusListView');
+async function refreshSyllabusList() {
+  const snapshot = await getDocs(collection(db, "syllabus"));
+  allSyllabusRaw = [];
+  snapshot.forEach(docSnap => {
+    const data = docSnap.data();
+    data.id = docSnap.id;
+    allSyllabusRaw.push(data);
+  });
+  renderSyllabusList();
+}
+function renderSyllabusList() {
+  const filterSubject = syllabusSubjectFilterDropdown.value;
+  const searchVal = syllabusSearchInput.value.trim().toLowerCase();
+  let filtered = allSyllabusRaw;
+  if (filterSubject) filtered = filtered.filter(s => s.mon_hoc_id === filterSubject);
+  if (searchVal) filtered = filtered.filter(s =>
+    (s.file_name||"").toLowerCase().includes(searchVal) ||
+    (s.owner||"").toLowerCase().includes(searchVal)
+  );
+  let html = "";
+  filtered.forEach(s => {
+    html += `
+      <div class="syllabus-list-item">
+        <div><span class="fw-medium">Môn học:</span> ${(syllabusSubjectFilterDropdown.querySelector(`[value="${s.mon_hoc_id}"]`)||{}).textContent||"Không rõ"}</div>
+        <div><span class="fw-medium">Tên file:</span> <a href="${s.file_url}" target="_blank">${s.file_name||""}</a></div>
+        <div><span class="fw-medium">Chủ sở hữu:</span> ${s.owner || ""}</div>
+        <div><span class="fw-medium">Ngày upload:</span> ${s.uploaded_at ? (new Date(s.uploaded_at)).toLocaleString() : ""}</div>
+        <div class="mt-2">
+          <button class="btn btn-sm btn-warning edit-syllabus-btn" data-id="${s.id}">Sửa</button>
+          <button class="btn btn-sm btn-danger delete-syllabus-btn" data-id="${s.id}">Xóa</button>
+        </div>
+      </div>
+    `;
+  });
+  syllabusListView.innerHTML = html || "<div>Không có đề cương nào phù hợp.</div>";
+  syllabusListView.querySelectorAll('.edit-syllabus-btn').forEach(btn=>{
+    btn.onclick = () => showEditSyllabusModal(btn.getAttribute("data-id"));
+  });
+  syllabusListView.querySelectorAll('.delete-syllabus-btn').forEach(btn=>{
+    btn.onclick = async ()=>{
+      if(confirm("Bạn có chắc muốn xóa đề cương này?")) {
+        await deleteDoc(doc(db, "syllabus", btn.getAttribute("data-id")));
+        await refreshSyllabusList();
+      }
+    };
+  });
+}
+syllabusSearchInput.addEventListener("input", renderSyllabusList);
+syllabusSubjectFilterDropdown.addEventListener("change", renderSyllabusList);
+
+// ==== Modal sửa đề cương ====
+const editSyllabusModal = document.getElementById('editSyllabusModal');
+const closeEditSyllabusModal = document.getElementById('closeEditSyllabusModal');
+const editSyllabusForm = document.getElementById('editSyllabusForm');
+const editSyllabusOwner = document.getElementById('editSyllabusOwner');
+const editSyllabusFileInput = document.getElementById('editSyllabusFileInput');
+function showEditSyllabusModal(syllabusId) {
+  const s = allSyllabusRaw.find(x=>x.id===syllabusId);
+  if (!s) return;
+  currentEditSyllabusId = syllabusId;
+  loadSyllabusSubjectDropdowns().then(()=>{
+    editSyllabusSubjectDropdown.value = s.mon_hoc_id || "";
+  });
+  editSyllabusOwner.value = s.owner || "";
+  document.getElementById("currentFileName").innerHTML = `File hiện tại: <a href="${s.file_url}" target="_blank">${s.file_name||""}</a>`;
+  editSyllabusModal.style.display = "flex";
+}
+window.showEditSyllabusModal = showEditSyllabusModal;
+closeEditSyllabusModal.onclick = ()=>{ editSyllabusModal.style.display = "none"; };
+editSyllabusForm.onsubmit = async function(e) {
+  e.preventDefault();
+  const mon_hoc_id = editSyllabusSubjectDropdown.value;
+  const owner = editSyllabusOwner.value.trim();
+  let file_url = null;
+  let file_name = null;
+  if (editSyllabusFileInput.files && editSyllabusFileInput.files[0]) {
+    file_url = await uploadToDrive(editSyllabusFileInput.files[0]);
+    file_name = editSyllabusFileInput.files[0].name;
+  }
+  const s = allSyllabusRaw.find(x=>x.id===currentEditSyllabusId);
+  await updateDoc(doc(db,"syllabus",currentEditSyllabusId),{
+    mon_hoc_id,
+    owner,
+    file_url: file_url || s.file_url,
+    file_name: file_name || s.file_name,
+    uploaded_at: (new Date()).toISOString()
+  });
+  editSyllabusModal.style.display = "none";
+  editSyllabusForm.reset();
+  await refreshSyllabusList();
+};
+  
