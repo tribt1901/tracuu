@@ -258,14 +258,16 @@
   </div>
 </div>
 <script type="module">
- // === Firebase import ===
+// ==== Firebase import ====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // ==== CÁC BIẾN TOÀN CỤC ====
 let allSyllabusRaw = [];
 let currentEditSyllabusId = null;
+let allQuestionsRaw = [];
+let currentEditQid = null;
 
 // ==== Đăng xuất ====
 const firebaseConfig = {
@@ -659,6 +661,13 @@ viewQuestionListBtn.onclick = async () => {
 
 // ==== CRUD CÂU HỎI: THÊM ====
 const questionForm = document.getElementById("questionForm");
+const subjectDropdown = document.getElementById("subjectDropdown");
+const questionText = document.getElementById("questionText");
+const answerA = document.getElementById("answerA");
+const answerB = document.getElementById("answerB");
+const answerC = document.getElementById("answerC");
+const answerD = document.getElementById("answerD");
+const correctAnswerDropdown = document.getElementById("correctAnswerDropdown");
 questionForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const subjectId = subjectDropdown.value;
@@ -700,9 +709,16 @@ questionForm.addEventListener("submit", async (e) => {
 });
 
 // ==== CRUD CÂU HỎI: SỬA ====
-let allQuestionsRaw = [];
-let currentEditQid = null;
 const editForm = document.getElementById("editForm");
+const editSubjectDropdown = document.getElementById("editSubjectDropdown");
+const editQuestionText = document.getElementById("editQuestionText");
+const editAnswerA = document.getElementById("editAnswerA");
+const editAnswerB = document.getElementById("editAnswerB");
+const editAnswerC = document.getElementById("editAnswerC");
+const editAnswerD = document.getElementById("editAnswerD");
+const editCorrectAnswerDropdown = document.getElementById("editCorrectAnswerDropdown");
+const editQuestionModal = document.getElementById("editQuestionModal");
+const closeEditModal = document.getElementById("closeEditModal");
 editForm.onsubmit = async function(e) {
   e.preventDefault();
   const mon_hoc_id = editSubjectDropdown.value;
@@ -790,7 +806,7 @@ function renderQuestionList() {
     html += `
       <div class="question-list-item">
         <div><span class="fw-medium">Môn học:</span> ${(subjectFilterDropdown.querySelector(`[value="${q.mon_hoc_id}"]`)||{}).textContent||"Không rõ"}</div>
-        <div><span class="fw-medium">Câu hỏi:</span> <span class="mathjax-content">${q.noi_dung||""}</span></div>
+        <div><span class="fw-medium">Câu hỏi:</span> <span class="mathjax-content"></span></div>
         ${q.noi_dung_img ? `<div><img src="${qImgDisplay}" class="img-preview" style="max-width:200px;"/></div>` : ""}
         <div class="question-list-answers">
           ${["a","b","c","d"].map(k=>{
@@ -799,7 +815,7 @@ function renderQuestionList() {
             const ansImg = (q.lua_chon && q.lua_chon[k+"Img"]) ? q.lua_chon[k+"Img"] : "";
             const ansImgDisplay = getDisplayableImgUrl(ansImg);
             return `<div class="answer-item${isCorrect?' correct':''}">
-                ${k}. <span class="mathjax-content">${ansText}</span>
+                ${k}. <span class="mathjax-content"></span>
                 ${ansImgDisplay ? `<img src="${ansImgDisplay}" class="img-preview-ans" style="max-width:80px;"/>` : ""}
               </div>`
           }).join("")}
@@ -812,6 +828,22 @@ function renderQuestionList() {
     `;
   });
   questionListView.innerHTML = `<div>${html || "<div>Không có câu hỏi nào phù hợp.</div>"}</div>`;
+  // Gắn innerHTML cho câu hỏi/đáp án
+  let idx = 0;
+  filtered.forEach(q=>{
+    const item = questionListView.querySelectorAll('.question-list-item')[idx];
+    if (item) {
+      // Câu hỏi
+      const qEl = item.querySelector('.mathjax-content');
+      if (qEl) qEl.innerHTML = q.noi_dung || "";
+      // Đáp án
+      const ansEls = item.querySelectorAll('.question-list-answers .mathjax-content');
+      ["a","b","c","d"].forEach((k, i) => {
+        if (ansEls[i]) ansEls[i].innerHTML = (q.lua_chon && q.lua_chon[k]) ? q.lua_chon[k] : "";
+      });
+    }
+    idx++;
+  });
   // Kích hoạt MathJax cho nội dung vừa render (hỗ trợ công thức toán)
   if (window.MathJax && window.MathJax.typesetPromise) {
     MathJax.typesetPromise(Array.from(questionListView.querySelectorAll('.mathjax-content')));
@@ -828,6 +860,9 @@ function renderQuestionList() {
     };
   });
 }
+const questionSearchInput = document.getElementById("questionSearchInput");
+const subjectFilterDropdown = document.getElementById("subjectFilterDropdown");
+const questionListView = document.getElementById("questionListView");
 questionSearchInput.addEventListener("input", renderQuestionList);
 subjectFilterDropdown.addEventListener("change", renderQuestionList);
 
@@ -855,6 +890,21 @@ function isDuplicateInSet(question, existSet) {
 }
 
 // ==== IMPORT HTML ====
+// Sửa: Lấy innerHTML thay vì innerText để giữ công thức toán
+const importHtmlBtn = document.getElementById("importHtmlBtn");
+const manualBtn = document.getElementById("manualBtn");
+const viewQuestionListBtn = document.getElementById("viewQuestionListBtn");
+const importHtmlSection = document.getElementById("importHtmlSection");
+const manualSection = document.getElementById("manualSection");
+const questionModeChoice = document.getElementById("questionModeChoice");
+const backToChoice1 = document.getElementById("backToChoice1");
+const backToChoice2 = document.getElementById("backToChoice2");
+const backToChoice3 = document.getElementById("backToChoice3");
+const subjectDropdownImport = document.getElementById("subjectDropdownImport");
+const importHtmlInput = document.getElementById("importHtmlInput");
+const importHtmlResult = document.getElementById("importHtmlResult");
+const saveImportBtn = document.getElementById("saveImportBtn");
+
 subjectDropdownImport.addEventListener("change", function() {
   importHtmlInput.value = "";
   importHtmlResult.innerHTML = "";
@@ -878,12 +928,12 @@ importHtmlInput.addEventListener("change", async function(e) {
     let importedQuestions = [];
     let rawQuestions = [];
     docx.querySelectorAll('.que').forEach(q => {
-      let questionText = q.querySelector('.qtext')?.innerText.trim() || '';
+      let questionHtml = q.querySelector('.qtext')?.innerHTML.trim() || '';
       const answerNodes = q.querySelectorAll('.answer > div');
       const answers = [];
       answerNodes.forEach((ans, idx) => {
-        let ansText = ans.querySelector('.flex-fill, div.ml-1')?.innerText.trim() || '';
-        answers.push(ansText);
+        let ansHtml = ans.querySelector('.flex-fill, div.ml-1')?.innerHTML.trim() || '';
+        answers.push(ansHtml);
       });
       let correct = '';
       let correctIdx = -1;
@@ -892,10 +942,10 @@ importHtmlInput.addEventListener("change", async function(e) {
       let match = rightAnswerText.match(/The correct answer is: (.+)$/);
       if (match) {
         let correctValue = match[1].trim();
-        correctIdx = answers.findIndex(a =>
-          a.trim().toLowerCase() === correctValue.trim().toLowerCase()
-          || a.trim().toLowerCase().includes(correctValue.trim().toLowerCase())
-          || correctValue.trim().toLowerCase().includes(a.trim().toLowerCase())
+        correctIdx = answers.findIndex(a => 
+          a.replace(/<[^>]+>/g,'').trim().toLowerCase() === correctValue.trim().toLowerCase() ||
+          a.replace(/<[^>]+>/g,'').trim().toLowerCase().includes(correctValue.trim().toLowerCase()) ||
+          correctValue.trim().toLowerCase().includes(a.replace(/<[^>]+>/g,'').trim().toLowerCase())
         );
         correctKey = ['a','b','c','d'][correctIdx] || '';
         correct = answers[correctIdx] || '';
@@ -909,7 +959,7 @@ importHtmlInput.addEventListener("change", async function(e) {
         });
       }
       rawQuestions.push({
-        questionText, answers,
+        questionHtml, answers,
         correct, correctIdx, correctKey,
         lua_chon: {
           a: answers[0]||"", b: answers[1]||"", c: answers[2]||"", d: answers[3]||""
@@ -918,9 +968,9 @@ importHtmlInput.addEventListener("change", async function(e) {
     });
     importedQuestions = rawQuestions.map(q => ({
       ...q,
-      duplicate: q.correctKey && q.questionText
+      duplicate: q.correctKey && q.questionHtml
         ? isDuplicateInSet({
-            noi_dung: q.questionText,
+            noi_dung: q.questionHtml,
             dap_an_dung: q.correctKey,
             lua_chon: q.lua_chon
           }, existSet)
@@ -929,10 +979,10 @@ importHtmlInput.addEventListener("change", async function(e) {
     let htmlResult = `<div class="fw-bold mb-2">Kết quả trích xuất (${importedQuestions.length} câu):</div>`;
     importedQuestions.forEach((q, idx) => {
       htmlResult += `<div class="import-question${q.duplicate ? ' import-duplicate' : ''}">
-        <span>${q.questionText}</span><br>`;
+        <span class="mathjax-content">${q.questionHtml}</span><br>`;
       q.answers.forEach((a,i) => {
         htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
-          ${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}
+          ${String.fromCharCode(97+i)}. <span class="mathjax-content">${a}</span> ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}
         </div>`;
       });
       if(q.duplicate)
@@ -940,8 +990,9 @@ importHtmlInput.addEventListener("change", async function(e) {
       htmlResult += `</div>`;
     });
     importHtmlResult.innerHTML = htmlResult;
+    // Kích hoạt MathJax cho nội dung vừa render
+    if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise(Array.from(importHtmlResult.querySelectorAll('.mathjax-content')));
     saveImportBtn.style.display = importedQuestions.length>0 ? "inline-block" : "none";
-    if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
     // Save importedQuestions to window for saveImportBtn
     window._importedQuestions = importedQuestions;
     window._importedMonHocId = mon_hoc_id;
@@ -959,7 +1010,7 @@ saveImportBtn.onclick = async function() {
     if(q.duplicate) { skip++; continue; }
     await addDoc(collection(db, "cau_hoi"), {
       mon_hoc_id,
-      noi_dung: q.questionText,
+      noi_dung: q.questionHtml, // Lưu HTML thay vì text
       noi_dung_img: "",
       lua_chon: q.lua_chon,
       dap_an_dung: q.correctKey
@@ -969,7 +1020,7 @@ saveImportBtn.onclick = async function() {
   saveImportBtn.disabled = false;
 };
 
-// ==== KHỞI ĐỘNG ====
 showChoice();
 </script>
+</body>
 </html>
