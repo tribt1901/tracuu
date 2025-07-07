@@ -36,7 +36,6 @@
       border-collapse: collapse;
       margin: 0 auto;
       width: 700px;
-      /* table-layout: auto mặc định */
     }
     #pdf-content table th, #pdf-content table td {
       border: 1px solid #222;
@@ -80,6 +79,11 @@
       margin-bottom: 12px;
       margin-top: 10px;
       font-family: 'Roboto', Arial, sans-serif;
+    }
+    /* Chống tách dòng bảng qua trang */
+    #pdf-content table, #pdf-content tr, #pdf-content td, #pdf-content th {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
   </style>
 </head>
@@ -202,6 +206,8 @@
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
+
+  // TỐI ƯU: Tránh tách dòng cuối trang, mỗi row là một bảng nhỏ để html2pdf không bao giờ tách dòng giữa 2 trang
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if (!questions.length) {
@@ -213,11 +219,14 @@
       question: item.noi_dung,
       answer: item.lua_chon?.[item.dap_an_dung] || ""
     }));
-    rows = rows
-      .sort((a, b) => a.stt.localeCompare(b.stt, 'vi'));
+    rows = rows.sort((a, b) => a.stt.localeCompare(b.stt, 'vi'));
     const pdfDiv = document.getElementById("pdf-content");
     let html = `
       <div class="pdf-title">Đề cương môn: ${subjectName}</div>
+    `;
+    // Duyệt từng row, mỗi row là một bảng nhỏ với header, đảm bảo không bị tách đôi
+    for(const row of rows) {
+      html += `
       <div class="pdf-table-wrap">
         <table>
           <thead>
@@ -228,26 +237,24 @@
             </tr>
           </thead>
           <tbody>
-    `;
-    for(const row of rows) {
-      html += `<tr>
-        <td class="stt" style="text-align:center;">${row.stt}</td>
-        <td class="question">${row.question}</td>
-        <td class="answer"><div>${row.answer}</div></td>
-      </tr>`;
+            <tr>
+              <td class="stt" style="text-align:center;">${row.stt}</td>
+              <td class="question">${row.question}</td>
+              <td class="answer"><div>${row.answer}</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
     }
-    html += `</tbody></table></div>`;
     pdfDiv.innerHTML = html;
     pdfDiv.style.display = "block";
     if(window.MathJax && window.MathJax.typesetPromise) {
       await MathJax.typesetPromise([pdfDiv]);
-      // Scale SVG công thức cho vừa với cell
       pdfDiv.querySelectorAll('.answer svg').forEach(svg => {
         svg.style.maxWidth = '100%';
         svg.style.width = '100%';
         svg.style.height = 'auto';
         svg.setAttribute("preserveAspectRatio", "xMinYMin meet");
-        // Nếu SVG vẫn to quá, scale nhỏ lại vừa với parent
         const parent = svg.parentElement;
         if (svg.clientWidth > parent.clientWidth && parent.clientWidth > 0) {
           const scale = parent.clientWidth / svg.clientWidth;
