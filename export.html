@@ -26,36 +26,34 @@
 
     #pdf-content { text-align: left; }
     #pdf-content .pdf-table-wrap {
-      display: inline-block;
+      display: block;
       max-width: 100%;
       text-align: left;
     }
     #pdf-content table {
       border: 2px solid #222;
       border-collapse: collapse;
-      margin: 0 auto;
-      width: 800px;
-      /* table-layout: auto để chiều rộng các cột tùy nội dung */
+      width: 100%;
+      max-width: 900px;
+      table-layout: fixed; /* Đảm bảo chia tỷ lệ width cột */
     }
     #pdf-content table th, #pdf-content table td {
       border: 1px solid #222;
       padding: 6px;
       font-size: 14px;
       font-family: 'Roboto', Arial, sans-serif;
+      vertical-align: top;
       word-break: break-word;
-      overflow-wrap: break-word;
-      white-space: pre-line;
-      text-align: left;
-      max-width: none;
+      white-space: pre-line !important;
       overflow: visible;
-      /* Ngăn tách dòng giữa 2 trang khi xuất PDF */
       page-break-inside: avoid !important;
       break-inside: avoid !important;
+      max-width: 100%;
     }
     #pdf-content table th.stt, #pdf-content table td.stt {
-      width: 7%;
-      min-width: 35px;
-      max-width: 60px;
+      width: 8%;
+      min-width: 40px;
+      max-width: 80px;
       text-align: center !important;
     }
     #pdf-content table th.question, #pdf-content table td.question {
@@ -67,13 +65,13 @@
       width: 44%;
       min-width: 100px;
       text-align: left;
-      overflow: visible;
     }
     #pdf-content table td.answer > div, #pdf-content table th.answer > div {
       display: block;
       width: 100%;
-      overflow-x: auto;
-      white-space: normal;
+      overflow-x: visible;
+      white-space: pre-line;
+      word-break: break-word;
     }
     #pdf-content .pdf-title {
       text-align: center;
@@ -274,7 +272,10 @@
       filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      pagebreak: {
+        mode: ['avoid-all', 'css', 'legacy'],
+        before: '#pdf-content table tr',
+      }
     }).from(pdfDiv).save();
     pdfDiv.style.display = "none";
   }
