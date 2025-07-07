@@ -111,10 +111,13 @@ function firstWord(str) {
 }
 function extractLatexFromHTML(html) {
   if (typeof html !== "string") return "";
+  // Ưu tiên lấy LaTeX từ <script type="math/tex">...</script>
   const scriptLatex = html.match(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]*?)<\/script>/i);
   if (scriptLatex) return scriptLatex[1].trim();
+  // Có thể có format khác, ví dụ data-latex
   const dataLatex = html.match(/data-latex="([^"]+)"/i);
   if (dataLatex) return dataLatex[1].trim();
+  // Nếu không có LaTeX, loại bỏ tag HTML, chỉ lấy text
   return html.replace(/<[^>]*>/g, " ").trim();
 }
 async function latexToSVG(latex) {
