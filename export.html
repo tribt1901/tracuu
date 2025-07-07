@@ -1,48 +1,285 @@
-<!doctype html>
-<html lang=vi>
+<!DOCTYPE html>
+<html lang="vi">
 <head>
-<meta charset=UTF-8>
-<title>Đề cương môn học</title>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel=stylesheet>
-<link href=https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css rel=stylesheet>
-<script src=https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js></script>
-<script src=https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js></script>
-<script src=https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js></script>
-<script>window.MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]],displayMath:[["$$","$$"],["\\[","\\]"]]},svg:{fontCache:"global"}}</script>
-<script src=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js async></script>
-<style>body{padding-top:70px;font-family:Roboto,Arial,sans-serif}.subject-btns .btn{margin-right:6px}.table-responsive{max-height:500px;overflow-y:auto}.nav-link,.navbar-brand{font-family:Roboto,Arial,sans-serif}.subject-title-icon{font-size:1.15em;margin-right:6px}#pdf-content{display:none}#pdf-content{text-align:left}#pdf-content .pdf-table-wrap{display:inline-block;max-width:100%;text-align:left}#pdf-content table{border:2px solid #222;border-collapse:collapse;margin:0 auto;width:700px}#pdf-content table td,#pdf-content table th{border:1px solid #222;padding:6px;font-size:14px;font-family:Roboto,Arial,sans-serif;word-break:break-word;overflow-wrap:break-word;white-space:pre-line;text-align:left;max-width:none;overflow:visible}#pdf-content table td.stt,#pdf-content table th.stt{width:7%;min-width:35px;max-width:60px;text-align:center!important}#pdf-content table td.question,#pdf-content table th.question{width:49%;min-width:120px;text-align:left}#pdf-content table td.answer,#pdf-content table th.answer{width:44%;min-width:100px;text-align:left;overflow:visible}#pdf-content table td.answer>div,#pdf-content table th.answer>div{display:block;width:100%;overflow-x:auto;white-space:normal}#pdf-content .pdf-title{text-align:center;font-size:22px;font-weight:700;margin-bottom:12px;margin-top:10px;font-family:Roboto,Arial,sans-serif}</style>
+  <meta charset="UTF-8">
+  <title>Đề cương môn học</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Roboto font for both web and html2pdf -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$'], ['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <style>
+    body { padding-top: 70px; font-family: 'Roboto', Arial, sans-serif; }
+    .subject-btns .btn { margin-right: 6px; }
+    .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
+    .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
+    #pdf-content { display: none; }
+
+    #pdf-content { text-align: left; }
+    #pdf-content .pdf-table-wrap {
+      display: inline-block;
+      max-width: 100%;
+      text-align: left;
+    }
+    #pdf-content table {
+      border: 2px solid #222;
+      border-collapse: collapse;
+      margin: 0 auto;
+      width: 800px;
+      /* table-layout: auto để chiều rộng các cột tùy nội dung */
+    }
+    #pdf-content table th, #pdf-content table td {
+      border: 1px solid #222;
+      padding: 6px;
+      font-size: 14px;
+      font-family: 'Roboto', Arial, sans-serif;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      white-space: pre-line;
+      text-align: left;
+      max-width: none;
+      overflow: visible;
+      /* Ngăn tách dòng giữa 2 trang khi xuất PDF */
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    #pdf-content table th.stt, #pdf-content table td.stt {
+      width: 7%;
+      min-width: 35px;
+      max-width: 60px;
+      text-align: center !important;
+    }
+    #pdf-content table th.question, #pdf-content table td.question {
+      width: 49%;
+      min-width: 120px;
+      text-align: left;
+    }
+    #pdf-content table th.answer, #pdf-content table td.answer {
+      width: 44%;
+      min-width: 100px;
+      text-align: left;
+      overflow: visible;
+    }
+    #pdf-content table td.answer > div, #pdf-content table th.answer > div {
+      display: block;
+      width: 100%;
+      overflow-x: auto;
+      white-space: normal;
+    }
+    #pdf-content .pdf-title {
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      margin-top: 10px;
+      font-family: 'Roboto', Arial, sans-serif;
+    }
+    #pdf-content table tr, 
+    #pdf-content table th, 
+    #pdf-content table td {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+  </style>
 </head>
-<body class=bg-light>
-<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style=background-color:#4caf50>
-<div class=container-fluid>
-<a class="navbar-brand text-white" href=/ >📘 Hệ thống tra cứu</a>
-<button class=navbar-toggler data-bs-target=#navbarNav data-bs-toggle=collapse type=button>
-<span class=navbar-toggler-icon></span>
-</button>
-<div class="collapse navbar-collapse" id=navbarNav>
-<ul class="navbar-nav ms-auto">
-<li class=nav-item><a class="nav-link text-white" href=/upload>Upload</a></li>
-<li class=nav-item><a class="nav-link text-white" href=/subjects>Môn học</a></li>
-<li class=nav-item><a class="nav-link text-white" href=/export>Tài liệu học ở đây nè!!!</a></li>
-  <li class=nav-item><a class="nav-link text-white" href=/outline>Hủ Đề cương</a></li>
-</ul>
-</div>
-</div>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
+  <div class="container-fluid">
+    <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
+    <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
+      </ul>
+    </div>
+  </div>
 </nav>
+
 <div class="container py-4">
-<div class="card shadow-sm mb-4">
-<div class=card-body>
-<h5 class=card-title>📂 Tải câu hỏi & đáp án theo môn</h5>
-<div id=subjectList><div>Đang tải...</div></div>
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title">📂 Tải câu hỏi & đáp án theo môn</h5>
+      <div id="subjectList"><div>Đang tải...</div></div>
+    </div>
+  </div>
 </div>
-</div>
-</div>
-<div id=pdf-content></div>
-<script src=https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js></script>
-<script src=https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js></script>
-<script src=https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js></script>
-<script type=module>const firebaseConfig={apiKey:"AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",authDomain:"tracuu-d3ee9.firebaseapp.com",projectId:"tracuu-d3ee9",storageBucket:"tracuu-d3ee9.appspot.com",messagingSenderId:"593568604435",appId:"1:593568604435:web:9a5145457a8ee734143ae6"};firebase.initializeApp(firebaseConfig);const db=firebase.firestore();async function getSubjects(){return(await db.collection("mon_hoc").get()).docs.map((t=>({id:t.id,...t.data()})))}async function getQuestionsBySubject(t){return(await db.collection("cau_hoi").where("mon_hoc_id","==",t).get()).docs.map((t=>t.data()))}function getFirstPhrase(t){if(!t)return"";const e=document.createElement("div");e.innerHTML=t;const n=e.textContent?.trim()||"",a=n.indexOf(" ");return-1===a?n:n.slice(0,a)}function stripHTML(t){if(!t)return"";const e=document.createElement("div");return e.innerHTML=t,e.textContent?.trim()||""}async function loadSubjects(){const t=document.getElementById("subjectList");t.innerHTML="<div>Đang tải...</div>";const e=await getSubjects();0!==e.length?(t.innerHTML="",e.forEach((e=>{const n=document.createElement("div");n.className="d-flex align-items-center justify-content-between border-bottom py-2",n.innerHTML=`\n        <span class="fw-bold"><span class="subject-title-icon">📘</span>${e.ten_mon}</span>\n        <div class="subject-btns">\n          <button class="btn btn-sm btn-outline-secondary" data-type="txt" data-id="${e.id}" data-name="${e.ten_mon}">📝 TXT</button>\n          <button class="btn btn-sm btn-outline-primary" data-type="pdf" data-id="${e.id}" data-name="${e.ten_mon}">📄 PDF</button>\n        </div>\n      `,n.querySelectorAll("button").forEach((t=>{t.addEventListener("click",(async()=>{const e=t.getAttribute("data-type"),n=t.getAttribute("data-id"),a=t.getAttribute("data-name");"txt"===e?exportTXT(n,a):exportPDF(n,a)}))})),t.appendChild(n)}))):t.innerHTML="<div>Không có dữ liệu môn học.</div>"}async function exportTXT(t,e){const n=await getQuestionsBySubject(t);if(!n.length)return void alert("Không có dữ liệu câu hỏi cho môn này.");const a=n.map((t=>({stt:getFirstPhrase(t.noi_dung),question:stripHTML(t.noi_dung),answer:t.lua_chon?.[t.dap_an_dung]?stripHTML(t.lua_chon[t.dap_an_dung]):""}))).sort(((t,e)=>t.stt.localeCompare(e.stt,"vi")));let i=`Đề cương môn: ${e}\n\n`;a.forEach((t=>{i+=`STT: ${t.stt}\nCâu hỏi: ${t.question}\nĐáp án đúng: ${t.answer}\n\n`}));const s=new Blob([i],{type:"text/plain;charset=utf-8"});saveAs(s,`DeCuong_${e.replace(/\s+/g,"_")}.txt`)}async function exportPDF(t,e){const n=await getQuestionsBySubject(t);if(!n.length)return void alert("Không có dữ liệu câu hỏi cho môn này.");let a=n.map((t=>({stt:getFirstPhrase(t.noi_dung),question:t.noi_dung,answer:t.lua_chon?.[t.dap_an_dung]||""})));a=a.sort(((t,e)=>t.stt.localeCompare(e.stt,"vi")));const i=document.getElementById("pdf-content");let s=`\n      <div class="pdf-title">Đề cương môn: ${e}</div>\n      <div class="pdf-table-wrap">\n        <table>\n          <thead>\n            <tr>\n              <th class="stt" style="text-align:center; vertical-align:middle;">STT</th>\n              <th class="question" style="text-align:center; vertical-align:middle;">Câu hỏi</th>\n              <th class="answer" style="text-align:center; vertical-align:middle;">Đáp án đúng</th>\n            </tr>\n          </thead>\n          <tbody>\n    `;for(const t of a)s+=`<tr>\n        <td class="stt" style="text-align:center;">${t.stt}</td>\n        <td class="question">${t.question}</td>\n        <td class="answer"><div>${t.answer}</div></td>\n      </tr>`;s+="</tbody></table></div>",i.innerHTML=s,i.style.display="block",window.MathJax&&window.MathJax.typesetPromise&&(await MathJax.typesetPromise([i]),i.querySelectorAll(".answer svg").forEach((t=>{t.style.maxWidth="100%",t.style.width="100%",t.style.height="auto",t.setAttribute("preserveAspectRatio","xMinYMin meet");const e=t.parentElement;if(t.clientWidth>e.clientWidth&&e.clientWidth>0){const n=e.clientWidth/t.clientWidth;t.style.transform=`scale(${n})`,t.style.transformOrigin="left top"}}))),await html2pdf().set({margin:10,filename:`DeCuong_${e.replace(/\s+/g,"_")}.pdf`,html2canvas:{scale:2,useCORS:!0},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(i).save(),i.style.display="none"}loadSubjects()</script>
-<script src=https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js></script>
+
+<div id="pdf-content"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script type="module">
+  // ==== Cấu hình Firebase của bạn tại đây! ====
+  const firebaseConfig = {
+    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
+    authDomain: "tracuu-d3ee9.firebaseapp.com",
+    projectId: "tracuu-d3ee9",
+    storageBucket: "tracuu-d3ee9.appspot.com",
+    messagingSenderId: "593568604435",
+    appId: "1:593568604435:web:9a5145457a8ee734143ae6"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  async function getSubjects() {
+    const snapshot = await db.collection("mon_hoc").get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  }
+  async function getQuestionsBySubject(subjectId) {
+    const qSnapshot = await db.collection("cau_hoi").where("mon_hoc_id", "==", subjectId).get();
+    return qSnapshot.docs.map(doc => doc.data());
+  }
+  function getFirstPhrase(str) {
+    if (!str) return "";
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = str;
+    const text = tempDiv.textContent?.trim() || '';
+    const firstSpaceIdx = text.indexOf(' ');
+    if (firstSpaceIdx === -1) return text;
+    return text.slice(0, firstSpaceIdx);
+  }
+  function stripHTML(html) {
+    if (!html) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    return tempDiv.textContent?.trim() || '';
+  }
+  async function loadSubjects() {
+    const subjectList = document.getElementById("subjectList");
+    subjectList.innerHTML = "<div>Đang tải...</div>";
+    const subjects = await getSubjects();
+    if(subjects.length === 0) {
+      subjectList.innerHTML = "<div>Không có dữ liệu môn học.</div>";
+      return;
+    }
+    subjectList.innerHTML = "";
+    subjects.forEach(subj => {
+      const div = document.createElement("div");
+      div.className = "d-flex align-items-center justify-content-between border-bottom py-2";
+      div.innerHTML = `
+        <span class="fw-bold"><span class="subject-title-icon">📘</span>${subj.ten_mon}</span>
+        <div class="subject-btns">
+          <button class="btn btn-sm btn-outline-secondary" data-type="txt" data-id="${subj.id}" data-name="${subj.ten_mon}">📝 TXT</button>
+          <button class="btn btn-sm btn-outline-primary" data-type="pdf" data-id="${subj.id}" data-name="${subj.ten_mon}">📄 PDF</button>
+        </div>
+      `;
+      div.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const type = btn.getAttribute("data-type");
+          const subjectId = btn.getAttribute("data-id");
+          const subjectName = btn.getAttribute("data-name");
+          if(type === "txt") {
+            exportTXT(subjectId, subjectName);
+          } else {
+            exportPDF(subjectId, subjectName);
+          }
+        });
+      });
+      subjectList.appendChild(div);
+    });
+  }
+  async function exportTXT(subjectId, subjectName) {
+    const questions = await getQuestionsBySubject(subjectId);
+    if(!questions.length) {
+      alert("Không có dữ liệu câu hỏi cho môn này.");
+      return;
+    }
+    const rows = questions.map(item => ({
+      stt: getFirstPhrase(item.noi_dung),
+      question: stripHTML(item.noi_dung),
+      answer: item.lua_chon?.[item.dap_an_dung]
+        ? stripHTML(item.lua_chon[item.dap_an_dung])
+        : ""
+    })).sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
+
+    let content = `Đề cương môn: ${subjectName}\n\n`;
+    rows.forEach(row => {
+      content += `STT: ${row.stt}\nCâu hỏi: ${row.question}\nĐáp án đúng: ${row.answer}\n\n`;
+    });
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
+  }
+  async function exportPDF(subjectId, subjectName) {
+    const questions = await getQuestionsBySubject(subjectId);
+    if (!questions.length) {
+      alert("Không có dữ liệu câu hỏi cho môn này.");
+      return;
+    }
+    let rows = questions.map(item => ({
+      stt: getFirstPhrase(item.noi_dung),
+      question: item.noi_dung,
+      answer: item.lua_chon?.[item.dap_an_dung] || ""
+    }));
+    rows = rows
+      .sort((a, b) => a.stt.localeCompare(b.stt, 'vi'));
+    const pdfDiv = document.getElementById("pdf-content");
+    let html = `
+      <div class="pdf-title">Đề cương môn: ${subjectName}</div>
+      <div class="pdf-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="stt" style="text-align:center; vertical-align:middle;">STT</th>
+              <th class="question" style="text-align:center; vertical-align:middle;">Câu hỏi</th>
+              <th class="answer" style="text-align:center; vertical-align:middle;">Đáp án đúng</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    for(const row of rows) {
+      html += `<tr>
+        <td class="stt" style="text-align:center;">${row.stt}</td>
+        <td class="question">${row.question}</td>
+        <td class="answer"><div>${row.answer}</div></td>
+      </tr>`;
+    }
+    html += `</tbody></table></div>`;
+    pdfDiv.innerHTML = html;
+    pdfDiv.style.display = "block";
+    if(window.MathJax && window.MathJax.typesetPromise) {
+      await MathJax.typesetPromise([pdfDiv]);
+      // Scale SVG công thức cho vừa với cell
+      pdfDiv.querySelectorAll('.answer svg').forEach(svg => {
+        svg.style.maxWidth = '100%';
+        svg.style.width = '100%';
+        svg.style.height = 'auto';
+        svg.setAttribute("preserveAspectRatio", "xMinYMin meet");
+        const parent = svg.parentElement;
+        if (svg.clientWidth > parent.clientWidth && parent.clientWidth > 0) {
+          const scale = parent.clientWidth / svg.clientWidth;
+          svg.style.transform = `scale(${scale})`;
+          svg.style.transformOrigin = "left top";
+        }
+      });
+    }
+    await html2pdf().set({
+      margin: 10,
+      filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    }).from(pdfDiv).save();
+    pdfDiv.style.display = "none";
+  }
+  loadSubjects();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
