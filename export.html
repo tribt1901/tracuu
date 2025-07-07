@@ -25,20 +25,21 @@
     .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
     #pdf-content { display: none; }
-    /* KHUNG BẢNG CHUẨN, NỘI DUNG VỪA Ô, KHÔNG TRÀN KHUNG */
+
     #pdf-content {
-      text-align: center;
+      text-align: left;
     }
     #pdf-content .pdf-table-wrap {
       display: inline-block;
-      /* Đảm bảo bảng không kéo quá rộng ngoài page */
       max-width: 100%;
+      text-align: left;
     }
     #pdf-content table {
       border: 2px solid #222;
       border-collapse: collapse;
       margin: 0 auto;
-      /* max-width: 100%; bỏ để inline-block div quyết định */
+      table-layout: fixed;
+      width: 700px; /* cố định chiều rộng bảng cho xuất PDF */
     }
     #pdf-content table th, #pdf-content table td {
       border: 1px solid #222;
@@ -47,29 +48,31 @@
       font-size: 14px;
       font-family: 'Roboto', Arial, sans-serif;
       word-break: break-word;
-      max-width: 330px;
       box-sizing: border-box;
+      text-align: left; /* Căn lề trái cho cả th và td */
+      overflow-wrap: break-word;
+      overflow: hidden;
     }
     #pdf-content table th {
       background: #eeeeee;
-      text-align: center;
+      text-align: left;
     }
-    /* Chỉnh chiều rộng từng cột cho hợp lý, không bị vỡ khi xuất PDF */
     #pdf-content table th.stt,
     #pdf-content table td.stt {
-      width: 40px;
-      min-width: 30px;
-      max-width: 60px;
+      width: 80px;
+      min-width: 60px;
+      max-width: 120px;
+      text-align: center !important;
     }
     #pdf-content table th.question,
     #pdf-content table td.question {
-      width: 360px;
-      min-width: 160px;
+      width: 310px;
+      min-width: 120px;
       max-width: 380px;
     }
     #pdf-content table th.answer,
     #pdf-content table td.answer {
-      width: 250px;
+      width: 270px;
       min-width: 100px;
       max-width: 330px;
     }
@@ -134,6 +137,24 @@
     return qSnapshot.docs.map(doc => doc.data());
   }
 
+  // ---- Hàm lấy cụm từ đầu tiên trước khoảng trắng ----
+  function getFirstPhrase(str) {
+    if (!str) return "";
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = str;
+    const text = tempDiv.textContent?.trim() || '';
+    const firstSpaceIdx = text.indexOf(' ');
+    if (firstSpaceIdx === -1) return text; // Nếu không có khoảng trắng, trả về toàn bộ
+    return text.slice(0, firstSpaceIdx);
+  }
+
+  function stripHTML(html) {
+    if (!html) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    return tempDiv.textContent?.trim() || '';
+  }
+
   // ---- Hiển thị danh sách môn học ----
   async function loadSubjects() {
     const subjectList = document.getElementById("subjectList");
@@ -170,21 +191,6 @@
     });
   }
 
-  function getFirstChar(str) {
-    if (!str) return "";
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = str;
-    const text = tempDiv.textContent?.trim() || '';
-    return text.charAt(0).toUpperCase();
-  }
-
-  function stripHTML(html) {
-    if (!html) return '';
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    return tempDiv.textContent?.trim() || '';
-  }
-
   async function exportTXT(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if(!questions.length) {
@@ -192,7 +198,7 @@
       return;
     }
     const rows = questions.map(item => ({
-      stt: getFirstChar(item.noi_dung),
+      stt: getFirstPhrase(item.noi_dung),
       question: stripHTML(item.noi_dung),
       answer: item.lua_chon?.[item.dap_an_dung]
         ? stripHTML(item.lua_chon[item.dap_an_dung])
@@ -216,18 +222,17 @@
     }
 
     let rows = questions.map(item => ({
-      stt: getFirstChar(item.noi_dung),
+      stt: getFirstPhrase(item.noi_dung),
       question: item.noi_dung,
       answer: item.lua_chon?.[item.dap_an_dung] || ""
     }));
 
     rows = rows
-      .map(r => ({...r, stt: /^[A-Z]$/.test(r.stt) ? r.stt : ""}))
       .sort((a, b) => a.stt.localeCompare(b.stt, 'vi'));
 
     // Render bảng HTML 3 cột, bọc trong div inline-block để khung sát cạnh, nội dung vừa ô
     const pdfDiv = document.getElementById("pdf-content");
-    let html = `<div style="font-family:'Roboto',Arial,sans-serif;font-size:14px;text-align:center;">
+    let html = `<div style="font-family:'Roboto',Arial,sans-serif;font-size:14px;text-align:left;">
       <h2 style="text-align:center;">Đề cương môn: ${subjectName}</h2>
       <div class="pdf-table-wrap">
         <table>
