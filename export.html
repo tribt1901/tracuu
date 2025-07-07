@@ -6,9 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <!-- MathJax for LaTeX rendering -->
   <script>
     window.MathJax = {
       tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$'], ['\\[', '\\]']] },
@@ -48,6 +46,7 @@
       text-align: left;
       max-width: none;
       overflow: visible;
+      vertical-align: top;
     }
     #pdf-content table th.stt, #pdf-content table td.stt {
       width: 7%;
@@ -207,7 +206,7 @@
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
 
-  // TỐI ƯU: Tránh tách dòng cuối trang, mỗi row là một bảng nhỏ để html2pdf không bao giờ tách dòng giữa 2 trang
+  // TỐI ƯU: chỉ một table, chỉ 1 tiêu đề, công thức toán chắc chắn hiển thị
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if (!questions.length) {
@@ -223,10 +222,6 @@
     const pdfDiv = document.getElementById("pdf-content");
     let html = `
       <div class="pdf-title">Đề cương môn: ${subjectName}</div>
-    `;
-    // Duyệt từng row, mỗi row là một bảng nhỏ với header, đảm bảo không bị tách đôi
-    for(const row of rows) {
-      html += `
       <div class="pdf-table-wrap">
         <table>
           <thead>
@@ -237,32 +232,36 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="stt" style="text-align:center;">${row.stt}</td>
-              <td class="question">${row.question}</td>
-              <td class="answer"><div>${row.answer}</div></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>`;
+    `;
+    for(const row of rows) {
+      html += `<tr>
+        <td class="stt" style="text-align:center;">${row.stt}</td>
+        <td class="question">${row.question}</td>
+        <td class="answer"><div>${row.answer}</div></td>
+      </tr>`;
     }
+    html += `</tbody></table></div>`;
     pdfDiv.innerHTML = html;
     pdfDiv.style.display = "block";
+    // Chờ MathJax render xong
     if(window.MathJax && window.MathJax.typesetPromise) {
       await MathJax.typesetPromise([pdfDiv]);
-      pdfDiv.querySelectorAll('.answer svg').forEach(svg => {
-        svg.style.maxWidth = '100%';
-        svg.style.width = '100%';
-        svg.style.height = 'auto';
-        svg.setAttribute("preserveAspectRatio", "xMinYMin meet");
-        const parent = svg.parentElement;
-        if (svg.clientWidth > parent.clientWidth && parent.clientWidth > 0) {
-          const scale = parent.clientWidth / svg.clientWidth;
-          svg.style.transform = `scale(${scale})`;
-          svg.style.transformOrigin = "left top";
-        }
-      });
+      // Đợi thêm một chút cho chắc chắn SVG đã render
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
+    // Scale SVG công thức cho vừa với cell
+    pdfDiv.querySelectorAll('.answer svg, .question svg').forEach(svg => {
+      svg.style.maxWidth = '100%';
+      svg.style.width = '100%';
+      svg.style.height = 'auto';
+      svg.setAttribute("preserveAspectRatio", "xMinYMin meet");
+      const parent = svg.parentElement;
+      if (svg.clientWidth > parent.clientWidth && parent.clientWidth > 0) {
+        const scale = parent.clientWidth / svg.clientWidth;
+        svg.style.transform = `scale(${scale})`;
+        svg.style.transformOrigin = "left top";
+      }
+    });
     await html2pdf().set({
       margin: 10,
       filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
@@ -273,6 +272,7 @@
   }
   loadSubjects();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
