@@ -50,8 +50,10 @@
       word-break: break-word;
       box-sizing: border-box;
       overflow-wrap: break-word;
-      overflow: hidden;
-      white-space: normal;
+      white-space: pre-line; /* Giữ xuống dòng nếu có */
+      text-align: left;
+      overflow: visible;
+      max-width: none !important;
     }
     #pdf-content table th {
       background: #eeeeee;
@@ -66,14 +68,20 @@
     #pdf-content table th.question, #pdf-content table td.question {
       width: 49%;
       min-width: 120px;
-      max-width: 350px;
+      max-width: none !important;
       text-align: left;
     }
     #pdf-content table th.answer, #pdf-content table td.answer {
       width: 44%;
       min-width: 100px;
-      max-width: 315px;
+      max-width: none !important;
       text-align: left;
+      overflow-x: auto;
+    }
+    #pdf-content table td.answer > div, #pdf-content table th.answer > div {
+      white-space: normal;
+      overflow-x: auto;
+      width: 100%;
     }
     /* Center the document title */
     #pdf-content .pdf-title {
@@ -256,7 +264,7 @@
       html += `<tr>
         <td class="stt" style="text-align:center;">${row.stt}</td>
         <td class="question">${row.question}</td>
-        <td class="answer">${row.answer}</td>
+        <td class="answer"><div>${row.answer}</div></td>
       </tr>`;
     }
     html += `</tbody></table></div>`;
