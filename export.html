@@ -10,6 +10,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <link rel="icon" href="data:,">
   <style>
     body { padding-top: 70px; font-family: 'Roboto', Arial, sans-serif; }
     .subject-btns .btn { margin-right: 6px; }
@@ -118,6 +119,52 @@
     return str.trim().split(/\s+/)[0] || "";
   }
 
+  // ---- Hàm hỗ trợ bóc LaTeX từ HTML MathJax ----
+  function extractLatexFromHTML(html) {
+    if (!html) return null;
+    const match = html.match(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/);
+    if (match) return match[1].trim();
+    return null;
+  }
+
+  // ---- Hàm chuyển LaTeX thành SVG DataURL sử dụng MathJax ----
+  async function latexToSVGDataURL(latex) {
+    if (!latex) return null;
+    await MathJax.startup.promise;
+    const svgNode = MathJax.tex2svg(latex, { display: true });
+    const svg = svgNode.querySelector('svg');
+    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    svg.style.margin = "6px 0";
+    svg.style.background = "#fff";
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svg64 = btoa(unescape(encodeURIComponent(svgData)));
+    return 'data:image/svg+xml;base64,' + svg64;
+  }
+
+  // ---- Hàm chuyển HTML hoặc LaTeX thành node PDF (SVG hoặc text) ----
+  async function htmlOrLatexToPDFNode(str) {
+    if (!str) return '';
+    const latex = extractLatexFromHTML(str);
+    if (latex) {
+      const imgData = await latexToSVGDataURL(latex);
+      if (imgData && imgData.startsWith('data:image/svg+xml;base64,')) {
+        return { image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] };
+      }
+    }
+    // Nếu không có LaTeX hoặc lỗi, trả về text thuần đã loại bỏ HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = str;
+    return tempDiv.textContent || tempDiv.innerText || '';
+  }
+
+  // ---- Hàm chuyển html về plain text cho TXT export ----
+  function htmlToText(str) {
+    if (!str) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = str;
+    return tempDiv.textContent || tempDiv.innerText || '';
+  }
+
   // ---- Xuất TXT: mỗi dòng 1 câu hỏi, đáp án đúng ----
   async function exportTXT(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
@@ -141,48 +188,6 @@
 
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
-  }
-
-  // ---- Hàm hỗ trợ bóc LaTeX từ HTML MathJax ----
-  function extractLatexFromHTML(html) {
-    if (!html) return null;
-    const match = html.match(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/);
-    if (match) return match[1].trim();
-    return null;
-  }
-
-  // ---- Hàm chuyển LaTeX thành SVG DataURL sử dụng MathJax ----
-  async function latexToSVGDataURL(latex) {
-    await MathJax.startup.promise;
-    const svgNode = MathJax.tex2svg(latex, { display: true });
-    const svg = svgNode.querySelector('svg');
-    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    svg.style.margin = "6px 0";
-    svg.style.background = "#fff";
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const svg64 = btoa(unescape(encodeURIComponent(svgData)));
-    return 'data:image/svg+xml;base64,' + svg64;
-  }
-
-  // ---- Hàm chuyển HTML hoặc LaTeX thành node PDF (SVG hoặc text) ----
-  async function htmlOrLatexToPDFNode(str) {
-    const latex = extractLatexFromHTML(str);
-    if (latex) {
-      const imgData = await latexToSVGDataURL(latex);
-      return { image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] };
-    }
-    // Nếu không có LaTeX, trả về text thuần đã loại bỏ HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = str;
-    return tempDiv.textContent || tempDiv.innerText || '';
-  }
-
-  // ---- Hàm chuyển html về plain text cho TXT export ----
-  function htmlToText(str) {
-    if (!str) return '';
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = str;
-    return tempDiv.textContent || tempDiv.innerText || '';
   }
 
   // ---- Xuất PDF: hỗ trợ công thức Toán học LaTeX trong HTML ----
