@@ -134,17 +134,20 @@
 
   async function htmlOrLatexToPDFNode(str) {
     if (!str) return '';
-    const latex = extractLatexFromHTML(str);
+    let latex = null;
+    try {
+      latex = extractLatexFromHTML(str);
+    } catch (e) {
+      // ignore
+    }
     if (latex) {
       try {
         const imgData = await latexToSVGDataURL(latex);
-        // Debug
-        // console.log({str, latex, imgData});
         if (typeof imgData === 'string' && imgData.startsWith('data:image/svg+xml;base64,')) {
           return { image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] };
         }
       } catch (e) {
-        // Nếu MathJax render lỗi, fallback về plain text
+        // ignore, fallback to text
       }
     }
     // Nếu không có LaTeX hoặc lỗi, trả về text thuần đã loại bỏ HTML
