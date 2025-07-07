@@ -25,57 +25,6 @@
     .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
     #pdf-content { display: none; }
-
-    #pdf-content {
-      text-align: left;
-    }
-    #pdf-content .pdf-table-wrap {
-      display: inline-block;
-      max-width: 100%;
-      text-align: left;
-    }
-    #pdf-content table {
-      border: 2px solid #222;
-      border-collapse: collapse;
-      margin: 0 auto;
-      table-layout: fixed;
-      width: 700px;
-    }
-    #pdf-content table th, #pdf-content table td {
-      border: 1px solid #222;
-      padding: 6px 6px 6px 6px;
-      vertical-align: top;
-      font-size: 14px;
-      font-family: 'Roboto', Arial, sans-serif;
-      word-break: break-word;
-      box-sizing: border-box;
-      overflow-wrap: break-word;
-      overflow: hidden;
-      white-space: normal;
-    }
-    #pdf-content table th {
-      background: #eeeeee;
-      vertical-align: middle;
-    }
-    #pdf-content table th.stt, #pdf-content table td.stt {
-      width: 7%;
-      min-width: 35px;
-      max-width: 60px;
-      text-align: center !important;
-    }
-    #pdf-content table th.question, #pdf-content table td.question {
-      width: 49%;
-      min-width: 120px;
-      max-width: 350px;
-      text-align: left;
-    }
-    #pdf-content table th.answer, #pdf-content table td.answer {
-      width: 44%;
-      min-width: 100px;
-      max-width: 315px;
-      text-align: left;
-    }
-    /* Center the document title */
     #pdf-content .pdf-title {
       text-align: center;
       font-size: 22px;
@@ -221,6 +170,7 @@
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
 
+  // == exportPDF: Cỡ chữ 12px, không tách dòng qua trang ==
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if (!questions.length) {
@@ -233,35 +183,42 @@
       question: item.noi_dung,
       answer: item.lua_chon?.[item.dap_an_dung] || ""
     }));
+    rows = rows.sort((a, b) => a.stt.localeCompare(b.stt, 'vi'));
 
-    rows = rows
-      .sort((a, b) => a.stt.localeCompare(b.stt, 'vi'));
-
-    // Render bảng HTML 3 cột, bọc trong div inline-block để khung sát cạnh, nội dung vừa ô
+    // Render: mỗi dòng là 1 bảng nhỏ (table) để không bị tách qua trang
     const pdfDiv = document.getElementById("pdf-content");
-    let html = `
-      <div class="pdf-title">Đề cương môn: ${subjectName}</div>
-      <div class="pdf-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="stt" style="text-align:center; vertical-align:middle;">STT</th>
-              <th class="question" style="text-align:center; vertical-align:middle;">Câu hỏi</th>
-              <th class="answer" style="text-align:center; vertical-align:middle;">Đáp án đúng</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-    for(const row of rows) {
-      html += `<tr>
-        <td class="stt" style="text-align:center;">${row.stt}</td>
-        <td class="question">${row.question}</td>
-        <td class="answer">${row.answer}</td>
-      </tr>`;
+    let allRowsHtml = '';
+    for (const row of rows) {
+      allRowsHtml += `
+        <div class="pdf-table-wrap" style="break-inside: avoid; page-break-inside: avoid;">
+          <table style="font-size:12px; width:700px; border:2px solid #222; border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th class="stt" style="width:7%; min-width:35px; max-width:60px; text-align:center; vertical-align:middle; font-size:12px; border:1px solid #222; background:#eee;">STT</th>
+                <th class="question" style="width:49%; min-width:120px; max-width:350px; text-align:center; vertical-align:middle; font-size:12px; border:1px solid #222; background:#eee;">Câu hỏi</th>
+                <th class="answer" style="width:44%; min-width:100px; max-width:315px; text-align:center; vertical-align:middle; font-size:12px; border:1px solid #222; background:#eee;">Đáp án đúng</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="font-size:12px; page-break-inside: avoid;">
+                <td class="stt" style="text-align:center; font-size:12px; border:1px solid #222;">${row.stt}</td>
+                <td class="question" style="font-size:12px; border:1px solid #222;">${row.question}</td>
+                <td class="answer" style="font-size:12px; border:1px solid #222;">${row.answer}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
     }
-    html += `</tbody></table></div>`;
-    pdfDiv.innerHTML = html;
+    pdfDiv.innerHTML = `
+      <div class="pdf-title" style="text-align:center; font-size:22px; font-weight:bold; margin-bottom:12px; margin-top:10px; font-family:'Roboto', Arial, sans-serif;">
+        Đề cương môn: ${subjectName}
+      </div>
+      ${allRowsHtml}
+    `;
     pdfDiv.style.display = "block";
+
+    // Nếu có MathJax thì xử lý lại công thức
     if(window.MathJax && window.MathJax.typesetPromise) {
       await MathJax.typesetPromise([pdfDiv]);
     }
