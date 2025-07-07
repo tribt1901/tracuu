@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Đề cương môn học</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Roboto font for both web and pdfmake -->
+  <!-- Roboto font for both web and html2pdf -->
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -25,11 +25,15 @@
     .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
     #pdf-content { display: none; }
+    /* Căn giữa header cột bảng xuất PDF */
+    #pdf-content table th, #pdf-content table td {
+      vertical-align: top;
+    }
   </style>
 </head>
 <body class="bg-light">
 
-<!-- Menu với nhiều mục (theo yêu cầu) -->
+<!-- Menu với nhiều mục -->
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
   <div class="container-fluid">
     <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
@@ -55,7 +59,6 @@
   </div>
 </div>
 
-<!-- Ẩn nội dung HTML dùng để xuất PDF bằng html2pdf.js -->
 <div id="pdf-content"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -125,10 +128,21 @@
     });
   }
 
-  // ---- Hàm lấy từ đầu tiên của câu hỏi ----
-  function firstWord(str) {
-    if(!str) return "";
-    return str.trim().split(/\s+/)[0] || "";
+  // ---- Hàm lấy từ đầu tiên của câu hỏi, in hoa ----
+  function getFirstChar(str) {
+    if (!str) return "";
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = str;
+    const text = tempDiv.textContent?.trim() || '';
+    // Lấy ký tự đầu không phải dấu cách, in hoa
+    return text.charAt(0).toUpperCase();
+  }
+
+  function stripHTML(html) {
+    if (!html) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    return tempDiv.textContent?.trim() || '';
   }
 
   // ---- Xuất TXT: mỗi dòng 1 câu hỏi, đáp án đúng ----
@@ -140,7 +154,7 @@
     }
     // Sắp xếp theo STT (từ đầu tiên a-z)
     const rows = questions.map(item => ({
-      stt: firstWord(item.noi_dung),
+      stt: getFirstChar(item.noi_dung),
       question: stripHTML(item.noi_dung),
       answer: item.lua_chon?.[item.dap_an_dung]
         ? stripHTML(item.lua_chon[item.dap_an_dung])
@@ -156,23 +170,28 @@
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
 
-  // ---- Xuất PDF: sử dụng html2pdf.js để giữ nguyên công thức đẹp ----
+  // ---- Xuất PDF: bảng 3 cột, STT là ký tự đầu, sort A-Z, công thức đẹp ----
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
-    if(!questions.length) {
+    if (!questions.length) {
       alert("Không có dữ liệu câu hỏi cho môn này.");
       return;
     }
+
     let rows = questions.map(item => ({
-      stt: firstWord(item.noi_dung),
+      stt: getFirstChar(item.noi_dung),
       question: item.noi_dung,
       answer: item.lua_chon?.[item.dap_an_dung] || ""
     }));
-    rows.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
 
-    // Render ra div ẩn để xuất PDF
+    // Sắp xếp theo STT (A-Z, chỉ lấy ký tự chữ cái, ưu tiên)
+    rows = rows
+      .map(r => ({...r, stt: /^[A-Z]$/.test(r.stt) ? r.stt : ""}))
+      .sort((a, b) => a.stt.localeCompare(b.stt, 'vi'));
+
+    // Render bảng HTML 3 cột
     const pdfDiv = document.getElementById("pdf-content");
-    let html = `<div style="font-family: 'Roboto', Arial, sans-serif; font-size:14px;">`;
+    let html = `<div style="font-family:'Roboto',Arial,sans-serif;font-size:14px;">`;
     html += `<h2 style="text-align:center;">Đề cương môn: ${subjectName}</h2>`;
     html += `<table border="1" cellspacing="0" cellpadding="5" style="width:100%; border-collapse:collapse;">
       <thead>
@@ -186,7 +205,7 @@
     `;
     for(const row of rows) {
       html += `<tr>
-        <td style="text-align:center;">${row.stt}</td>
+        <td style="text-align:center;vertical-align:top;">${row.stt}</td>
         <td>${row.question}</td>
         <td>${row.answer}</td>
       </tr>`;
@@ -206,13 +225,6 @@
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
     }).from(pdfDiv).save();
     pdfDiv.style.display = "none";
-  }
-
-  function stripHTML(html) {
-    if (!html) return '';
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    return tempDiv.textContent?.trim() || '';
   }
 
   // ---- Khởi động ----
