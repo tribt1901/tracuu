@@ -124,7 +124,7 @@
     if (!html) return null;
     const matches = [...html.matchAll(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/g)];
     if (matches.length) {
-      // Lấy script cuối cùng (dữ liệu thực tế MathJax thường thế này)
+      // Lấy script cuối cùng (dữ liệu MathJax thực tế thường thế này)
       return matches[matches.length-1][1].trim();
     }
     return null;
@@ -213,6 +213,10 @@
     for (const row of rows) {
       const qNode = await htmlOrLatexToPDFNode(row.question);
       const answerNode = await htmlOrLatexToPDFNode(row.answer);
+      // Chỉ log kiểm tra khi debug
+      // if (typeof qNode === "object" && (!qNode.image || typeof qNode.image !== "string" || !qNode.image.startsWith("data:image/svg+xml;base64,"))) {
+      //   console.error("Ảnh SVG không hợp lệ!", qNode);
+      // }
       body.push([
         { text: row.stt, alignment: "center" },
         qNode,
