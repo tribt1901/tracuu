@@ -27,7 +27,6 @@
   </style>
 </head>
 <body class="bg-light">
-
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
   <div class="container-fluid">
     <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
@@ -43,7 +42,6 @@
     </div>
   </div>
 </nav>
-
 <div class="container py-4">
   <div class="card shadow-sm mb-4">
     <div class="card-body">
@@ -52,7 +50,6 @@
     </div>
   </div>
 </div>
-
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -119,10 +116,15 @@
   }
 
   // --- Xử lý LaTeX & HTML cho PDF ---
+  // Lấy LaTeX cuối cùng trong chuỗi (dự phòng trường hợp nhiều thẻ script)
   function extractLatexFromHTML(html) {
     if (!html) return null;
-    const match = html.match(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/);
-    return match ? match[1].trim() : null;
+    const matches = [...html.matchAll(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/g)];
+    if (matches.length) {
+      // Lấy script cuối cùng (đúng với dữ liệu mẫu gửi lên)
+      return matches[matches.length-1][1].trim();
+    }
+    return null;
   }
 
   async function latexToSVGDataURL(latex) {
@@ -143,7 +145,7 @@
     if (latex) {
       try {
         const imgData = await latexToSVGDataURL(latex);
-        if (imgData && imgData.startsWith('data:image/svg+xml;base64,')) {
+        if (typeof imgData === 'string' && imgData.startsWith('data:image/svg+xml;base64,')) {
           return { image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] };
         }
       } catch (e) {}
