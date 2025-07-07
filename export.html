@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Đề cương môn học</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    body { padding-top: 70px; font-family: 'Roboto', Arial, sans-serif; }
+    .subject-btns .btn { margin-right: 6px; }
+    .table-responsive { max-height: 500px; overflow-y: auto; }
+    .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
+    .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
+  </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
+  <div class="container-fluid">
+    <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
+    <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title">📂 Tải câu hỏi & đáp án theo môn</h5>
+      <div id="subjectList"><div>Đang tải...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script type="module">
+// ==== Cấu hình Firebase ====
+const firebaseConfig = {
+  apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
+  authDomain: "tracuu-d3ee9.firebaseapp.com",
+  projectId: "tracuu-d3ee9",
+  storageBucket: "tracuu-d3ee9.appspot.com",
+  messagingSenderId: "593568604435",
+  appId: "1:593568604435:web:9a5145457a8ee734143ae6"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+async function getSubjects() {
+  const snapshot = await db.collection("mon_hoc").get();
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+async function getQuestionsBySubject(subjectId) {
+  const qSnapshot = await db.collection("cau_hoi").where("mon_hoc_id", "==", subjectId).get();
+  return qSnapshot.docs.map(doc => doc.data());
+}
+async function loadSubjects() {
+  const subjectList = document.getElementById("subjectList");
+  subjectList.innerHTML = "<div>Đang tải...</div>";
+  const subjects = await getSubjects();
+  if(subjects.length === 0) {
+    subjectList.innerHTML = "<div>Không có dữ liệu môn học.</div>";
+    return;
+  }
+  subjectList.innerHTML = "";
+  subjects.forEach(subj => {
+    const div = document.createElement("div");
+    div.className = "d-flex align-items-center justify-content-between border-bottom py-2";
+    div.innerHTML = `
+      <span class="fw-bold"><span class="subject-title-icon">📘</span>${subj.ten_mon}</span>
+      <div class="subject-btns">
+        <button class="btn btn-sm btn-outline-secondary" data-type="txt" data-id="${subj.id}" data-name="${subj.ten_mon}">📝 TXT</button>
+        <button class="btn btn-sm btn-outline-primary" data-type="pdf" data-id="${subj.id}" data-name="${subj.ten_mon}">📄 PDF</button>
+      </div>
+    `;
+    div.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const type = btn.getAttribute("data-type");
+        const subjectId = btn.getAttribute("data-id");
+        const subjectName = btn.getAttribute("data-name");
+        if(type === "txt") {
+          exportTXT(subjectId, subjectName);
+        } else {
+          exportPDF(subjectId, subjectName);
+        }
+      });
+    });
+    subjectList.appendChild(div);
+  });
+}
+function firstWord(str) {
+  if(!str) return "";
+  return str.trim().split(/\s+/)[0] || "";
+}
+function extractLatexFromHTML(html) {
+  if (typeof html !== "string") return "";
+  // Ưu tiên lấy LaTeX từ <script type="math/tex">...</script>
+  const scriptLatex = html.match(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]*?)<\/script>/i);
+  if (scriptLatex) return scriptLatex[1].trim();
+  // Có thể có format khác, ví dụ data-latex
+  const dataLatex = html.match(/data-latex="([^"]+)"/i);
+  if (dataLatex) return dataLatex[1].trim();
+  // Nếu không có LaTeX, loại bỏ tag HTML, chỉ lấy text
+  return html.replace(/<[^>]*>/g, " ").trim();
+}
+async function latexToSVG(latex) {
+  try {
+    const svgNode = await MathJax.tex2svgPromise(latex, { display: true });
+    const svg = svgNode.querySelector('svg');
+    if (!svg) return null;
+    svg.removeAttribute('height');
+    svg.setAttribute('width', '120px');
+    svg.querySelectorAll('*').forEach(el => {
+      if (el.getAttribute('fill') === '#000000') el.setAttribute('fill', '#000');
+    });
+    return svg.outerHTML;
+  } catch (e) {
+    console.error("latexToSVG error", e);
+    return null;
+  }
+}
+function svgStringToDataURL(svgString) {
+  return new Promise(resolve => {
+    const svg = new Blob([svgString], {type: 'image/svg+xml'});
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(svg);
+  });
+}
+async function processMathInText(text) {
+  // Nếu text rỗng
+  if (!text) return [""];
+  // Nếu là MathJax HTML
+  if (typeof text === "string" && text.includes("math/tex")) {
+    const latex = extractLatexFromHTML(text);
+    if (latex) {
+      try {
+        const svg = await latexToSVG(latex);
+        if (svg) {
+          const dataUrl = await svgStringToDataURL(svg);
+          if (typeof dataUrl === "string" && dataUrl.startsWith("data:image/svg+xml")) {
+            return [{ image: dataUrl, width: 120, margin: [0, 2, 0, 2] }];
+          }
+        }
+      } catch (e) {
+        console.error("SVG conversion fail for latex:", latex, e);
+      }
+      return [latex];
+    }
+    // Nếu không extract được latex thì lấy text thuần
+    return [text.replace(/<[^>]*>/g, " ").trim()];
+  }
+  // Nếu là LaTeX thuần trong text (có ký hiệu $$...$$)
+  const regex = /\$\$?([^\$]+)\$\$?/g;
+  let lastIndex = 0;
+  let match;
+  const parts = [];
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: 'text', value: text.slice(lastIndex, match.index) });
+    }
+    const latex = match[1];
+    try {
+      const svg = await latexToSVG(latex);
+      if (svg) {
+        const dataUrl = await svgStringToDataURL(svg);
+        if (typeof dataUrl === "string" && dataUrl.startsWith("data:image/svg+xml")) {
+          parts.push({ type: 'image', value: dataUrl });
+        } else {
+          parts.push({ type: 'text', value: "$" + latex + "$" });
+        }
+      } else {
+        parts.push({ type: 'text', value: "$" + latex + "$" });
+      }
+    } catch (err) {
+      parts.push({ type: 'text', value: "$" + latex + "$" });
+    }
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    parts.push({ type: 'text', value: text.slice(lastIndex) });
+  }
+  return parts.map(p => {
+    if (p.type === 'text') return p.value;
+    if (typeof p.value === "string" && p.value.startsWith("data:image/svg+xml")) {
+      return { image: p.value, width: 100, margin: [0, 2, 0, 2] };
+    }
+    return "[Công thức lỗi]";
+  });
+}
+async function exportTXT(subjectId, subjectName) {
+  const questions = await getQuestionsBySubject(subjectId);
+  if(!questions.length) {
+    alert("Không có dữ liệu câu hỏi cho môn này.");
+    return;
+  }
+  const rows = questions.map(item => ({
+    stt: firstWord(item.noi_dung),
+    question: extractLatexFromHTML(item.noi_dung),
+    answer: extractLatexFromHTML(item.lua_chon?.[item.dap_an_dung] || "")
+  })).sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
+
+  let content = `Đề cương môn: ${subjectName}\n\n`;
+  rows.forEach(row => {
+    content += `STT: ${row.stt}\nCâu hỏi: ${row.question}\nĐáp án đúng: ${row.answer}\n\n`;
+  });
+
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
+}
+async function exportPDF(subjectId, subjectName) {
+  const questions = await getQuestionsBySubject(subjectId);
+  if(!questions.length) {
+    alert("Không có dữ liệu câu hỏi cho môn này.");
+    return;
+  }
+  let rows = questions.map(item => ({
+    stt: firstWord(item.noi_dung),
+    question: item.noi_dung,
+    answer: item.lua_chon?.[item.dap_an_dung] || ""
+  }));
+  rows.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
+
+  const body = [
+    [
+      { text: "STT", style: "tableHeader", alignment: "center" },
+      { text: "Câu hỏi", style: "tableHeader", alignment: "center" },
+      { text: "Đáp án đúng", style: "tableHeader", alignment: "center" }
+    ]
+  ];
+
+  for (let row of rows) {
+    const questionContent = await processMathInText(row.question);
+    const answerContent = await processMathInText(row.answer);
+    body.push([
+      { text: row.stt, alignment: "center" },
+      questionContent,
+      answerContent
+    ]);
+  }
+
+  pdfMake.fonts = {
+    Roboto: {
+      normal: 'Roboto-Regular.ttf',
+      bold: 'Roboto-Medium.ttf',
+      italics: 'Roboto-Italic.ttf',
+      bolditalics: 'Roboto-MediumItalic.ttf'
+    }
+  };
+
+  const docDefinition = {
+    content: [
+      { text: `Đề cương môn: ${subjectName}`, style: "header", margin: [0, 0, 0, 12] },
+      {
+        table: {
+          headerRows: 1,
+          widths: ["8%", "52%", "40%"],
+          body: body
+        }
+      }
+    ],
+    styles: {
+      header: {
+        fontSize: 18,
+        bold: true,
+        alignment: "center",
+        font: "Roboto"
+      },
+      tableHeader: {
+        bold: true,
+        fillColor: "#eeeeee",
+        font: "Roboto"
+      }
+    },
+    defaultStyle: {
+      font: "Roboto",
+      fontSize: 12
+    }
+  };
+
+  pdfMake.createPdf(docDefinition).download(`DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`);
+}
+loadSubjects();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
