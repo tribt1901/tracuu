@@ -146,9 +146,13 @@
     if (!str) return '';
     const latex = extractLatexFromHTML(str);
     if (latex) {
-      const imgData = await latexToSVGDataURL(latex);
-      if (imgData && imgData.startsWith('data:image/svg+xml;base64,')) {
-        return { image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] };
+      try {
+        const imgData = await latexToSVGDataURL(latex);
+        if (imgData && typeof imgData === 'string' && imgData.startsWith('data:image/svg+xml;base64,')) {
+          return { image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] };
+        }
+      } catch (e) {
+        // Nếu MathJax render lỗi, fallback về plain text
       }
     }
     // Nếu không có LaTeX hoặc lỗi, trả về text thuần đã loại bỏ HTML
