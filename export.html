@@ -128,8 +128,10 @@
     // Sắp xếp theo STT (từ đầu tiên a-z)
     const rows = questions.map(item => ({
       stt: firstWord(item.noi_dung),
-      question: item.noi_dung,
-      answer: item.lua_chon?.[item.dap_an_dung] || ""
+      question: htmlToText(item.noi_dung),
+      answer: item.lua_chon?.[item.dap_an_dung]
+        ? htmlToText(item.lua_chon[item.dap_an_dung])
+        : ""
     })).sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
 
     let content = `Đề cương môn: ${subjectName}\n\n`;
@@ -141,22 +143,17 @@
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
 
-  // ---- Phần hỗ trợ công thức Toán học trong PDF ----
-
-  // Phát hiện LaTeX dạng $$...$$ hoặc \[...\]
-  function extractLatex(str) {
-    if (!str) return null;
-    const regex = /\$\$([\s\S]+?)\$\$|\\\[((?:.|\s)+?)\\\]/;
-    const match = str.match(regex);
-    if (match) return match[1] || match[2];
+  // ---- Hàm hỗ trợ bóc LaTeX từ HTML MathJax ----
+  function extractLatexFromHTML(html) {
+    if (!html) return null;
+    const match = html.match(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/);
+    if (match) return match[1].trim();
     return null;
   }
 
-  // Chuyển LaTeX thành SVG DataURL sử dụng MathJax
+  // ---- Hàm chuyển LaTeX thành SVG DataURL sử dụng MathJax ----
   async function latexToSVGDataURL(latex) {
-    // Đợi MathJax load xong
     await MathJax.startup.promise;
-    // Render SVG
     const svgNode = MathJax.tex2svg(latex, { display: true });
     const svg = svgNode.querySelector('svg');
     svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
@@ -167,25 +164,28 @@
     return 'data:image/svg+xml;base64,' + svg64;
   }
 
-  // Chuyển nội dung câu hỏi thành node PDF (nếu có LaTeX thì nhúng SVG)
-  async function questionToPDFNode(question) {
-    const latex = extractLatex(question);
+  // ---- Hàm chuyển HTML hoặc LaTeX thành node PDF (SVG hoặc text) ----
+  async function htmlOrLatexToPDFNode(str) {
+    const latex = extractLatexFromHTML(str);
     if (latex) {
-      const latexRegex = /\$\$([\s\S]+?)\$\$|\\\[((?:.|\s)+?)\\\]/;
-      const match = question.match(latexRegex);
-      const before = match ? question.slice(0, match.index).trim() : "";
-      const after = match ? question.slice(match.index + match[0].length).trim() : "";
       const imgData = await latexToSVGDataURL(latex);
-      const content = [];
-      if (before) content.push(before + " ");
-      content.push({ image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] });
-      if (after) content.push(" " + after);
-      return content;
+      return { image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] };
     }
-    return question;
+    // Nếu không có LaTeX, trả về text thuần đã loại bỏ HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = str;
+    return tempDiv.textContent || tempDiv.innerText || '';
   }
 
-  // ---- Xuất PDF: hỗ trợ công thức Toán học LaTeX ----
+  // ---- Hàm chuyển html về plain text cho TXT export ----
+  function htmlToText(str) {
+    if (!str) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = str;
+    return tempDiv.textContent || tempDiv.innerText || '';
+  }
+
+  // ---- Xuất PDF: hỗ trợ công thức Toán học LaTeX trong HTML ----
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if(!questions.length) {
@@ -206,12 +206,14 @@
         { text: "Đáp án đúng", style: "tableHeader", alignment: "center" }
       ]
     ];
+
     for (const row of rows) {
-      const qNode = await questionToPDFNode(row.question);
+      const qNode = await htmlOrLatexToPDFNode(row.question);
+      const answerNode = await htmlOrLatexToPDFNode(row.answer);
       body.push([
         { text: row.stt, alignment: "center" },
         qNode,
-        row.answer
+        answerNode
       ]);
     }
 
