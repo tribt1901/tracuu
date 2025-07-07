@@ -119,15 +119,12 @@
   }
 
   // --- Xử lý LaTeX & HTML cho PDF ---
-  // Lấy LaTeX từ HTML (nếu có)
   function extractLatexFromHTML(html) {
     if (!html) return null;
     const match = html.match(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/);
-    if (match) return match[1].trim();
-    return null;
+    return match ? match[1].trim() : null;
   }
 
-  // Convert LaTeX thành SVG DataURL dùng MathJax
   async function latexToSVGDataURL(latex) {
     if (!latex) return null;
     await MathJax.startup.promise;
@@ -135,32 +132,28 @@
     const svg = svgNode.querySelector('svg');
     if (!svg) return null;
     svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    svg.style.margin = "6px 0";
-    svg.style.background = "#fff";
     const svgData = new XMLSerializer().serializeToString(svg);
     const svg64 = btoa(unescape(encodeURIComponent(svgData)));
     return 'data:image/svg+xml;base64,' + svg64;
   }
 
-  // Tạo node pdfmake: ưu tiên render công thức, fallback về text thường
   async function htmlOrLatexToPDFNode(str) {
     if (!str) return '';
     const latex = extractLatexFromHTML(str);
     if (latex) {
       try {
         const imgData = await latexToSVGDataURL(latex);
-        if (typeof imgData === 'string' && imgData.startsWith('data:image/svg+xml;base64,')) {
+        if (imgData && imgData.startsWith('data:image/svg+xml;base64,')) {
           return { image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] };
         }
       } catch (e) {}
     }
-    // Nếu không có LaTeX hoặc lỗi, trả về text thuần đã loại bỏ HTML
+    // fallback về text
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = str;
     return tempDiv.textContent?.trim() || '';
   }
 
-  // --- Loại bỏ HTML để export TXT ---
   function stripHTML(html) {
     if (!html) return '';
     const tempDiv = document.createElement('div');
@@ -168,7 +161,6 @@
     return tempDiv.textContent?.trim() || '';
   }
 
-  // ---- Xuất TXT ----
   async function exportTXT(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if(!questions.length) {
@@ -192,7 +184,6 @@
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
 
-  // ---- Xuất PDF: công thức toán học sẽ hiển thị đẹp ----
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if(!questions.length) {
@@ -266,7 +257,6 @@
     pdfMake.createPdf(docDefinition).download(`DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`);
   }
 
-  // ---- Khởi động ----
   loadSubjects();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
