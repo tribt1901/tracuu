@@ -25,15 +25,27 @@
     .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
     #pdf-content { display: none; }
-    /* Căn giữa header cột bảng xuất PDF */
+    /* KHUNG BẢNG CHUẨN NHƯ ẢNH */
+    #pdf-content table {
+      border: 2px solid #222;
+      border-collapse: collapse;
+      width: 100%;
+    }
     #pdf-content table th, #pdf-content table td {
+      border: 1px solid #222;
+      padding: 5px;
       vertical-align: top;
+      font-size: 14px;
+      font-family: 'Roboto', Arial, sans-serif;
+    }
+    #pdf-content table th {
+      background: #eeeeee;
+      text-align: center;
     }
   </style>
 </head>
 <body class="bg-light">
 
-<!-- Menu với nhiều mục -->
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
   <div class="container-fluid">
     <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
@@ -111,7 +123,6 @@
           <button class="btn btn-sm btn-outline-primary" data-type="pdf" data-id="${subj.id}" data-name="${subj.ten_mon}">📄 PDF</button>
         </div>
       `;
-      // Sự kiện export TXT/PDF
       div.querySelectorAll("button").forEach(btn => {
         btn.addEventListener("click", async () => {
           const type = btn.getAttribute("data-type");
@@ -128,13 +139,11 @@
     });
   }
 
-  // ---- Hàm lấy từ đầu tiên của câu hỏi, in hoa ----
   function getFirstChar(str) {
     if (!str) return "";
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = str;
     const text = tempDiv.textContent?.trim() || '';
-    // Lấy ký tự đầu không phải dấu cách, in hoa
     return text.charAt(0).toUpperCase();
   }
 
@@ -145,14 +154,12 @@
     return tempDiv.textContent?.trim() || '';
   }
 
-  // ---- Xuất TXT: mỗi dòng 1 câu hỏi, đáp án đúng ----
   async function exportTXT(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if(!questions.length) {
       alert("Không có dữ liệu câu hỏi cho môn này.");
       return;
     }
-    // Sắp xếp theo STT (từ đầu tiên a-z)
     const rows = questions.map(item => ({
       stt: getFirstChar(item.noi_dung),
       question: stripHTML(item.noi_dung),
@@ -170,7 +177,6 @@
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
 
-  // ---- Xuất PDF: bảng 3 cột, STT là ký tự đầu, sort A-Z, công thức đẹp ----
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if (!questions.length) {
@@ -184,28 +190,27 @@
       answer: item.lua_chon?.[item.dap_an_dung] || ""
     }));
 
-    // Sắp xếp theo STT (A-Z, chỉ lấy ký tự chữ cái, ưu tiên)
     rows = rows
       .map(r => ({...r, stt: /^[A-Z]$/.test(r.stt) ? r.stt : ""}))
       .sort((a, b) => a.stt.localeCompare(b.stt, 'vi'));
 
-    // Render bảng HTML 3 cột
+    // Render bảng HTML 3 cột với khung ngoài
     const pdfDiv = document.getElementById("pdf-content");
     let html = `<div style="font-family:'Roboto',Arial,sans-serif;font-size:14px;">`;
     html += `<h2 style="text-align:center;">Đề cương môn: ${subjectName}</h2>`;
-    html += `<table border="1" cellspacing="0" cellpadding="5" style="width:100%; border-collapse:collapse;">
+    html += `<table>
       <thead>
-        <tr style="background:#eeeeee;">
-          <th style="text-align:center;width:8%;">STT</th>
-          <th style="text-align:center;width:52%;">Câu hỏi</th>
-          <th style="text-align:center;width:40%;">Đáp án đúng</th>
+        <tr>
+          <th style="width:8%;">STT</th>
+          <th style="width:52%;">Câu hỏi</th>
+          <th style="width:40%;">Đáp án đúng</th>
         </tr>
       </thead>
       <tbody>
     `;
     for(const row of rows) {
       html += `<tr>
-        <td style="text-align:center;vertical-align:top;">${row.stt}</td>
+        <td style="text-align:center;">${row.stt}</td>
         <td>${row.question}</td>
         <td>${row.answer}</td>
       </tr>`;
@@ -213,11 +218,9 @@
     html += `</tbody></table></div>`;
     pdfDiv.innerHTML = html;
     pdfDiv.style.display = "block";
-    // Đảm bảo MathJax render xong
     if(window.MathJax && window.MathJax.typesetPromise) {
       await MathJax.typesetPromise([pdfDiv]);
     }
-    // Xuất PDF bằng html2pdf.js
     await html2pdf().set({
       margin: 10,
       filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
@@ -227,7 +230,6 @@
     pdfDiv.style.display = "none";
   }
 
-  // ---- Khởi động ----
   loadSubjects();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
