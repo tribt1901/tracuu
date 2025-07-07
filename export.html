@@ -25,22 +25,53 @@
     .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
     #pdf-content { display: none; }
-    /* KHUNG BẢNG CHUẨN NHƯ ẢNH */
+    /* KHUNG BẢNG CHUẨN, NỘI DUNG VỪA Ô, KHÔNG TRÀN KHUNG */
+    #pdf-content {
+      text-align: center;
+    }
+    #pdf-content .pdf-table-wrap {
+      display: inline-block;
+      /* Đảm bảo bảng không kéo quá rộng ngoài page */
+      max-width: 100%;
+    }
     #pdf-content table {
       border: 2px solid #222;
       border-collapse: collapse;
-      width: 100%;
+      margin: 0 auto;
+      /* max-width: 100%; bỏ để inline-block div quyết định */
     }
     #pdf-content table th, #pdf-content table td {
       border: 1px solid #222;
-      padding: 5px;
+      padding: 6px 6px 6px 6px;
       vertical-align: top;
       font-size: 14px;
       font-family: 'Roboto', Arial, sans-serif;
+      word-break: break-word;
+      max-width: 330px;
+      box-sizing: border-box;
     }
     #pdf-content table th {
       background: #eeeeee;
       text-align: center;
+    }
+    /* Chỉnh chiều rộng từng cột cho hợp lý, không bị vỡ khi xuất PDF */
+    #pdf-content table th.stt,
+    #pdf-content table td.stt {
+      width: 40px;
+      min-width: 30px;
+      max-width: 60px;
+    }
+    #pdf-content table th.question,
+    #pdf-content table td.question {
+      width: 360px;
+      min-width: 160px;
+      max-width: 380px;
+    }
+    #pdf-content table th.answer,
+    #pdf-content table td.answer {
+      width: 250px;
+      min-width: 100px;
+      max-width: 330px;
     }
   </style>
 </head>
@@ -194,28 +225,29 @@
       .map(r => ({...r, stt: /^[A-Z]$/.test(r.stt) ? r.stt : ""}))
       .sort((a, b) => a.stt.localeCompare(b.stt, 'vi'));
 
-    // Render bảng HTML 3 cột với khung ngoài
+    // Render bảng HTML 3 cột, bọc trong div inline-block để khung sát cạnh, nội dung vừa ô
     const pdfDiv = document.getElementById("pdf-content");
-    let html = `<div style="font-family:'Roboto',Arial,sans-serif;font-size:14px;">`;
-    html += `<h2 style="text-align:center;">Đề cương môn: ${subjectName}</h2>`;
-    html += `<table>
-      <thead>
-        <tr>
-          <th style="width:8%;">STT</th>
-          <th style="width:52%;">Câu hỏi</th>
-          <th style="width:40%;">Đáp án đúng</th>
-        </tr>
-      </thead>
-      <tbody>
+    let html = `<div style="font-family:'Roboto',Arial,sans-serif;font-size:14px;text-align:center;">
+      <h2 style="text-align:center;">Đề cương môn: ${subjectName}</h2>
+      <div class="pdf-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="stt">STT</th>
+              <th class="question">Câu hỏi</th>
+              <th class="answer">Đáp án đúng</th>
+            </tr>
+          </thead>
+          <tbody>
     `;
     for(const row of rows) {
       html += `<tr>
-        <td style="text-align:center;">${row.stt}</td>
-        <td>${row.question}</td>
-        <td>${row.answer}</td>
+        <td class="stt" style="text-align:center;">${row.stt}</td>
+        <td class="question">${row.question}</td>
+        <td class="answer">${row.answer}</td>
       </tr>`;
     }
-    html += `</tbody></table></div>`;
+    html += `</tbody></table></div></div>`;
     pdfDiv.innerHTML = html;
     pdfDiv.style.display = "block";
     if(window.MathJax && window.MathJax.typesetPromise) {
