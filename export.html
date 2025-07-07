@@ -227,26 +227,33 @@ async function exportPDF(subjectId, subjectName) {
     alert("Không có dữ liệu câu hỏi cho môn này.");
     return;
   }
-  let rows = questions.map(item => ({
-    stt: firstWord(item.noi_dung),
+  let rows = questions.map((item, idx) => ({
+    stt: `Câu ${idx + 1}`,
     question: item.noi_dung,
     answer: item.lua_chon?.[item.dap_an_dung] || ""
   }));
-  rows.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
 
   const body = [
     [
-      { text: "STT", style: "tableHeader", alignment: "center" },
       { text: "Câu hỏi", style: "tableHeader", alignment: "center" },
       { text: "Đáp án đúng", style: "tableHeader", alignment: "center" }
     ]
   ];
 
   for (let row of rows) {
-    const questionContent = await processMathInText(row.question);
-    const answerContent = await processMathInText(row.answer);
+    // Tạo nội dung giống mẫu ảnh: Câu X: [question] (có thể nhiều dòng)
+    let questionContent = [
+      { text: row.stt + ":", bold: true },
+      { text: "\n" }
+    ];
+    const qc = await processMathInText(row.question);
+    if (Array.isArray(qc)) questionContent = questionContent.concat(qc);
+
+    let answerContent = [{ text: "Đáp án đúng:", bold: true }, { text: "\n" }];
+    const ac = await processMathInText(row.answer);
+    if (Array.isArray(ac)) answerContent = answerContent.concat(ac);
+
     body.push([
-      { text: row.stt, alignment: "center" },
       questionContent,
       answerContent
     ]);
@@ -267,7 +274,7 @@ async function exportPDF(subjectId, subjectName) {
       {
         table: {
           headerRows: 1,
-          widths: ["8%", "52%", "40%"],
+          widths: ["60%", "40%"],
           body: body
         }
       }
