@@ -49,10 +49,9 @@
       font-family: 'Roboto', Arial, sans-serif;
       word-break: break-word;
       box-sizing: border-box;
+      overflow: visible !important;
       overflow-wrap: break-word;
-      white-space: pre-line; /* Giữ xuống dòng nếu có */
-      text-align: left;
-      overflow: visible;
+      white-space: pre-line;
       max-width: none !important;
     }
     #pdf-content table th {
@@ -76,11 +75,14 @@
       min-width: 100px;
       max-width: none !important;
       text-align: left;
-      overflow-x: auto;
+      overflow: visible !important;
+      padding: 6px;
     }
     #pdf-content table td.answer > div, #pdf-content table th.answer > div {
-      white-space: normal;
+      display: block;
       overflow-x: auto;
+      min-width: 400px;
+      white-space: normal;
       width: 100%;
     }
     /* Center the document title */
@@ -272,6 +274,11 @@
     pdfDiv.style.display = "block";
     if(window.MathJax && window.MathJax.typesetPromise) {
       await MathJax.typesetPromise([pdfDiv]);
+      // Scale all MathJax SVG to fit container
+      pdfDiv.querySelectorAll('.answer svg').forEach(svg => {
+        svg.style.maxWidth = '100%';
+        svg.style.height = 'auto';
+      });
     }
     await html2pdf().set({
       margin: 10,
