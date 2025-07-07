@@ -111,10 +111,13 @@ function firstWord(str) {
 }
 function extractLatexFromHTML(html) {
   if (typeof html !== "string") return "";
+  // Ưu tiên lấy LaTeX từ <script type="math/tex">...</script>
   const scriptLatex = html.match(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]*?)<\/script>/i);
   if (scriptLatex) return scriptLatex[1].trim();
+  // Có thể có format khác, ví dụ data-latex
   const dataLatex = html.match(/data-latex="([^"]+)"/i);
   if (dataLatex) return dataLatex[1].trim();
+  // Nếu không có LaTeX, loại bỏ tag HTML, chỉ lấy text
   return html.replace(/<[^>]*>/g, " ").trim();
 }
 async function latexToSVG(latex) {
@@ -134,12 +137,9 @@ async function latexToSVG(latex) {
   }
 }
 function svgStringToDataURL(svgString) {
-  return new Promise(resolve => {
-    const svg = new Blob([svgString], {type: 'image/svg+xml'});
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsDataURL(svg);
-  });
+  // Convert svg string to base64 dataURL
+  const base64 = btoa(unescape(encodeURIComponent(svgString)));
+  return `data:image/svg+xml;base64,${base64}`;
 }
 async function processMathInText(text) {
   if (!text) return [""];
@@ -149,7 +149,7 @@ async function processMathInText(text) {
       try {
         const svg = await latexToSVG(latex);
         if (svg) {
-          const dataUrl = await svgStringToDataURL(svg);
+          const dataUrl = svgStringToDataURL(svg);
           if (typeof dataUrl === "string" && dataUrl.startsWith("data:image/svg+xml")) {
             return [{ image: dataUrl, width: 120, margin: [0, 2, 0, 2] }];
           }
@@ -173,7 +173,7 @@ async function processMathInText(text) {
     try {
       const svg = await latexToSVG(latex);
       if (svg) {
-        const dataUrl = await svgStringToDataURL(svg);
+        const dataUrl = svgStringToDataURL(svg);
         if (typeof dataUrl === "string" && dataUrl.startsWith("data:image/svg+xml")) {
           parts.push({ type: 'image', value: dataUrl });
         } else {
