@@ -33,6 +33,11 @@
       margin-top: 10px;
       font-family: 'Roboto', Arial, sans-serif;
     }
+    /* Chống tràn chữ, chống gãy dòng công thức */
+    #pdf-content .pdf-table-wrap, #pdf-content table, #pdf-content th, #pdf-content td {
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
   </style>
 </head>
 <body class="bg-light">
@@ -170,7 +175,7 @@
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
 
-  // == exportPDF: Cỡ chữ 13px, chỉ tiêu đề bảng 1 lần ở đầu, không tách dòng qua trang ==
+  // == exportPDF: Cỡ chữ 13px, chỉ tiêu đề bảng 1 lần ở đầu, chống lỗi MathJax chồng công thức ==
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if (!questions.length) {
@@ -192,7 +197,7 @@
         Đề cương môn: ${subjectName}
       </div>
       <div class="pdf-table-wrap" style="display:inline-block; max-width:100%; text-align:left;">
-        <table style="font-size:13px; border:2px solid #222; border-collapse:collapse; margin:0 auto; table-layout:fixed; width:700px;">
+        <table style="font-size:13px; border:2px solid #222; border-collapse:collapse; margin:0 auto; table-layout:fixed; width:700px; word-break:break-word;">
           <thead>
             <tr>
               <th class="stt" style="width:7%; min-width:35px; max-width:60px; text-align:center; vertical-align:middle; font-size:13px; border:1px solid #222; background:#eee;">STT</th>
@@ -215,10 +220,13 @@
     pdfDiv.innerHTML = html;
     pdfDiv.style.display = "block";
 
-    // Nếu có MathJax thì xử lý lại công thức
+    // Chờ MathJax render xong (nếu có công thức)
     if(window.MathJax && window.MathJax.typesetPromise) {
       await MathJax.typesetPromise([pdfDiv]);
+      // Đợi thêm một chút để chắc chắn MathJax render hoàn toàn (tránh lỗi chồng công thức)
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
+
     await html2pdf().set({
       margin: 10,
       filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
