@@ -137,7 +137,6 @@ async function latexToSVG(latex) {
   }
 }
 function svgStringToDataURL(svgString) {
-  // Convert svg string to base64 dataURL
   const base64 = btoa(unescape(encodeURIComponent(svgString)));
   return `data:image/svg+xml;base64,${base64}`;
 }
