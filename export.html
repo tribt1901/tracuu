@@ -111,13 +111,10 @@ function firstWord(str) {
 }
 function extractLatexFromHTML(html) {
   if (typeof html !== "string") return "";
-  // Ưu tiên lấy LaTeX từ <script type="math/tex">...</script>
   const scriptLatex = html.match(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]*?)<\/script>/i);
   if (scriptLatex) return scriptLatex[1].trim();
-  // Có thể có format khác, ví dụ data-latex
   const dataLatex = html.match(/data-latex="([^"]+)"/i);
   if (dataLatex) return dataLatex[1].trim();
-  // Nếu không có LaTeX, loại bỏ tag HTML, chỉ lấy text
   return html.replace(/<[^>]*>/g, " ").trim();
 }
 async function latexToSVG(latex) {
@@ -145,9 +142,7 @@ function svgStringToDataURL(svgString) {
   });
 }
 async function processMathInText(text) {
-  // Nếu text rỗng
   if (!text) return [""];
-  // Nếu là MathJax HTML
   if (typeof text === "string" && text.includes("math/tex")) {
     const latex = extractLatexFromHTML(text);
     if (latex) {
@@ -164,10 +159,8 @@ async function processMathInText(text) {
       }
       return [latex];
     }
-    // Nếu không extract được latex thì lấy text thuần
     return [text.replace(/<[^>]*>/g, " ").trim()];
   }
-  // Nếu là LaTeX thuần trong text (có ký hiệu $$...$$)
   const regex = /\$\$?([^\$]+)\$\$?/g;
   let lastIndex = 0;
   let match;
