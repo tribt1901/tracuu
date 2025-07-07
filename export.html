@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Export PDF với công thức Toán học</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Favicon rỗng để không báo lỗi -->
+  <!-- Favicon rỗng để không báo lỗi 404 -->
   <link rel="icon" href="data:,">
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
@@ -28,126 +28,127 @@
 
   <!-- MathJax for LaTeX to SVG -->
   <script>
-  window.MathJax = {
-    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$'], ['\\[', '\\]']] },
-    svg: { fontCache: 'global' }
-  };
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$'], ['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
 
   <script>
-  // ==== DỮ LIỆU MẪU GIẢ LẬP ĐÚNG CẤU TRÚC ==== //
-  const DATA = [
-    {
-      noi_dung: `<span class="filter_mathjaxloader_equation"><p>Thay đổi thứ tự tính tích phân: <script type="math/tex" id="MathJax-Element-17">
-      I = \\displaystyle\\int\\limits_{1}^{2}{dx}\\displaystyle\\int\\limits_{x}^{2x}{f(x,y)dy}.
-      </script></p></span>`,
-      lua_chon: {
-        a: `<span class="filter_mathjaxloader_equation"><p><script type="math/tex" id="MathJax-Element-18">
-        I = \\displaystyle\\int\\limits_{1}^{2}{dy}\\displaystyle\\int\\limits_{1}^{y}{f(x,y)dx}+\\displaystyle\\int\\limits_{2}^{4}{dy}\\displaystyle\\int\\limits_{y/2}^{2}{f(x,y)dx}
+    // ==== DỮ LIỆU MẪU GIẢ LẬP ĐÚNG CẤU TRÚC ==== //
+    const DATA = [
+      {
+        noi_dung: `<span class="filter_mathjaxloader_equation"><p>Thay đổi thứ tự tính tích phân: <script type="math/tex" id="MathJax-Element-17">
+        I = \\displaystyle\\int\\limits_{1}^{2}{dx}\\displaystyle\\int\\limits_{x}^{2x}{f(x,y)dy}.
         </script></p></span>`,
-        b: `<span class="filter_mathjaxloader_equation"><p><script type="math/tex" id="MathJax-Element-19">
-        I = \\displaystyle\\int\\limits_{1}^{2}{dy}\\displaystyle\\int\\limits_{y}^{1}{f(x,y)dx}+\\displaystyle\\int\\limits_{2}^{4}{dy}\\displaystyle\\int\\limits_{2}^{y/2}{f(x,y)dx}
-        </script></p></span>`,
-        c: `<span class="filter_mathjaxloader_equation"><p><script type="math/tex" id="MathJax-Element-20">
-        I = \\displaystyle\\int\\limits_{1}^{4}{dy}\\displaystyle\\int\\limits_{1}^{2}{f(x,y)dx}
-        </script></p></span>`,
-        d: `<span class="filter_mathjaxloader_equation"><p><script type="math/tex" id="MathJax-Element-21">
-        I = \\displaystyle\\int\\limits_{0}^{4}{dy}\\displaystyle\\int\\limits_{1}^{2}{f(x,y)dx}
-        </script></p></span>`
-      },
-      dap_an_dung: "a"
-    }
-  ];
-
-  // Hiện dữ liệu mẫu ra màn hình
-  window.onload = function() {
-    document.getElementById('sample').textContent = JSON.stringify(DATA, null, 2);
-  };
-
-  // ==== XỬ LÝ EXPORT PDF ==== //
-  // Hàm bóc LaTeX từ HTML MathJax
-  function extractLatexFromHTML(html) {
-    if (!html) return null;
-    const match = html.match(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/);
-    if (match) return match[1].trim();
-    return null;
-  }
-
-  // Chuyển LaTeX thành SVG DataURL dùng MathJax
-  async function latexToSVGDataURL(latex) {
-    if (!latex) return null;
-    await MathJax.startup.promise; // Đảm bảo MathJax đã sẵn sàng
-    const svgNode = MathJax.tex2svg(latex, { display: true });
-    const svg = svgNode.querySelector('svg');
-    if (!svg) return null;
-    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    svg.style.margin = "6px 0"; svg.style.background = "#fff";
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const svg64 = btoa(unescape(encodeURIComponent(svgData)));
-    return 'data:image/svg+xml;base64,' + svg64;
-  }
-
-  // Hàm trả về node cho pdfmake: nếu có LaTeX thì là ảnh, không thì là text
-  async function htmlOrLatexToPDFNode(str) {
-    if (!str) return '';
-    const latex = extractLatexFromHTML(str);
-    if (latex) {
-      try {
-        const imgData = await latexToSVGDataURL(latex);
-        if (typeof imgData === 'string' && imgData.startsWith('data:image/svg+xml;base64,')) {
-          return { image: imgData, width: 200, alignment: "left", margin: [0,4,0,4] };
-        }
-      } catch (e) {}
-    }
-    // Nếu không có LaTeX hoặc lỗi, trả về text thuần đã loại bỏ HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = str;
-    return tempDiv.textContent?.trim() || '';
-  }
-
-  // Hàm xuất PDF
-  async function exportPDF() {
-    const body = [
-      [
-        { text: "STT", style: "tableHeader", alignment: "center" },
-        { text: "Câu hỏi", style: "tableHeader", alignment: "center" },
-        { text: "Đáp án đúng", style: "tableHeader", alignment: "center" }
-      ]
+        lua_chon: {
+          a: `<span class="filter_mathjaxloader_equation"><p><script type="math/tex" id="MathJax-Element-18">
+          I = \\displaystyle\\int\\limits_{1}^{2}{dy}\\displaystyle\\int\\limits_{1}^{y}{f(x,y)dx}+\\displaystyle\\int\\limits_{2}^{4}{dy}\\displaystyle\\int\\limits_{y/2}^{2}{f(x,y)dx}
+          </script></p></span>`,
+          b: `<span class="filter_mathjaxloader_equation"><p><script type="math/tex" id="MathJax-Element-19">
+          I = \\displaystyle\\int\\limits_{1}^{2}{dy}\\displaystyle\\int\\limits_{y}^{1}{f(x,y)dx}+\\displaystyle\\int\\limits_{2}^{4}{dy}\\displaystyle\\int\\limits_{2}^{y/2}{f(x,y)dx}
+          </script></p></span>`,
+          c: `<span class="filter_mathjaxloader_equation"><p><script type="math/tex" id="MathJax-Element-20">
+          I = \\displaystyle\\int\\limits_{1}^{4}{dy}\\displaystyle\\int\\limits_{1}^{2}{f(x,y)dx}
+          </script></p></span>`,
+          d: `<span class="filter_mathjaxloader_equation"><p><script type="math/tex" id="MathJax-Element-21">
+          I = \\displaystyle\\int\\limits_{0}^{4}{dy}\\displaystyle\\int\\limits_{1}^{2}{f(x,y)dx}
+          </script></p></span>`
+        },
+        dap_an_dung: "a"
+      }
     ];
 
-    for (let i = 0; i < DATA.length; ++i) {
-      const q = DATA[i];
-      const qNode = await htmlOrLatexToPDFNode(q.noi_dung);
-      const answerHTML = q.lua_chon ? q.lua_chon[q.dap_an_dung] : '';
-      const answerNode = await htmlOrLatexToPDFNode(answerHTML);
-      body.push([
-        { text: (i+1).toString(), alignment: "center" },
-        qNode,
-        answerNode
-      ]);
-    }
-
-    const docDefinition = {
-      content: [
-        { text: "Đề cương môn học - Export PDF", style: "header", margin: [0, 0, 0, 12] },
-        {
-          table: {
-            headerRows: 1,
-            widths: ["8%", "52%", "40%"],
-            body: body
-          }
-        }
-      ],
-      styles: {
-        header: { fontSize: 18, bold: true, alignment: "center" },
-        tableHeader: { bold: true, fillColor: "#eeeeee" }
-      },
-      defaultStyle: { fontSize: 12 }
+    // Hiện dữ liệu mẫu ra màn hình
+    window.onload = function() {
+      document.getElementById('sample').textContent = JSON.stringify(DATA, null, 2);
     };
 
-    pdfMake.createPdf(docDefinition).download('DeCuong_ToanHoc.pdf');
-  }
+    // Hàm bóc LaTeX từ HTML MathJax
+    function extractLatexFromHTML(html) {
+      if (!html) return null;
+      const match = html.match(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/);
+      if (match) return match[1].trim();
+      return null;
+    }
+
+    // Chuyển LaTeX thành SVG DataURL dùng MathJax
+    async function latexToSVGDataURL(latex) {
+      if (!latex) return null;
+      await MathJax.startup.promise; // Đảm bảo MathJax đã sẵn sàng
+      const svgNode = MathJax.tex2svg(latex, { display: true });
+      const svg = svgNode.querySelector('svg');
+      if (!svg) return null;
+      svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      svg.style.margin = "6px 0"; svg.style.background = "#fff";
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const svg64 = btoa(unescape(encodeURIComponent(svgData)));
+      return 'data:image/svg+xml;base64,' + svg64;
+    }
+
+    // Hàm trả về node cho pdfmake: nếu có LaTeX thì là ảnh, không thì là text
+    async function htmlOrLatexToPDFNode(str) {
+      if (!str) return '';
+      const latex = extractLatexFromHTML(str);
+      if (latex) {
+        try {
+          const imgData = await latexToSVGDataURL(latex);
+          if (typeof imgData === 'string' && imgData.startsWith('data:image/svg+xml;base64,')) {
+            return { image: imgData, width: 200, alignment: "left", margin: [0,4,0,4] };
+          }
+        } catch (e) {}
+      }
+      // Nếu không có LaTeX hoặc lỗi, trả về text thuần đã loại bỏ HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = str;
+      return tempDiv.textContent?.trim() || '';
+    }
+
+    // Hàm xuất PDF (đảm bảo global)
+    async function exportPDF() {
+      const body = [
+        [
+          { text: "STT", style: "tableHeader", alignment: "center" },
+          { text: "Câu hỏi", style: "tableHeader", alignment: "center" },
+          { text: "Đáp án đúng", style: "tableHeader", alignment: "center" }
+        ]
+      ];
+
+      for (let i = 0; i < DATA.length; ++i) {
+        const q = DATA[i];
+        const qNode = await htmlOrLatexToPDFNode(q.noi_dung);
+        const answerHTML = q.lua_chon ? q.lua_chon[q.dap_an_dung] : '';
+        const answerNode = await htmlOrLatexToPDFNode(answerHTML);
+        body.push([
+          { text: (i+1).toString(), alignment: "center" },
+          qNode,
+          answerNode
+        ]);
+      }
+
+      const docDefinition = {
+        content: [
+          { text: "Đề cương môn học - Export PDF", style: "header", margin: [0, 0, 0, 12] },
+          {
+            table: {
+              headerRows: 1,
+              widths: ["8%", "52%", "40%"],
+              body: body
+            }
+          }
+        ],
+        styles: {
+          header: { fontSize: 18, bold: true, alignment: "center" },
+          tableHeader: { bold: true, fillColor: "#eeeeee" }
+        },
+        defaultStyle: { fontSize: 12 }
+      };
+
+      pdfMake.createPdf(docDefinition).download('DeCuong_ToanHoc.pdf');
+    }
+    // Gán vào window để đảm bảo gọi được từ onclick trên nút
+    window.exportPDF = exportPDF;
   </script>
 </body>
 </html>
