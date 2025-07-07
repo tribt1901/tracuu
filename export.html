@@ -49,34 +49,31 @@
       font-family: 'Roboto', Arial, sans-serif;
       word-break: break-word;
       box-sizing: border-box;
-      text-align: left;
       overflow-wrap: break-word;
       overflow: hidden;
       white-space: normal;
     }
     #pdf-content table th {
       background: #eeeeee;
-      text-align: left;
       vertical-align: middle;
     }
-    #pdf-content table th.stt,
-    #pdf-content table td.stt {
-      width: 80px;
-      min-width: 60px;
-      max-width: 120px;
+    #pdf-content table th.stt, #pdf-content table td.stt {
+      width: 7%;
+      min-width: 35px;
+      max-width: 60px;
       text-align: center !important;
     }
-    #pdf-content table th.question,
-    #pdf-content table td.question {
-      width: 310px;
+    #pdf-content table th.question, #pdf-content table td.question {
+      width: 48%;
       min-width: 120px;
-      max-width: 380px;
+      max-width: 350px;
+      text-align: left;
     }
-    #pdf-content table th.answer,
-    #pdf-content table td.answer {
-      width: 270px;
+    #pdf-content table th.answer, #pdf-content table td.answer {
+      width: 45%;
       min-width: 100px;
-      max-width: 330px;
+      max-width: 315px;
+      text-align: left;
     }
     /* Center the document title */
     #pdf-content .pdf-title {
@@ -155,7 +152,7 @@
     tempDiv.innerHTML = str;
     const text = tempDiv.textContent?.trim() || '';
     const firstSpaceIdx = text.indexOf(' ');
-    if (firstSpaceIdx === -1) return text; // Nếu không có khoảng trắng, trả về toàn bộ
+    if (firstSpaceIdx === -1) return text;
     return text.slice(0, firstSpaceIdx);
   }
 
@@ -166,7 +163,6 @@
     return tempDiv.textContent?.trim() || '';
   }
 
-  // ---- Hiển thị danh sách môn học ----
   async function loadSubjects() {
     const subjectList = document.getElementById("subjectList");
     subjectList.innerHTML = "<div>Đang tải...</div>";
