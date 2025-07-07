@@ -52,7 +52,6 @@
 
 <script type="module">
 // ==== Cấu hình Firebase ====
-// Nếu chạy trên Github Pages, đảm bảo bạn đã bật quyền CORS cho Firestore hoặc dùng hosting đúng domain
 const firebaseConfig = {
   apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
   authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -147,7 +146,7 @@ async function processMathInText(text) {
         const svg = await latexToSVG(latex);
         if (svg) {
           const dataUrl = svgStringToDataURL(svg);
-          if (typeof dataUrl === "string" && dataUrl.startsWith("data:image/svg+xml")) {
+          if (typeof dataUrl === "string" && /^data:image\/svg\+xml;base64,/.test(dataUrl)) {
             return [{ image: dataUrl, width: 120, margin: [0, 2, 0, 2] }];
           }
         }
@@ -158,6 +157,7 @@ async function processMathInText(text) {
     }
     return [text.replace(/<[^>]*>/g, " ").trim()];
   }
+  // Còn nếu có công thức dạng $$latex$$ trong text
   const regex = /\$\$?([^\$]+)\$\$?/g;
   let lastIndex = 0;
   let match;
@@ -171,7 +171,7 @@ async function processMathInText(text) {
       const svg = await latexToSVG(latex);
       if (svg) {
         const dataUrl = svgStringToDataURL(svg);
-        if (typeof dataUrl === "string" && dataUrl.startsWith("data:image/svg+xml")) {
+        if (typeof dataUrl === "string" && /^data:image\/svg\+xml;base64,/.test(dataUrl)) {
           parts.push({ type: 'image', value: dataUrl });
         } else {
           parts.push({ type: 'text', value: "$" + latex + "$" });
