@@ -39,7 +39,7 @@
       border-collapse: collapse;
       margin: 0 auto;
       table-layout: fixed;
-      width: 700px; /* cố định chiều rộng bảng cho xuất PDF */
+      width: 700px;
     }
     #pdf-content table th, #pdf-content table td {
       border: 1px solid #222;
@@ -49,14 +49,15 @@
       font-family: 'Roboto', Arial, sans-serif;
       word-break: break-word;
       box-sizing: border-box;
-      text-align: left; /* Căn lề trái cho cả th và td */
+      text-align: left;
       overflow-wrap: break-word;
       overflow: hidden;
-      white-space: normal; /* Đảm bảo nội dung tự xuống dòng */
+      white-space: normal;
     }
     #pdf-content table th {
       background: #eeeeee;
       text-align: left;
+      vertical-align: middle;
     }
     #pdf-content table th.stt,
     #pdf-content table td.stt {
@@ -76,6 +77,15 @@
       width: 270px;
       min-width: 100px;
       max-width: 330px;
+    }
+    /* Center the document title */
+    #pdf-content .pdf-title {
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      margin-top: 10px;
+      font-family: 'Roboto', Arial, sans-serif;
     }
   </style>
 </head>
@@ -233,15 +243,15 @@
 
     // Render bảng HTML 3 cột, bọc trong div inline-block để khung sát cạnh, nội dung vừa ô
     const pdfDiv = document.getElementById("pdf-content");
-    let html = `<div style="font-family:'Roboto',Arial,sans-serif;font-size:14px;text-align:left;">
-      <h2 style="text-align:center;">Đề cương môn: ${subjectName}</h2>
+    let html = `
+      <div class="pdf-title">Đề cương môn: ${subjectName}</div>
       <div class="pdf-table-wrap">
         <table>
           <thead>
             <tr>
-              <th class="stt">STT</th>
-              <th class="question">Câu hỏi</th>
-              <th class="answer">Đáp án đúng</th>
+              <th class="stt" style="text-align:center; vertical-align:middle;">STT</th>
+              <th class="question" style="text-align:center; vertical-align:middle;">Câu hỏi</th>
+              <th class="answer" style="text-align:center; vertical-align:middle;">Đáp án đúng</th>
             </tr>
           </thead>
           <tbody>
@@ -253,7 +263,7 @@
         <td class="answer">${row.answer}</td>
       </tr>`;
     }
-    html += `</tbody></table></div></div>`;
+    html += `</tbody></table></div>`;
     pdfDiv.innerHTML = html;
     pdfDiv.style.display = "block";
     if(window.MathJax && window.MathJax.typesetPromise) {
