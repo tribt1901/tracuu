@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>Export PDF với công thức Toán học</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Favicon rỗng để không báo lỗi -->
+  <link rel="icon" href="data:,">
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
@@ -34,8 +36,7 @@
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
 
   <script>
-  // ==== DỮ LIỆU GIẢ LẬP THEO ĐÚNG CẤU TRÚC BẠN GỬI ==== //
-  // (bạn có thể lấy từ Firestore hoặc sửa trực tiếp ở đây)
+  // ==== DỮ LIỆU MẪU GIẢ LẬP ĐÚNG CẤU TRÚC ==== //
   const DATA = [
     {
       noi_dung: `<span class="filter_mathjaxloader_equation"><p>Thay đổi thứ tự tính tích phân: <script type="math/tex" id="MathJax-Element-17">
@@ -60,7 +61,9 @@
   ];
 
   // Hiện dữ liệu mẫu ra màn hình
-  document.getElementById('sample').textContent = JSON.stringify(DATA, null, 2);
+  window.onload = function() {
+    document.getElementById('sample').textContent = JSON.stringify(DATA, null, 2);
+  };
 
   // ==== XỬ LÝ EXPORT PDF ==== //
   // Hàm bóc LaTeX từ HTML MathJax
