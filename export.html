@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Đề cương môn học</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="data:,">
+  <!-- Roboto font for both web and pdfmake -->
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -24,10 +24,12 @@
     .table-responsive { max-height: 500px; overflow-y: auto; }
     .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
+    #pdf-content { display: none; }
   </style>
 </head>
 <body class="bg-light">
 
+<!-- Menu với nhiều mục (theo yêu cầu) -->
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
   <div class="container-fluid">
     <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
@@ -53,6 +55,10 @@
   </div>
 </div>
 
+<!-- Ẩn nội dung HTML dùng để xuất PDF bằng html2pdf.js -->
+<div id="pdf-content"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -70,14 +76,19 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
+  // ---- Hàm lấy danh sách môn học ----
   async function getSubjects() {
     const snapshot = await db.collection("mon_hoc").get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
+
+  // ---- Hàm lấy danh sách câu hỏi của môn học ----
   async function getQuestionsBySubject(subjectId) {
     const qSnapshot = await db.collection("cau_hoi").where("mon_hoc_id", "==", subjectId).get();
     return qSnapshot.docs.map(doc => doc.data());
   }
+
+  // ---- Hiển thị danh sách môn học ----
   async function loadSubjects() {
     const subjectList = document.getElementById("subjectList");
     subjectList.innerHTML = "<div>Đang tải...</div>";
@@ -97,6 +108,7 @@
           <button class="btn btn-sm btn-outline-primary" data-type="pdf" data-id="${subj.id}" data-name="${subj.ten_mon}">📄 PDF</button>
         </div>
       `;
+      // Sự kiện export TXT/PDF
       div.querySelectorAll("button").forEach(btn => {
         btn.addEventListener("click", async () => {
           const type = btn.getAttribute("data-type");
@@ -113,80 +125,20 @@
     });
   }
 
+  // ---- Hàm lấy từ đầu tiên của câu hỏi ----
   function firstWord(str) {
     if(!str) return "";
     return str.trim().split(/\s+/)[0] || "";
   }
 
-  // --- Xử lý LaTeX & HTML cho PDF ---
-  // Lấy LaTeX cuối cùng trong chuỗi (dự phòng trường hợp nhiều thẻ script)
-  function extractLatexFromHTML(html) {
-    if (!html) return null;
-    const matches = [...html.matchAll(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/g)];
-    if (matches.length) {
-      // Lấy script cuối cùng (dữ liệu MathJax thực tế thường thế này)
-      return matches[matches.length-1][1].trim();
-    }
-    return null;
-  }
-
-  async function latexToSVGDataURL(latex) {
-    if (!latex) return null;
-    await MathJax.startup.promise;
-    const svgNode = MathJax.tex2svg(latex, { display: true });
-    const svg = svgNode.querySelector('svg');
-    if (!svg) return null;
-    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const svg64 = btoa(unescape(encodeURIComponent(svgData)));
-    return 'data:image/svg+xml;base64,' + svg64;
-  }
-
- async function htmlOrLatexToPDFNode(str) {
-  if (!str) return '';
-  // Lấy LaTeX cuối cùng trong chuỗi (nếu có nhiều script)
-  const matches = [...str.matchAll(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/g)];
-  if (matches.length) {
-    const latex = matches[matches.length - 1][1].trim();
-    if (latex) {
-      try {
-        await MathJax.startup.promise;
-        const svgNode = MathJax.tex2svg(latex, { display: true });
-        const svg = svgNode.querySelector('svg');
-        if (svg) {
-          svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-          const svgData = new XMLSerializer().serializeToString(svg);
-          const svg64 = btoa(unescape(encodeURIComponent(svgData)));
-          const imgData = 'data:image/svg+xml;base64,' + svg64;
-          // CHỈ trả về nếu imgData đúng chuẩn
-          if (typeof imgData === 'string' && imgData.startsWith('data:image/svg+xml;base64,')) {
-            return { image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] };
-          }
-        }
-      } catch (e) {
-        // fallback xuống text
-      }
-    }
-  }
-  // fallback về text
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = str;
-  return tempDiv.textContent?.trim() || '';
-}
-
-  function stripHTML(html) {
-    if (!html) return '';
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    return tempDiv.textContent?.trim() || '';
-  }
-
+  // ---- Xuất TXT: mỗi dòng 1 câu hỏi, đáp án đúng ----
   async function exportTXT(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if(!questions.length) {
       alert("Không có dữ liệu câu hỏi cho môn này.");
       return;
     }
+    // Sắp xếp theo STT (từ đầu tiên a-z)
     const rows = questions.map(item => ({
       stt: firstWord(item.noi_dung),
       question: stripHTML(item.noi_dung),
@@ -204,6 +156,7 @@
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
 
+  // ---- Xuất PDF: sử dụng html2pdf.js để giữ nguyên công thức đẹp ----
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if(!questions.length) {
@@ -217,70 +170,52 @@
     }));
     rows.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
 
-    const body = [
-      [
-        { text: "STT", style: "tableHeader", alignment: "center" },
-        { text: "Câu hỏi", style: "tableHeader", alignment: "center" },
-        { text: "Đáp án đúng", style: "tableHeader", alignment: "center" }
-      ]
-    ];
-
-    for (const row of rows) {
-      const qNode = await htmlOrLatexToPDFNode(row.question);
-      const answerNode = await htmlOrLatexToPDFNode(row.answer);
-      // Chỉ log kiểm tra khi debug
-      // if (typeof qNode === "object" && (!qNode.image || typeof qNode.image !== "string" || !qNode.image.startsWith("data:image/svg+xml;base64,"))) {
-      //   console.error("Ảnh SVG không hợp lệ!", qNode);
-      // }
-      body.push([
-        { text: row.stt, alignment: "center" },
-        qNode,
-        answerNode
-      ]);
+    // Render ra div ẩn để xuất PDF
+    const pdfDiv = document.getElementById("pdf-content");
+    let html = `<div style="font-family: 'Roboto', Arial, sans-serif; font-size:14px;">`;
+    html += `<h2 style="text-align:center;">Đề cương môn: ${subjectName}</h2>`;
+    html += `<table border="1" cellspacing="0" cellpadding="5" style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#eeeeee;">
+          <th style="text-align:center;width:8%;">STT</th>
+          <th style="text-align:center;width:52%;">Câu hỏi</th>
+          <th style="text-align:center;width:40%;">Đáp án đúng</th>
+        </tr>
+      </thead>
+      <tbody>
+    `;
+    for(const row of rows) {
+      html += `<tr>
+        <td style="text-align:center;">${row.stt}</td>
+        <td>${row.question}</td>
+        <td>${row.answer}</td>
+      </tr>`;
     }
-
-    pdfMake.fonts = {
-      Roboto: {
-        normal: 'Roboto-Regular.ttf',
-        bold: 'Roboto-Medium.ttf',
-        italics: 'Roboto-Italic.ttf',
-        bolditalics: 'Roboto-MediumItalic.ttf'
-      }
-    };
-
-    const docDefinition = {
-      content: [
-        { text: `Đề cương môn: ${subjectName}`, style: "header", margin: [0, 0, 0, 12] },
-        {
-          table: {
-            headerRows: 1,
-            widths: ["8%", "52%", "40%"],
-            body: body
-          }
-        }
-      ],
-      styles: {
-        header: {
-          fontSize: 18,
-          bold: true,
-          alignment: "center",
-          font: "Roboto"
-        },
-        tableHeader: {
-          bold: true,
-          fillColor: "#eeeeee",
-          font: "Roboto"
-        }
-      },
-      defaultStyle: {
-        font: "Roboto",
-        fontSize: 12
-      }
-    };
-
-    pdfMake.createPdf(docDefinition).download(`DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`);
+    html += `</tbody></table></div>`;
+    pdfDiv.innerHTML = html;
+    pdfDiv.style.display = "block";
+    // Đảm bảo MathJax render xong
+    if(window.MathJax && window.MathJax.typesetPromise) {
+      await MathJax.typesetPromise([pdfDiv]);
+    }
+    // Xuất PDF bằng html2pdf.js
+    await html2pdf().set({
+      margin: 10,
+      filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    }).from(pdfDiv).save();
+    pdfDiv.style.display = "none";
   }
 
+  function stripHTML(html) {
+    if (!html) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    return tempDiv.textContent?.trim() || '';
+  }
+
+  // ---- Khởi động ----
   loadSubjects();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
