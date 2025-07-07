@@ -141,7 +141,51 @@
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
 
-  // ---- Xuất PDF: sử dụng font Roboto, đầu trang là tên môn, dưới là bảng 3 cột đúng yêu cầu ----
+  // ---- Phần hỗ trợ công thức Toán học trong PDF ----
+
+  // Phát hiện LaTeX dạng $$...$$ hoặc \[...\]
+  function extractLatex(str) {
+    if (!str) return null;
+    const regex = /\$\$([\s\S]+?)\$\$|\\\[((?:.|\s)+?)\\\]/;
+    const match = str.match(regex);
+    if (match) return match[1] || match[2];
+    return null;
+  }
+
+  // Chuyển LaTeX thành SVG DataURL sử dụng MathJax
+  async function latexToSVGDataURL(latex) {
+    // Đợi MathJax load xong
+    await MathJax.startup.promise;
+    // Render SVG
+    const svgNode = MathJax.tex2svg(latex, { display: true });
+    const svg = svgNode.querySelector('svg');
+    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    svg.style.margin = "6px 0";
+    svg.style.background = "#fff";
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svg64 = btoa(unescape(encodeURIComponent(svgData)));
+    return 'data:image/svg+xml;base64,' + svg64;
+  }
+
+  // Chuyển nội dung câu hỏi thành node PDF (nếu có LaTeX thì nhúng SVG)
+  async function questionToPDFNode(question) {
+    const latex = extractLatex(question);
+    if (latex) {
+      const latexRegex = /\$\$([\s\S]+?)\$\$|\\\[((?:.|\s)+?)\\\]/;
+      const match = question.match(latexRegex);
+      const before = match ? question.slice(0, match.index).trim() : "";
+      const after = match ? question.slice(match.index + match[0].length).trim() : "";
+      const imgData = await latexToSVGDataURL(latex);
+      const content = [];
+      if (before) content.push(before + " ");
+      content.push({ image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] });
+      if (after) content.push(" " + after);
+      return content;
+    }
+    return question;
+  }
+
+  // ---- Xuất PDF: hỗ trợ công thức Toán học LaTeX ----
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if(!questions.length) {
@@ -153,24 +197,24 @@
       question: item.noi_dung,
       answer: item.lua_chon?.[item.dap_an_dung] || ""
     }));
-    // Sắp xếp theo STT (từ đầu tiên a-z, có hỗ trợ tiếng Việt)
     rows.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
 
-    // Tạo body bảng PDF
     const body = [
       [
         { text: "STT", style: "tableHeader", alignment: "center" },
         { text: "Câu hỏi", style: "tableHeader", alignment: "center" },
         { text: "Đáp án đúng", style: "tableHeader", alignment: "center" }
-      ],
-      ...rows.map(row => [
-        { text: row.stt, alignment: "center" },
-        row.question,
-        row.answer
-      ])
+      ]
     ];
+    for (const row of rows) {
+      const qNode = await questionToPDFNode(row.question);
+      body.push([
+        { text: row.stt, alignment: "center" },
+        qNode,
+        row.answer
+      ]);
+    }
 
-    // Đảm bảo sử dụng Roboto font pdfmake (có sẵn trong vfs_fonts.js)
     pdfMake.fonts = {
       Roboto: {
         normal: 'Roboto-Regular.ttf',
@@ -217,5 +261,14 @@
   loadSubjects();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- MathJax 3 cho render SVG công thức toán -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$'], ['\\[', '\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
 </body>
 </html>
