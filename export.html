@@ -4,11 +4,13 @@
   <meta charset="UTF-8">
   <title>Đề cương môn học</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Roboto font for both web and html2pdf -->
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <!-- MathJax for LaTeX rendering -->
   <script>
     window.MathJax = {
       tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$'], ['\\[', '\\]']] },
@@ -28,10 +30,52 @@
       text-align: left;
     }
     #pdf-content .pdf-table-wrap {
-      display: block;
+      display: inline-block;
       max-width: 100%;
       text-align: left;
     }
+    #pdf-content table {
+      border: 2px solid #222;
+      border-collapse: collapse;
+      margin: 0 auto;
+      table-layout: fixed;
+      width: 700px;
+    }
+    #pdf-content table th, #pdf-content table td {
+      border: 1px solid #222;
+      padding: 6px 6px 6px 6px;
+      vertical-align: top;
+      font-size: 14px;
+      font-family: 'Roboto', Arial, sans-serif;
+      word-break: break-word;
+      box-sizing: border-box;
+      overflow-wrap: break-word;
+      overflow: hidden;
+      white-space: normal;
+    }
+    #pdf-content table th {
+      background: #eeeeee;
+      vertical-align: middle;
+    }
+    #pdf-content table th.stt, #pdf-content table td.stt {
+      width: 7%;
+      min-width: 35px;
+      max-width: 60px;
+      text-align: center !important;
+    }
+    #pdf-content table th.question, #pdf-content table td.question {
+      width: 49%;
+      min-width: 120px;
+      max-width: 350px;
+      text-align: left;
+    }
+    #pdf-content table th.answer, #pdf-content table td.answer {
+      width: 44%;
+      min-width: 100px;
+      max-width: 315px;
+      text-align: left;
+    }
+    /* Center the document title */
     #pdf-content .pdf-title {
       text-align: center;
       font-size: 22px;
@@ -40,56 +84,10 @@
       margin-top: 10px;
       font-family: 'Roboto', Arial, sans-serif;
     }
-    #pdf-content table {
-      border: 2px solid #222;
-      border-collapse: collapse;
-      margin-left: auto;
-      margin-right: auto;
-      width: 100%;
-      max-width: 900px;
-      table-layout: fixed;
-      background: #fff;
-    }
-    #pdf-content table th, #pdf-content table td {
-      border: 1px solid #222;
-      padding: 6px;
-      font-size: 12px;
-      font-family: 'Roboto', Arial, sans-serif;
-      word-break: break-word;
-      overflow-wrap: break-word;
-      white-space: pre-line;
-      max-width: none;
-      overflow: visible;
-      vertical-align: top;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-    #pdf-content table th.stt, #pdf-content table td.stt {
-      width: 8%;
-      min-width: 35px;
-      max-width: 80px;
-      text-align: center !important;
-    }
-    #pdf-content table th.question, #pdf-content table td.question {
-      width: 49%;
-      min-width: 120px;
-      text-align: left;
-    }
-    #pdf-content table th.answer, #pdf-content table td.answer {
-      width: 44%;
-      min-width: 100px;
-      text-align: left;
-    }
-    #pdf-content table td.answer > div, #pdf-content table th.answer > div {
-      display: block;
-      width: 100%;
-      overflow-x: auto;
-      white-space: pre-line;
-      word-break: break-word;
-    }
   </style>
 </head>
 <body class="bg-light">
+
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
   <div class="container-fluid">
     <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
@@ -105,6 +103,7 @@
     </div>
   </div>
 </nav>
+
 <div class="container py-4">
   <div class="card shadow-sm mb-4">
     <div class="card-body">
@@ -113,11 +112,16 @@
     </div>
   </div>
 </div>
+
 <div id="pdf-content"></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
 <script type="module">
+  // ==== Cấu hình Firebase của bạn tại đây! ====
   const firebaseConfig = {
     apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
     authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -129,14 +133,19 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
+  // ---- Hàm lấy danh sách môn học ----
   async function getSubjects() {
     const snapshot = await db.collection("mon_hoc").get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
+
+  // ---- Hàm lấy danh sách câu hỏi của môn học ----
   async function getQuestionsBySubject(subjectId) {
     const qSnapshot = await db.collection("cau_hoi").where("mon_hoc_id", "==", subjectId).get();
     return qSnapshot.docs.map(doc => doc.data());
   }
+
+  // ---- Hàm lấy cụm từ đầu tiên trước khoảng trắng ----
   function getFirstPhrase(str) {
     if (!str) return "";
     const tempDiv = document.createElement('div');
@@ -146,12 +155,14 @@
     if (firstSpaceIdx === -1) return text;
     return text.slice(0, firstSpaceIdx);
   }
+
   function stripHTML(html) {
     if (!html) return '';
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
     return tempDiv.textContent?.trim() || '';
   }
+
   async function loadSubjects() {
     const subjectList = document.getElementById("subjectList");
     subjectList.innerHTML = "<div>Đang tải...</div>";
@@ -186,6 +197,7 @@
       subjectList.appendChild(div);
     });
   }
+
   async function exportTXT(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if(!questions.length) {
@@ -208,19 +220,24 @@
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
+
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if (!questions.length) {
       alert("Không có dữ liệu câu hỏi cho môn này.");
       return;
     }
+
     let rows = questions.map(item => ({
       stt: getFirstPhrase(item.noi_dung),
       question: item.noi_dung,
       answer: item.lua_chon?.[item.dap_an_dung] || ""
     }));
+
     rows = rows
       .sort((a, b) => a.stt.localeCompare(b.stt, 'vi'));
+
+    // Render bảng HTML 3 cột, bọc trong div inline-block để khung sát cạnh, nội dung vừa ô
     const pdfDiv = document.getElementById("pdf-content");
     let html = `
       <div class="pdf-title">Đề cương môn: ${subjectName}</div>
@@ -239,7 +256,7 @@
       html += `<tr>
         <td class="stt" style="text-align:center;">${row.stt}</td>
         <td class="question">${row.question}</td>
-        <td class="answer"><div>${row.answer}</div></td>
+        <td class="answer">${row.answer}</td>
       </tr>`;
     }
     html += `</tbody></table></div>`;
@@ -247,20 +264,6 @@
     pdfDiv.style.display = "block";
     if(window.MathJax && window.MathJax.typesetPromise) {
       await MathJax.typesetPromise([pdfDiv]);
-      // Scale SVG công thức cho vừa với cell
-      pdfDiv.querySelectorAll('.answer svg').forEach(svg => {
-        svg.style.maxWidth = '100%';
-        svg.style.width = '100%';
-        svg.style.height = 'auto';
-        svg.setAttribute("preserveAspectRatio", "xMinYMin meet");
-        // Nếu SVG vẫn to quá, scale nhỏ lại vừa với parent
-        const parent = svg.parentElement;
-        if (svg.clientWidth > parent.clientWidth && parent.clientWidth > 0) {
-          const scale = parent.clientWidth / svg.clientWidth;
-          svg.style.transform = `scale(${scale})`;
-          svg.style.transformOrigin = "left top";
-        }
-      });
     }
     await html2pdf().set({
       margin: 10,
@@ -270,6 +273,7 @@
     }).from(pdfDiv).save();
     pdfDiv.style.display = "none";
   }
+
   loadSubjects();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
