@@ -170,7 +170,7 @@
     saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
   }
 
-  // == exportPDF: Cỡ chữ 12px, chỉ tiêu đề bảng 1 lần ở đầu, không tách dòng qua trang ==
+  // == exportPDF: Cỡ chữ 13px, chỉ tiêu đề bảng 1 lần ở đầu, không tách dòng qua trang ==
   async function exportPDF(subjectId, subjectName) {
     const questions = await getQuestionsBySubject(subjectId);
     if (!questions.length) {
@@ -192,22 +192,22 @@
         Đề cương môn: ${subjectName}
       </div>
       <div class="pdf-table-wrap" style="display:inline-block; max-width:100%; text-align:left;">
-        <table style="font-size:12px; border:2px solid #222; border-collapse:collapse; margin:0 auto; table-layout:fixed; width:700px;">
+        <table style="font-size:13px; border:2px solid #222; border-collapse:collapse; margin:0 auto; table-layout:fixed; width:700px;">
           <thead>
             <tr>
-              <th class="stt" style="width:7%; min-width:35px; max-width:60px; text-align:center; vertical-align:middle; font-size:12px; border:1px solid #222; background:#eee;">STT</th>
-              <th class="question" style="width:49%; min-width:120px; max-width:350px; text-align:center; vertical-align:middle; font-size:12px; border:1px solid #222; background:#eee;">Câu hỏi</th>
-              <th class="answer" style="width:44%; min-width:100px; max-width:315px; text-align:center; vertical-align:middle; font-size:12px; border:1px solid #222; background:#eee;">Đáp án đúng</th>
+              <th class="stt" style="width:7%; min-width:35px; max-width:60px; text-align:center; vertical-align:middle; font-size:13px; border:1px solid #222; background:#eee;">STT</th>
+              <th class="question" style="width:49%; min-width:120px; max-width:350px; text-align:center; vertical-align:middle; font-size:13px; border:1px solid #222; background:#eee;">Câu hỏi</th>
+              <th class="answer" style="width:44%; min-width:100px; max-width:315px; text-align:center; vertical-align:middle; font-size:13px; border:1px solid #222; background:#eee;">Đáp án đúng</th>
             </tr>
           </thead>
           <tbody>
     `;
     for (const row of rows) {
       html += `
-        <tr style="font-size:12px; page-break-inside: avoid;">
-          <td class="stt" style="text-align:center; font-size:12px; border:1px solid #222;">${row.stt}</td>
-          <td class="question" style="font-size:12px; border:1px solid #222;">${row.question}</td>
-          <td class="answer" style="font-size:12px; border:1px solid #222;">${row.answer}</td>
+        <tr style="font-size:13px; page-break-inside: avoid;">
+          <td class="stt" style="text-align:center; font-size:13px; border:1px solid #222;">${row.stt}</td>
+          <td class="question" style="font-size:13px; border:1px solid #222;">${row.question}</td>
+          <td class="answer" style="font-size:13px; border:1px solid #222;">${row.answer}</td>
         </tr>
       `;
     }
