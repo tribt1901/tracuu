@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Export PDF với công thức Toán học</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Favicon rỗng để không báo lỗi 404 -->
   <link rel="icon" href="data:,">
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
@@ -60,7 +59,7 @@
       }
     ];
 
-    // Hiện dữ liệu mẫu ra màn hình
+    // Hiện dữ liệu mẫu ra màn hình khi tải xong trang
     window.onload = function() {
       document.getElementById('sample').textContent = JSON.stringify(DATA, null, 2);
     };
@@ -76,7 +75,7 @@
     // Chuyển LaTeX thành SVG DataURL dùng MathJax
     async function latexToSVGDataURL(latex) {
       if (!latex) return null;
-      await MathJax.startup.promise; // Đảm bảo MathJax đã sẵn sàng
+      await MathJax.startup.promise;
       const svgNode = MathJax.tex2svg(latex, { display: true });
       const svg = svgNode.querySelector('svg');
       if (!svg) return null;
@@ -147,8 +146,10 @@
 
       pdfMake.createPdf(docDefinition).download('DeCuong_ToanHoc.pdf');
     }
-    // Gán vào window để đảm bảo gọi được từ onclick trên nút
+
+    // Đảm bảo exportPDF là global
     window.exportPDF = exportPDF;
+
   </script>
 </body>
 </html>
