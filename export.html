@@ -142,22 +142,37 @@
     return 'data:image/svg+xml;base64,' + svg64;
   }
 
-  async function htmlOrLatexToPDFNode(str) {
-    if (!str) return '';
-    const latex = extractLatexFromHTML(str);
+ async function htmlOrLatexToPDFNode(str) {
+  if (!str) return '';
+  // Lấy LaTeX cuối cùng trong chuỗi (nếu có nhiều script)
+  const matches = [...str.matchAll(/<script[^>]+type=["']math\/tex["'][^>]*>([\s\S]+?)<\/script>/g)];
+  if (matches.length) {
+    const latex = matches[matches.length - 1][1].trim();
     if (latex) {
       try {
-        const imgData = await latexToSVGDataURL(latex);
-        if (typeof imgData === 'string' && imgData.startsWith('data:image/svg+xml;base64,')) {
-          return { image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] };
+        await MathJax.startup.promise;
+        const svgNode = MathJax.tex2svg(latex, { display: true });
+        const svg = svgNode.querySelector('svg');
+        if (svg) {
+          svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+          const svgData = new XMLSerializer().serializeToString(svg);
+          const svg64 = btoa(unescape(encodeURIComponent(svgData)));
+          const imgData = 'data:image/svg+xml;base64,' + svg64;
+          // CHỈ trả về nếu imgData đúng chuẩn
+          if (typeof imgData === 'string' && imgData.startsWith('data:image/svg+xml;base64,')) {
+            return { image: imgData, width: 180, alignment: "left", margin: [0,4,0,4] };
+          }
         }
-      } catch (e) {}
+      } catch (e) {
+        // fallback xuống text
+      }
     }
-    // fallback về text
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = str;
-    return tempDiv.textContent?.trim() || '';
   }
+  // fallback về text
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = str;
+  return tempDiv.textContent?.trim() || '';
+}
 
   function stripHTML(html) {
     if (!html) return '';
