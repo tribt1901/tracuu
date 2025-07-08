@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "dependencies": {
     "googleapis": "^105.0.0",
-    "formidable": "^3.5.0"
+    "formidable": "^3.5.0",
+    "katex": "^0.16.9"
   }
 }
