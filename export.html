@@ -125,7 +125,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Helper functions
 async function getSubjects() {
   const snapshot = await db.collection("mon_hoc").get();
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -156,18 +155,14 @@ function getAnswer(item) {
   return item.lua_chon[key];
 }
 function hasMath(html) {
-  // Kiểm tra có LaTeX dạng \( ... \), \[ ... \] hoặc <script type="math/tex">
   return /\\\(|\\\[|<script[^>]*type="math\/tex"[^>]*>/i.test(html || "");
 }
 function extractFirstLatex(html) {
   if (!html) return "";
-  // Ưu tiên: <script type="math/tex">...</script>
   let match = html.match(/<script[^>]*type="math\/tex"[^>]*>([\s\S]*?)<\/script>/);
   if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
-  // Tìm trong \( ... \)
   match = html.match(/\\\((.*?)\\\)/);
   if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
-  // Tìm trong \[ ... \]
   match = html.match(/\\\[(.*?)\\\]/);
   if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
   return "";
@@ -245,7 +240,6 @@ async function exportPDF(subjectId, subjectName) {
     return;
   }
 
-  // Kiểm tra toàn bộ câu hỏi/đáp án có công thức không
   let hasAnyMath = false;
   questions.forEach(item => {
     if (hasMath(item.noi_dung)) hasAnyMath = true;
@@ -290,7 +284,6 @@ async function exportPDF(subjectId, subjectName) {
     return;
   }
 
-  // Nếu có công thức: render công thức qua API
   document.getElementById('loading-mathjax').style.display = 'block';
   const latexArr = [];
   questions.forEach(item => {
