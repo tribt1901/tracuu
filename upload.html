@@ -184,7 +184,13 @@ async function uploadFile(file) {
 }
 
 // ==== Hàm loại bỏ lặp công thức toán MathJax và lặp toán inline ====
-// Lặp lại nhiều lần cho đến khi hết lặp để xử lý mọi trường hợp
+// Loại bỏ lặp lại dạng "z = ... z = ..." (với cùng công thức hoặc giống nhau)
+function removeDuplicateEquation(text) {
+  // Chỉ giữ lại cụm đầu tiên cho các lặp lại "z = ... z = ...", không quan trọng ký tự kết thúc là gì
+  // (giữa các cụm có thể là khoảng trắng, dấu phẩy, chấm, xuống dòng, v.v.)
+  return text.replace(/(z\s*=\s*[\s\S]+?)(?:\s+z\s*=\s*[\s\S]+?)+(?=\s|\.|,|;|$)/g, '$1');
+}
+// Loại bỏ các đoạn <span class="math-tex">...</span> lặp liền kề nhau
 function removeConsecutiveMathJaxDuplicates(html) {
   let prev;
   do {
@@ -193,15 +199,17 @@ function removeConsecutiveMathJaxDuplicates(html) {
   } while (html !== prev);
   return html;
 }
+// Loại bỏ các đoạn $...$ lặp liền kề nhau
 function removeDuplicateMathInline(str) {
   return str.replace(/(\$.*?\$)(\s*\1)+/g, '$1');
 }
-// Hàm tổng hợp làm sạch lặp công thức toán (nên dùng duy nhất hàm này)
+// Hàm tổng hợp làm sạch lặp toán học, ưu tiên loại lặp "z = ... z = ..." trước
 function cleanMathDuplicates(str) {
   let prev;
   str = ensureMathDelimiters(str);
   do {
     prev = str;
+    str = removeDuplicateEquation(str); // loại z = ... z = ...
     str = removeConsecutiveMathJaxDuplicates(str);
     str = removeDuplicateMathInline(str);
   } while (str !== prev);
@@ -334,8 +342,7 @@ importHtmlInput.addEventListener("change", async function(e) {
       if (questionNode) {
         questionText = questionNode.innerHTML.trim();
         questionText = cleanMathDuplicates(questionText);
-        // Loại bỏ vế lặp kiểu "z = ... z = ..." nếu có:
-        questionText = questionText.replace(/(z\s*=.*?)(\s+z\s*=.*?)/, '$1');
+        // Đã đưa xử lý loại lặp "z = ... z = ..." vào cleanMathDuplicates
       }
       const answerNodes = q.querySelectorAll('.answer > div');
       const answers = [];
