@@ -149,18 +149,29 @@ function stripHTML(html) {
   tempDiv.innerHTML = html;
   return tempDiv.textContent?.trim() || '';
 }
-function extractFirstLatex(html) {
-  if (!html) return "";
-  const match = html.match(/<script[^>]*type="math\/tex"[^>]*>([\s\S]*?)<\/script>/);
-  let latex = match && match[1] ? match[1].trim() : "";
-  // Loại bỏ non-breaking space (Unicode 160) và ký tự unicode lạ khác nếu có
-  latex = latex.replace(/\u00A0/g, " ");
-  // Có thể loại toàn bộ ký tự ngoài ASCII nếu muốn (tùy chọn)
-  // latex = latex.replace(/[^\x00-\x7F]/g, " ");
-  return latex;
+// Đảm bảo luôn lấy đáp án đúng dù key là số hay string
+function getAnswer(item) {
+  if (!item || !item.lua_chon || item.dap_an_dung === undefined || item.dap_an_dung === null) return "";
+  const key = String(item.dap_an_dung);
+  if (!(key in item.lua_chon)) return "";
+  return item.lua_chon[key];
 }
 function hasMath(html) {
-  return /<script[^>]*type="math\/tex"[^>]*>/i.test(html || "");
+  // Kiểm tra có LaTeX dạng \( ... \), \[ ... \] hoặc <script type="math/tex">
+  return /\\\(|\\\[|<script[^>]*type="math\/tex"[^>]*>/i.test(html || "");
+}
+function extractFirstLatex(html) {
+  if (!html) return "";
+  // Ưu tiên: <script type="math/tex">...</script>
+  let match = html.match(/<script[^>]*type="math\/tex"[^>]*>([\s\S]*?)<\/script>/);
+  if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
+  // Tìm trong \( ... \)
+  match = html.match(/\\\((.*?)\\\)/);
+  if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
+  // Tìm trong \[ ... \]
+  match = html.match(/\\\[(.*?)\\\]/);
+  if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
+  return "";
 }
 
 // Render LaTeX qua API KaTeX server
@@ -222,9 +233,7 @@ async function exportTXT(subjectId, subjectName) {
   const rows = questions.map(item => ({
     stt: getFirstPhrase(item.noi_dung),
     question: stripHTML(item.noi_dung),
-    answer: (item.lua_chon && item.dap_an_dung in item.lua_chon)
-      ? stripHTML(item.lua_chon[item.dap_an_dung])
-      : ""
+    answer: stripHTML(getAnswer(item))
   })).sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
   let content = `Đề cương môn: ${subjectName}\n\n`;
   rows.forEach(row => {
@@ -245,7 +254,7 @@ async function exportPDF(subjectId, subjectName) {
   let hasAnyMath = false;
   questions.forEach(item => {
     if (hasMath(item.noi_dung)) hasAnyMath = true;
-    else if (item.lua_chon && item.dap_an_dung in item.lua_chon && hasMath(item.lua_chon[item.dap_an_dung])) hasAnyMath = true;
+    else if (hasMath(getAnswer(item))) hasAnyMath = true;
   });
 
   // Nếu KHÔNG có công thức ở bất kỳ đâu -> xuất bản gốc, không gọi API, rất nhanh
@@ -266,9 +275,7 @@ async function exportPDF(subjectId, subjectName) {
     questions.forEach(item => {
       const stt = getFirstPhrase(item.noi_dung);
       const questionText = stripHTML(item.noi_dung);
-      const answerText = (item.lua_chon && item.dap_an_dung in item.lua_chon)
-        ? stripHTML(item.lua_chon[item.dap_an_dung])
-        : "";
+      const answerText = stripHTML(getAnswer(item));
       html += `<tr>
         <td class="stt" style="text-align:center;">${stt}</td>
         <td class="question">${questionText}</td>
@@ -294,9 +301,7 @@ async function exportPDF(subjectId, subjectName) {
   const latexArr = [];
   questions.forEach(item => {
     latexArr.push(extractFirstLatex(item.noi_dung));
-    latexArr.push(extractFirstLatex(
-      (item.lua_chon && item.dap_an_dung in item.lua_chon) ? item.lua_chon[item.dap_an_dung] : ""
-    ));
+    latexArr.push(extractFirstLatex(getAnswer(item)));
   });
   const htmlArr = await renderLatexBatch(latexArr);
 
@@ -320,13 +325,19 @@ async function exportPDF(subjectId, subjectName) {
   questions.forEach(item => {
     const stt = getFirstPhrase(item.noi_dung);
     // Tách phần text không chứa công thức
-    const questionText = stripHTML(item.noi_dung.replace(/<script[^>]*type="math\/tex"[^>]*>[\s\S]*?<\/script>/g, ''));
+    let questionText = stripHTML(
+      item.noi_dung
+        .replace(/<script[^>]*type="math\/tex"[^>]*>[\s\S]*?<\/script>/g, '')
+        .replace(/\\\(.+?\\\)/g, '')
+        .replace(/\\\[.+?\\\]/g, '')
+    );
+    const answerText = getAnswer(item);
     const questionHTML = htmlArr[idx];
     const answerHTML = htmlArr[idx + 1];
     html += `<tr>
       <td class="stt" style="text-align:center;">${stt}</td>
       <td class="question">${questionText}${questionHTML ? "<br>"+questionHTML : ""}</td>
-      <td class="answer"><div>${answerHTML}</div></td>
+      <td class="answer"><div>${hasMath(answerText) && answerHTML ? answerHTML : stripHTML(answerText)}</div></td>
     </tr>`;
     idx += 2;
   });
