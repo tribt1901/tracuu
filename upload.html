@@ -184,6 +184,7 @@ async function uploadFile(file) {
 }
 
 // ==== Hàm loại bỏ lặp công thức toán MathJax và lặp toán inline ====
+// Lặp lại nhiều lần cho đến khi hết lặp để xử lý mọi trường hợp
 function removeConsecutiveMathJaxDuplicates(html) {
   let prev;
   do {
@@ -193,8 +194,18 @@ function removeConsecutiveMathJaxDuplicates(html) {
   return html;
 }
 function removeDuplicateMathInline(str) {
-  // Loại bỏ các đoạn $...$ lặp liền kề nhau
   return str.replace(/(\$.*?\$)(\s*\1)+/g, '$1');
+}
+// Hàm tổng hợp làm sạch lặp công thức toán (nên dùng duy nhất hàm này)
+function cleanMathDuplicates(str) {
+  let prev;
+  str = ensureMathDelimiters(str);
+  do {
+    prev = str;
+    str = removeConsecutiveMathJaxDuplicates(str);
+    str = removeDuplicateMathInline(str);
+  } while (str !== prev);
+  return str;
 }
 
 // MathJax wrap
@@ -255,7 +266,6 @@ document.getElementById("questionSecurityCodeImport").addEventListener("input", 
     status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
   }
 });
-
 document.getElementById("questionSecurityCodeManual").addEventListener("input", async function() {
   const code = this.value.trim();
   const status = document.getElementById("questionSecurityCodeStatusManual");
@@ -272,7 +282,6 @@ document.getElementById("questionSecurityCodeManual").addEventListener("input", 
     status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
   }
 });
-
 document.getElementById("syllabusSecurityCode").addEventListener("input", async function() {
   const code = this.value.trim();
   const status = document.getElementById("syllabusSecurityCodeStatus");
@@ -324,20 +333,16 @@ importHtmlInput.addEventListener("change", async function(e) {
       let questionText = "";
       if (questionNode) {
         questionText = questionNode.innerHTML.trim();
-        questionText = ensureMathDelimiters(questionText);
+        questionText = cleanMathDuplicates(questionText);
         // Loại bỏ vế lặp kiểu "z = ... z = ..." nếu có:
         questionText = questionText.replace(/(z\s*=.*?)(\s+z\s*=.*?)/, '$1');
-        questionText = removeConsecutiveMathJaxDuplicates(questionText);
-        questionText = removeDuplicateMathInline(questionText);
       }
       const answerNodes = q.querySelectorAll('.answer > div');
       const answers = [];
       answerNodes.forEach((ans, idx) => {
         let ansNode = ans.querySelector('.flex-fill, .ml-1');
         let ansText = ansNode ? ansNode.innerHTML.trim() : ans.innerHTML.trim();
-        ansText = ensureMathDelimiters(ansText);
-        ansText = removeConsecutiveMathJaxDuplicates(ansText);
-        ansText = removeDuplicateMathInline(ansText);
+        ansText = cleanMathDuplicates(ansText);
         answers.push(ansText);
       });
       // === Robust answer detection ===
@@ -359,18 +364,14 @@ importHtmlInput.addEventListener("change", async function(e) {
         answerNodes.forEach((ans, idx) => {
           let ansNode = ans.querySelector('.flex-fill, .ml-1');
           let ansText = ansNode ? ansNode.innerHTML.trim() : ans.innerHTML.trim();
-          ansText = ensureMathDelimiters(ansText);
-          ansText = removeConsecutiveMathJaxDuplicates(ansText);
-          ansText = removeDuplicateMathInline(ansText);
+          ansText = cleanMathDuplicates(ansText);
           if (normalizeMathText(ansText) === correctValue) correctIdx = idx;
         });
         if (correctIdx === -1 && correctValue) {
           answerNodes.forEach((ans, idx) => {
             let ansNode = ans.querySelector('.flex-fill, .ml-1');
             let ansText = ansNode ? ansNode.innerHTML.trim() : ans.innerHTML.trim();
-            ansText = ensureMathDelimiters(ansText);
-            ansText = removeConsecutiveMathJaxDuplicates(ansText);
-            ansText = removeDuplicateMathInline(ansText);
+            ansText = cleanMathDuplicates(ansText);
             let ansNorm = normalizeMathText(ansText);
             if (
               ansNorm && correctValue &&
