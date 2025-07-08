@@ -183,27 +183,25 @@ async function uploadFile(file) {
   return (await res.json()).url;
 }
 
-// Hàm phát hiện công thức dạng text đầu câu hỏi và loại bỏ nó nếu đã có công thức MathJax phía sau
-function removePlainTextFormulaAtStart(questionHtml) {
+// Hàm loại bỏ mọi text toán học dư thừa nếu đã có MathJax trong cùng block
+function removeRedundantMathText(html) {
   let div = document.createElement("div");
-  div.innerHTML = questionHtml;
-  let txt = div.textContent || div.innerText || "";
-  let mathjax = div.querySelector(".math-tex");
-  if (mathjax) {
+  div.innerHTML = html;
+  let maths = div.querySelectorAll(".math-tex");
+  if (maths.length === 0) return html;
+  maths.forEach(mathjax => {
     let mathContent = mathjax.textContent.replace(/\$/g, '').replace(/\s+/g, ' ').trim();
-    let regex = new RegExp("^\\s*([\\w\\s=\\-+*/^|.|,;\\[\\]\\(\\)\\{\\}\\\\]+)\\s*");
-    let m = txt.match(regex);
-    if (m && m[1]) {
-      let frontText = m[1].replace(/\s+/g, ' ').replace(/\$/g, '').trim();
-      if (frontText && (frontText === mathContent)) {
-        let idx = questionHtml.indexOf(mathjax.outerHTML);
-        if (idx !== -1) {
-          return questionHtml.slice(idx);
+    Array.from(div.childNodes).forEach(node => {
+      if (node.nodeType === 3) { // node text
+        let text = node.nodeValue.replace(/\s+/g, ' ').replace(/\$/g, '').trim();
+        // Chỉ loại nếu giống hoàn toàn (text trùng math)
+        if (text && (text === mathContent)) {
+          node.nodeValue = '';
         }
       }
-    }
-  }
-  return questionHtml;
+    });
+  });
+  return div.innerHTML.trim();
 }
 
 // ==== Hàm loại bỏ lặp công thức toán học và lặp block ====
@@ -217,7 +215,6 @@ function normalizeBlockForCompare(str) {
     .trim()
     .toLowerCase();
 }
-// Loại toàn bộ các block lặp liền kề, bất kể là text hay math (giới hạn sliding window tối đa 6, lặp tối đa 3 lần)
 function removeConsecutiveDuplicateBlocks(str, maxDepth = 3) {
   let splitter = /(;|=|<br\s*\/?>|\r?\n|\t)/;
   let parts = str.split(splitter).map(s => s.trim()).filter(s => s !== "");
@@ -407,7 +404,7 @@ importHtmlInput.addEventListener("change", async function(e) {
       let questionText = "";
       if (questionNode) {
         questionText = questionNode.innerHTML.trim();
-        questionText = removePlainTextFormulaAtStart(questionText);
+        questionText = removeRedundantMathText(questionText);
         questionText = cleanMathDuplicates(questionText);
       }
       const answerNodes = q.querySelectorAll('.answer > div');
@@ -415,6 +412,7 @@ importHtmlInput.addEventListener("change", async function(e) {
       answerNodes.forEach((ans, idx) => {
         let ansNode = ans.querySelector('.flex-fill, .ml-1');
         let ansText = ansNode ? ansNode.innerHTML.trim() : ans.innerHTML.trim();
+        ansText = removeRedundantMathText(ansText);
         ansText = cleanMathDuplicates(ansText);
         answers.push(ansText);
       });
