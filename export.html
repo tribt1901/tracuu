@@ -155,13 +155,19 @@ function getAnswer(item) {
 }
 // Gửi nội dung có thể chứa nhiều công thức qua API để render toàn bộ sang KaTeX
 async function renderMathContentBatch(htmlArr) {
-  // API này hỗ trợ nhận mảng nội dung html, sẽ trả về html đã render công thức bằng KaTeX
+  if (!Array.isArray(htmlArr) || htmlArr.length === 0) return [];
   const res = await fetch("https://tracuu-app.hugo.io.vn/api/render-math", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ htmlArr })
   });
-  const data = await res.json();
+  let data = {};
+  try {
+    data = await res.json();
+  } catch(e) {
+    data = {};
+  }
+  if (!data || !Array.isArray(data.results)) return htmlArr.map(()=> "");
   return data.results.map(r =>
     r && r.html && r.html.trim() !== "" ? r.html : ""
   );
@@ -218,17 +224,21 @@ async function exportTXT(subjectId, subjectName) {
 // PDF: render toàn bộ nội dung công thức đẹp bằng KaTeX, không lựa chọn
 async function exportPDF(subjectId, subjectName) {
   const questions = await getQuestionsBySubject(subjectId);
-  if (!questions.length) {
+  if (!questions || !questions.length) {
     alert("Không có dữ liệu câu hỏi cho môn này.");
     return;
   }
   document.getElementById('loading-mathjax').style.display = 'block';
-  // Gửi từng nội dung sang API để render toàn bộ công thức trong câu hỏi + đáp án
   const htmlArr = [];
   questions.forEach(item => {
-    htmlArr.push(item.noi_dung || "");
-    htmlArr.push(getAnswer(item) || "");
+    htmlArr.push(item.noi_dung ? String(item.noi_dung) : "");
+    htmlArr.push(getAnswer(item) ? String(getAnswer(item)) : "");
   });
+  if (htmlArr.length === 0) {
+    alert("Dữ liệu rỗng.");
+    document.getElementById('loading-mathjax').style.display = 'none';
+    return;
+  }
   const renderedArr = await renderMathContentBatch(htmlArr);
 
   let html = `
