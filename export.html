@@ -151,11 +151,15 @@ function stripHTML(html) {
   tempDiv.innerHTML = html;
   return tempDiv.textContent?.trim() || '';
 }
-// Math utils
 function extractFirstLatex(html) {
   if (!html) return "";
   const match = html.match(/<script[^>]*type="math\/tex"[^>]*>([\s\S]*?)<\/script>/);
-  return match && match[1] ? match[1].trim() : "";
+  let latex = match && match[1] ? match[1].trim() : "";
+  // Loại bỏ non-breaking space (Unicode 160) và ký tự unicode lạ khác nếu có
+  latex = latex.replace(/\u00A0/g, " ");
+  // Có thể loại toàn bộ ký tự ngoài ASCII nếu muốn (tùy chọn)
+  // latex = latex.replace(/[^\x00-\x7F]/g, " ");
+  return latex;
 }
 function hasMath(html) {
   return /<script[^>]*type="math\/tex"[^>]*>/i.test(html || "");
