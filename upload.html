@@ -25,6 +25,7 @@
     .mathjax-content{font-size:1.1em}
   </style>
   <link rel="icon" href="data:,">
+  <!-- MathJax CDN -->
   <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
@@ -184,8 +185,15 @@ async function uploadFile(file) {
 function removeMathJaxArtifacts(html) {
   let el = document.createElement("div");
   el.innerHTML = html;
-  // Xoá các thẻ render MathJax dư thừa, MathML, nobr, GIỮ LẠI công thức
-  el.querySelectorAll('.MathJax_Preview,.MathJax,.MJX_Assistive_MathML,math,nobr').forEach(e=>e.remove());
+  // Xóa các thẻ render dư thừa, GIỮ LẠI <script type="math/tex"> và <span class="math-tex">
+  el.querySelectorAll(
+    ".MathJax_Preview, .MathJax, .MJX_Assistive_MathML, nobr"
+  ).forEach(e => e.remove());
+  // Nếu muốn xóa MathML ngoài script:
+  el.querySelectorAll("math").forEach(e => {
+    // Nếu thẻ math KHÔNG nằm trong <script type="math/tex"> thì xóa
+    if (!e.closest('script[type="math/tex"]')) e.remove();
+  });
   return el.innerHTML;
 }
 
@@ -422,6 +430,7 @@ importHtmlInput.addEventListener("change", async function(e) {
     });
     importHtmlResult.innerHTML = htmlResult;
     saveImportBtn.style.display = importedQuestions.length>0 ? "inline-block" : "none";
+    // ---- Gọi lại MathJax để render công thức vừa import ----
     if (window.MathJax && window.MathJax.typesetPromise) {
       MathJax.typesetPromise(Array.from(importHtmlResult.querySelectorAll('.mathjax-content')));
     }
