@@ -162,11 +162,9 @@
   </div>
 </div>
 <script type="module">
-// Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 document.addEventListener("DOMContentLoaded", () => {
-  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
     authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -179,8 +177,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // ==== DOM SELECTORS ====
-  // Câu hỏi
   const manualQuestionImgPreview = document.getElementById("manualQuestionImgPreview");
   const manualRemoveQuestionImgBtn = document.getElementById("manualRemoveQuestionImgBtn");
   const manualAnswerAImgPreview = document.getElementById("manualAnswerAImgPreview");
@@ -198,7 +194,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const manualAnswerDImgInput = document.getElementById("manualAnswerDImgInput");
   const manualSubmitQuestionBtn = document.getElementById("manualSubmitQuestionBtn");
 
-  // ==== Chuyển mode ====
   const uploadTypeSelect = document.getElementById("uploadTypeSelect");
   const uploadQuestionSection = document.getElementById("uploadQuestionSection");
   const uploadSyllabusSection = document.getElementById("uploadSyllabusSection");
@@ -212,7 +207,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   uploadTypeSelect.dispatchEvent(new Event("change"));
 
-  // ==== Load Subjects vào Dropdown ====
   async function loadSubjectsToDropdown(dropdown, allowEmpty = false) {
     dropdown.innerHTML = allowEmpty ? `<option value="">-- Chọn môn học --</option>` : "";
     const snapshot = await getDocs(collection(db, "mon_hoc"));
@@ -227,7 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
   loadSubjectsToDropdown(document.getElementById("subjectDropdownManual"));
   loadSubjectsToDropdown(document.getElementById("syllabusSubjectDropdown"));
 
-  // ==== Upload ảnh/file lên Vercel server ====
   async function uploadToDrive(file) {
     const formData = new FormData();
     formData.append('file', file);
@@ -237,7 +230,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return result.url;
   }
 
-  // ==== Ảnh Google Drive helper ====
   function getDisplayableImgUrl(url) {
     if (!url) return "";
     let m = url.match(/https:\/\/drive\.google\.com\/file\/d\/([^/]+)/);
@@ -253,7 +245,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return url;
   }
 
-  // ==== Ảnh Preview cho thêm thủ công ====
   let manualQImgFile = null, manualAImgFiles = [null, null, null, null];
   let manualQImgUrl = "", manualAImgUrls = ["","","",""];
   function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
@@ -296,7 +287,6 @@ document.addEventListener("DOMContentLoaded", () => {
     f=>manualAImgFiles[3]=f, url=>manualAImgUrls[3]=url
   );
 
-  // ==== Import HTML: kiểm tra trùng ====
   let importedQuestions = [];
   let allQuestionsForSubject = [];
   async function loadQuestionsForSubject(mon_hoc_id) {
@@ -322,7 +312,6 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  // ==== Button logic cho Upload Câu hỏi ====
   document.getElementById("questionImportHtmlBtn").onclick = () => {
     document.getElementById("questionUploadChoice").style.display = "none";
     importHtmlSection.style.display = "block";
@@ -359,7 +348,6 @@ document.addEventListener("DOMContentLoaded", () => {
     manualQuestionSection.style.display = "none";
   };
 
-  // ==== Import HTML: mã bảo mật từng form ====
   let questionSecOKImport = false;
   document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() {
     const val = this.value.trim();
@@ -381,7 +369,6 @@ document.addEventListener("DOMContentLoaded", () => {
       statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
     }
   });
-  // ==== Mã bảo mật Manual ====
   let questionSecOKManual = false;
   document.getElementById("questionSecurityCodeManual").addEventListener("input", async function() {
     const val = this.value.trim();
@@ -403,7 +390,6 @@ document.addEventListener("DOMContentLoaded", () => {
       statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
     }
   });
-  // ==== Mã bảo mật Đề cương ====
   let syllabusSecOK = false;
   document.getElementById("syllabusSecurityCode").addEventListener("input", async function() {
     const val = this.value.trim();
@@ -426,7 +412,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ==== Import HTML ====
   subjectDropdownImport.addEventListener("change", async function() {
     importHtmlInput.value = "";
     importHtmlResult.innerHTML = "";
@@ -455,7 +440,6 @@ document.addEventListener("DOMContentLoaded", () => {
       importedQuestions = [];
       let rawQuestions = [];
       docx.querySelectorAll('.que').forEach(q => {
-        // SỬA: LẤY NỘI DUNG DƯỚI DẠNG HTML ĐỂ GIỮ LẠI CÔNG THỨC TOÁN
         let questionText = q.querySelector('.qtext')?.innerHTML.trim() || '';
         const answerNodes = q.querySelectorAll('.answer > div');
         const answers = [];
@@ -470,10 +454,17 @@ document.addEventListener("DOMContentLoaded", () => {
         let match = rightAnswerText.match(/The correct answer is: (.+)$/);
         if (match) {
           let correctValue = match[1].trim();
+          function normalize(s) {
+            return s.replace(/<[^>]+>/g, '')
+                    .replace(/[\s\n\r]/g, '')
+                    .replace(/\\\(/g, '').replace(/\\\)/g, '')
+                    .replace(/\\text\{([^}]+)\}/g, '$1')
+                    .toLowerCase();
+          }
           correctIdx = answers.findIndex(a =>
-            a.replace(/<[^>]+>/g,'').trim().toLowerCase() === correctValue.trim().toLowerCase()
-            || a.replace(/<[^>]+>/g,'').trim().toLowerCase().includes(correctValue.trim().toLowerCase())
-            || correctValue.trim().toLowerCase().includes(a.replace(/<[^>]+>/g,'').trim().toLowerCase())
+            normalize(a) === normalize(correctValue) ||
+            normalize(a).includes(normalize(correctValue)) ||
+            normalize(correctValue).includes(normalize(a))
           );
           correctKey = ['a','b','c','d'][correctIdx] || '';
           correct = answers[correctIdx] || '';
@@ -541,13 +532,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }).then(()=>success++).catch(()=>fail++);
     }
     alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
-    saveImportBtn.disabled = false;
+    location.reload();
   };
 
-  // ==== Thêm thủ công ====
   document.getElementById("manualQuestionForm").addEventListener("submit", async function(e) {
     e.preventDefault();
-    if (!questionSecOKManual) { alert("Chưa xác thực mã bảo mật!"); return; }
+    if (!questionSecOKManual) { alert("Chưa xác thực mã bảo mật!"); location.reload(); return; }
     const subjectId = subjectDropdownManual.value;
     const qText = manualQuestionText.value.trim();
     const a = manualAnswerA.value.trim();
@@ -570,6 +560,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const lua_chon = {a, aImg: aImg || "", b, bImg: bImg || "", c, cImg: cImg || "", d, dImg: dImg || ""};
     if (isDuplicateInSet({noi_dung: qText, dap_an_dung: correct, lua_chon}, existSet)) {
       alert("Câu hỏi này đã tồn tại trong môn học với đáp án đúng giống nhau!");
+      location.reload();
       return;
     }
     await addDoc(collection(db, "cau_hoi"), {
@@ -589,16 +580,16 @@ document.addEventListener("DOMContentLoaded", () => {
     manualQImgFile = null; manualAImgFiles = [null,null,null,null];
     manualQImgUrl = ""; manualAImgUrls = ["","","",""];
     alert("Đã thêm câu hỏi!");
+    location.reload();
   });
 
-  // ==== Upload Đề cương ====
   document.getElementById("syllabusForm").addEventListener("submit", async function(e) {
     e.preventDefault();
-    if (!syllabusSecOK) { alert("Chưa xác thực mã bảo mật!"); return; }
+    if (!syllabusSecOK) { alert("Chưa xác thực mã bảo mật!"); location.reload(); return; }
     const subjectId = syllabusSubjectDropdown.value;
     const owner = syllabusOwner.value.trim();
     const file = syllabusFileInput.files[0];
-    if (!subjectId || !file) { alert("Điền đầy đủ thông tin và chọn file!"); return; }
+    if (!subjectId || !file) { alert("Điền đầy đủ thông tin và chọn file!"); location.reload(); return; }
     syllabusSubmitBtn.disabled = true;
     try {
       const url = await uploadToDrive(file);
@@ -611,8 +602,10 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       syllabusForm.reset();
       alert("Đã upload đề cương!");
+      location.reload();
     } catch (e) {
       alert("Upload thất bại: " + e);
+      location.reload();
     }
     syllabusSubmitBtn.disabled = false;
   });
