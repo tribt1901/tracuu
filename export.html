@@ -26,16 +26,18 @@
       justify-content: center;
       width: 100%;
       max-width: 100%;
+      box-sizing: border-box;
     }
     #pdf-content table {
       border: 2px solid #222;
       border-collapse: collapse;
       margin: 0 auto;
       width: 100%;
-      max-width: 900px;
+      max-width: 690px; /* ~A4 width minus margins */
       table-layout: fixed;
       background: #fff;
       font-size: 15px;
+      box-sizing: border-box;
     }
     #pdf-content th, #pdf-content td {
       border: 1.5px solid #222 !important;
@@ -45,6 +47,7 @@
       white-space: pre-line;
       vertical-align: middle;
       background: #fff;
+      box-sizing: border-box;
     }
     #pdf-content th {
       background: #fff;
@@ -52,20 +55,20 @@
       text-align: center;
     }
     #pdf-content td.stt, #pdf-content th.stt {
-      width: 9%;
-      min-width: 40px;
-      max-width: 80px;
+      width: 8%;
+      min-width: 38px;
+      max-width: 60px;
       text-align: center;
     }
     #pdf-content td.question, #pdf-content th.question {
-      width: 48%;
-      min-width: 120px;
-      max-width: 470px;
+      width: 49%;
+      min-width: 110px;
+      max-width: 380px;
     }
     #pdf-content td.answer, #pdf-content th.answer {
       width: 43%;
       min-width: 100px;
-      max-width: 350px;
+      max-width: 250px;
     }
     #pdf-content tr {
       height: 1px;
@@ -79,6 +82,18 @@
       font-weight: bold;
       margin: 8px 0;
       text-align: center;
+    }
+    @media print {
+      body, html, #pdf-content, .pdf-table-wrap, table {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      #pdf-content table {
+        max-width: 690px !important;
+      }
     }
   </style>
 </head>
@@ -128,48 +143,38 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Hàm lấy từ khóa đầu tiên làm STT (sửa chuẩn cho các từ khóa đặc biệt)
 function getFirstWord(str) {
   if (!str) return "";
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = str;
   const text = tempDiv.textContent?.trim() || '';
-  // Nhận diện các từ khóa chính xác, chỉ lấy đúng từ đó
   const keys = ["Đặt", "Cho", "Hàm"];
   for (const k of keys)
     if (text.startsWith(k)) return k;
-  // Nếu không, lấy từ đầu tiên (tách theo khoảng trắng)
   const firstSpaceIdx = text.indexOf(' ');
   if (firstSpaceIdx === -1) return text;
   return text.slice(0, firstSpaceIdx);
 }
-
-// Loại bỏ tag HTML nhưng giữ nguyên công thức toán học (nếu có)
 function stripHTML(html) {
   if (!html) return '';
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html;
   return tempDiv.textContent?.trim() || '';
 }
-
-// Trả về đáp án đúng, giữ nguyên LaTeX/toán học nếu có
 function getAnswer(item) {
   if (!item || !item.lua_chon || item.dap_an_dung === undefined || item.dap_an_dung === null) return "";
   const key = String(item.dap_an_dung);
   if (!(key in item.lua_chon)) return "";
   return item.lua_chon[key];
 }
-
 async function getSubjects() {
   const snapshot = await db.collection("mon_hoc").get();
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
-
 async function getQuestionsBySubject(subjectId) {
   const qSnapshot = await db.collection("cau_hoi").where("mon_hoc_id", "==", subjectId).get();
   return qSnapshot.docs.map(doc => doc.data());
 }
-
 async function loadSubjects() {
   const subjectList = document.getElementById("subjectList");
   subjectList.innerHTML = "<div>Đang tải...</div>";
@@ -205,13 +210,11 @@ async function exportTXT(subjectId, subjectName) {
     alert("Không có dữ liệu câu hỏi cho môn này.");
     return;
   }
-  // Chuẩn bị mảng rows với stt là từ đầu tiên, giữ nguyên đáp án toán học (LaTeX nếu có)
   const rows = questions.map(item => ({
     stt: getFirstWord(item.noi_dung),
     question: stripHTML(item.noi_dung),
-    answer: getAnswer(item) // không stripHTML để giữ nguyên công thức toán học
+    answer: getAnswer(item)
   }));
-  // Sắp xếp theo stt từ A-Z
   rows.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
   let content = `Đề cương môn: ${subjectName}\n\n`;
   rows.forEach(row => {
@@ -240,7 +243,6 @@ async function exportPDF(subjectId, subjectName) {
   }
   document.getElementById('loading-mathjax').style.display = 'block';
 
-  // Chuẩn bị mảng rows với stt là từ đầu tiên, giữ nguyên đáp án toán học (LaTeX nếu có)
   const rows = questions.map((item, i) => ({
     stt: getFirstWord(item.noi_dung),
     question: item.noi_dung ? String(item.noi_dung) : "",
@@ -277,13 +279,11 @@ async function exportPDF(subjectId, subjectName) {
   pdfDiv.innerHTML = html;
   pdfDiv.style.display = "block";
 
-  // Render KaTeX trong vùng pdf-content
   renderKatexForElement(pdfDiv);
 
-  // Đợi một chút cho KaTeX render xong
   setTimeout(async () => {
     await html2pdf().set({
-      margin: 10,
+      margin: [10, 10, 10, 10], // top, right, bottom, left
       filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
