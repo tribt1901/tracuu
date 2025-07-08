@@ -14,9 +14,7 @@
     .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
     #pdf-content { display: none; }
-    #pdf-content {
-      text-align: left;
-    }
+    #pdf-content { text-align: left; }
     #pdf-content .pdf-table-wrap {
       display: inline-block;
       max-width: 100%;
@@ -224,7 +222,7 @@ async function exportTXT(subjectId, subjectName) {
   const rows = questions.map(item => ({
     stt: getFirstPhrase(item.noi_dung),
     question: stripHTML(item.noi_dung),
-    answer: item.lua_chon?.[item.dap_an_dung]
+    answer: (item.lua_chon && item.dap_an_dung in item.lua_chon)
       ? stripHTML(item.lua_chon[item.dap_an_dung])
       : ""
   })).sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
@@ -247,7 +245,7 @@ async function exportPDF(subjectId, subjectName) {
   let hasAnyMath = false;
   questions.forEach(item => {
     if (hasMath(item.noi_dung)) hasAnyMath = true;
-    else if (item.lua_chon?.[item.dap_an_dung] && hasMath(item.lua_chon[item.dap_an_dung])) hasAnyMath = true;
+    else if (item.lua_chon && item.dap_an_dung in item.lua_chon && hasMath(item.lua_chon[item.dap_an_dung])) hasAnyMath = true;
   });
 
   // Nếu KHÔNG có công thức ở bất kỳ đâu -> xuất bản gốc, không gọi API, rất nhanh
@@ -268,7 +266,9 @@ async function exportPDF(subjectId, subjectName) {
     questions.forEach(item => {
       const stt = getFirstPhrase(item.noi_dung);
       const questionText = stripHTML(item.noi_dung);
-      const answerText = stripHTML(item.lua_chon?.[item.dap_an_dung]);
+      const answerText = (item.lua_chon && item.dap_an_dung in item.lua_chon)
+        ? stripHTML(item.lua_chon[item.dap_an_dung])
+        : "";
       html += `<tr>
         <td class="stt" style="text-align:center;">${stt}</td>
         <td class="question">${questionText}</td>
@@ -294,7 +294,9 @@ async function exportPDF(subjectId, subjectName) {
   const latexArr = [];
   questions.forEach(item => {
     latexArr.push(extractFirstLatex(item.noi_dung));
-    latexArr.push(extractFirstLatex(item.lua_chon?.[item.dap_an_dung] || ""));
+    latexArr.push(extractFirstLatex(
+      (item.lua_chon && item.dap_an_dung in item.lua_chon) ? item.lua_chon[item.dap_an_dung] : ""
+    ));
   });
   const htmlArr = await renderLatexBatch(latexArr);
 
@@ -320,7 +322,7 @@ async function exportPDF(subjectId, subjectName) {
     // Tách phần text không chứa công thức
     const questionText = stripHTML(item.noi_dung.replace(/<script[^>]*type="math\/tex"[^>]*>[\s\S]*?<\/script>/g, ''));
     const questionHTML = htmlArr[idx];
-    const answerHTML = htmlArr[idx+1];
+    const answerHTML = htmlArr[idx + 1];
     html += `<tr>
       <td class="stt" style="text-align:center;">${stt}</td>
       <td class="question">${questionText}${questionHTML ? "<br>"+questionHTML : ""}</td>
