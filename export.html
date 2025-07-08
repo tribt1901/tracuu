@@ -30,7 +30,7 @@
       border-collapse: collapse;
       margin: 0 auto;
       width: 100%;
-      table-layout: auto;
+      table-layout: fixed;
       max-width: 900px;
     }
     #pdf-content table th, #pdf-content table td {
@@ -41,8 +41,8 @@
       word-break: break-word;
       overflow-wrap: break-word;
       white-space: pre-line;
-      text-align: left;
       vertical-align: top;
+      text-align: left;
     }
     #pdf-content table th.stt, #pdf-content table td.stt {
       width: 9%;
@@ -124,15 +124,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-async function getSubjects() {
-  const snapshot = await db.collection("mon_hoc").get();
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-async function getQuestionsBySubject(subjectId) {
-  const qSnapshot = await db.collection("cau_hoi").where("mon_hoc_id", "==", subjectId).get();
-  return qSnapshot.docs.map(doc => doc.data());
-}
-function getFirstPhrase(str) {
+function getFirstWord(str) {
   if (!str) return "";
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = str;
@@ -153,26 +145,36 @@ function getAnswer(item) {
   if (!(key in item.lua_chon)) return "";
   return item.lua_chon[key];
 }
-// Gửi nội dung có thể chứa nhiều công thức qua API để render toàn bộ sang KaTeX
+// Gửi mảng htmlArr (câu hỏi và đáp án) sang API để render công thức toán học, nếu lỗi trả lại text gốc
 async function renderMathContentBatch(htmlArr) {
   if (!Array.isArray(htmlArr) || htmlArr.length === 0) return [];
-  const res = await fetch("https://tracuu-app.hugo.io.vn/api/render-math", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ htmlArr })
-  });
   let data = {};
   try {
+    const res = await fetch("https://tracuu-app.hugo.io.vn/api/render-math", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ htmlArr })
+    });
     data = await res.json();
   } catch(e) {
     data = {};
   }
-  if (!data || !Array.isArray(data.results)) return htmlArr.map(()=> "");
+  if (!data || !Array.isArray(data.results)) {
+    // Nếu lỗi, trả lại text gốc không render
+    return htmlArr;
+  }
   return data.results.map(r =>
     r && r.html && r.html.trim() !== "" ? r.html : ""
   );
 }
-
+async function getSubjects() {
+  const snapshot = await db.collection("mon_hoc").get();
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+async function getQuestionsBySubject(subjectId) {
+  const qSnapshot = await db.collection("cau_hoi").where("mon_hoc_id", "==", subjectId).get();
+  return qSnapshot.docs.map(doc => doc.data());
+}
 async function loadSubjects() {
   const subjectList = document.getElementById("subjectList");
   subjectList.innerHTML = "<div>Đang tải...</div>";
@@ -208,11 +210,14 @@ async function exportTXT(subjectId, subjectName) {
     alert("Không có dữ liệu câu hỏi cho môn này.");
     return;
   }
+  // Chuẩn bị mảng rows với stt là từ đầu tiên
   const rows = questions.map(item => ({
-    stt: getFirstPhrase(item.noi_dung),
+    stt: getFirstWord(item.noi_dung),
     question: stripHTML(item.noi_dung),
     answer: stripHTML(getAnswer(item))
-  })).sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
+  }));
+  // Sắp xếp theo stt từ A-Z
+  rows.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
   let content = `Đề cương môn: ${subjectName}\n\n`;
   rows.forEach(row => {
     content += `STT: ${row.stt}\nCâu hỏi: ${row.question}\nĐáp án đúng: ${row.answer}\n\n`;
@@ -221,7 +226,6 @@ async function exportTXT(subjectId, subjectName) {
   saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
 }
 
-// PDF: render toàn bộ nội dung công thức đẹp bằng KaTeX, không lựa chọn
 async function exportPDF(subjectId, subjectName) {
   const questions = await getQuestionsBySubject(subjectId);
   if (!questions || !questions.length) {
@@ -229,10 +233,22 @@ async function exportPDF(subjectId, subjectName) {
     return;
   }
   document.getElementById('loading-mathjax').style.display = 'block';
+
+  // Chuẩn bị mảng rows với stt là từ đầu tiên
+  const rows = questions.map((item, i) => ({
+    stt: getFirstWord(item.noi_dung),
+    question: item.noi_dung ? String(item.noi_dung) : "",
+    answer: getAnswer(item) ? String(getAnswer(item)) : ""
+  }));
+
+  // Sắp xếp theo stt từ A-Z
+  rows.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
+
+  // render công thức toán cho cả câu hỏi và đáp án
   const htmlArr = [];
-  questions.forEach(item => {
-    htmlArr.push(item.noi_dung ? String(item.noi_dung) : "");
-    htmlArr.push(getAnswer(item) ? String(getAnswer(item)) : "");
+  rows.forEach(row => {
+    htmlArr.push(row.question);
+    htmlArr.push(row.answer);
   });
   if (htmlArr.length === 0) {
     alert("Dữ liệu rỗng.");
@@ -258,12 +274,11 @@ async function exportPDF(subjectId, subjectName) {
         <tbody>
   `;
   let idx = 0;
-  questions.forEach(item => {
-    const stt = getFirstPhrase(item.noi_dung);
-    const questionHTML = renderedArr[idx] || "";
-    const answerHTML = renderedArr[idx + 1] || "";
+  rows.forEach((row, i) => {
+    const questionHTML = renderedArr[idx] || stripHTML(row.question);
+    const answerHTML = renderedArr[idx + 1] || stripHTML(row.answer);
     html += `<tr>
-      <td class="stt" style="text-align:center;">${stt}</td>
+      <td class="stt" style="text-align:center;">${row.stt}</td>
       <td class="question">${questionHTML}</td>
       <td class="answer"><div>${answerHTML}</div></td>
     </tr>`;
