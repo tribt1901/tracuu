@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Đề cương môn học</title>
+  <title>Đề cương môn: Vi tích phân A2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -147,27 +147,45 @@ function getAnswer(item) {
   if (!(key in item.lua_chon)) return "";
   return item.lua_chon[key];
 }
-// Gửi mảng htmlArr (câu hỏi và đáp án) sang API để render công thức toán học, nếu lỗi trả lại text gốc
-async function renderMathContentBatch(htmlArr) {
+// Kiểm tra xem nội dung có toán học latex không
+function hasMath(str) {
+  if (!str) return false;
+  // Có \(...\) hoặc \[...\] hoặc <script type=math/tex>
+  return /\\\(|\\\[|<script[^>]*type=["']?math\/tex["']?[^>]*>/i.test(str);
+}
+// Render toán học nếu có, không thì trả lại text thường
+async function renderMathContentSmart(htmlArr, rawArr) {
   if (!Array.isArray(htmlArr) || htmlArr.length === 0) return [];
-  let data = {};
+  // Xác định xem phần tử nào cần render toán học
+  const needRenderArr = htmlArr.map((v, i) => hasMath(v));
+  // Nếu tất cả là false thì trả về text thường luôn
+  if (needRenderArr.every(v => !v)) return htmlArr;
+  // Chỉ gửi sang API các phần cần render
+  const toRenderArr = htmlArr.map((v, i) => needRenderArr[i] ? v : null);
+  let rendered = [];
   try {
     const res = await fetch("https://tracuu-app.hugo.io.vn/api/render-math", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ htmlArr })
+      body: JSON.stringify({ htmlArr: toRenderArr })
     });
-    data = await res.json();
-  } catch(e) {
-    data = {};
-  }
-  if (!data || !Array.isArray(data.results)) {
-    // Nếu lỗi, trả lại text gốc không render
+    const data = await res.json();
+    // Nếu API lỗi hoặc không đúng, trả lại text gốc
+    if (!data || !Array.isArray(data.results)) return htmlArr;
+    rendered = data.results;
+  } catch (e) {
     return htmlArr;
   }
-  return data.results.map(r =>
-    r && r.html && r.html.trim() !== "" ? r.html : ""
-  );
+  // Gộp lại: nếu cần render thì lấy kết quả, không thì lấy text như gốc
+  return htmlArr.map((v, i) => {
+    if (needRenderArr[i]) {
+      // Kiểm tra có render thành công không
+      return rendered[i] && rendered[i].html && rendered[i].html.trim() !== "" ? rendered[i].html : stripHTML(rawArr[i] || v);
+    } else {
+      // Trả về text thường (nếu là HTML thì giữ lại định dạng dòng)
+      return stripHTML(rawArr[i] || v);
+    }
+  });
 }
 async function getSubjects() {
   const snapshot = await db.collection("mon_hoc").get();
@@ -240,24 +258,29 @@ async function exportPDF(subjectId, subjectName) {
   const rows = questions.map((item, i) => ({
     stt: getFirstWord(item.noi_dung),
     question: item.noi_dung ? String(item.noi_dung) : "",
-    answer: getAnswer(item) ? String(getAnswer(item)) : ""
+    answer: getAnswer(item) ? String(getAnswer(item)) : "",
+    rawQ: item.noi_dung || "",
+    rawA: getAnswer(item) || ""
   }));
 
   // Sắp xếp theo stt từ A-Z
   rows.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
 
-  // render công thức toán cho cả câu hỏi và đáp án
+  // render công thức toán cho cả câu hỏi và đáp án (chỉ render nếu có toán học)
   const htmlArr = [];
+  const rawArr = [];
   rows.forEach(row => {
     htmlArr.push(row.question);
     htmlArr.push(row.answer);
+    rawArr.push(row.rawQ);
+    rawArr.push(row.rawA);
   });
   if (htmlArr.length === 0) {
     alert("Dữ liệu rỗng.");
     document.getElementById('loading-mathjax').style.display = 'none';
     return;
   }
-  const renderedArr = await renderMathContentBatch(htmlArr);
+  const renderedArr = await renderMathContentSmart(htmlArr, rawArr);
 
   let html = `
     <div class="pdf-title">Đề cương môn: ${subjectName}</div>
