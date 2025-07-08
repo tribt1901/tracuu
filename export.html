@@ -149,7 +149,6 @@ function stripHTML(html) {
   tempDiv.innerHTML = html;
   return tempDiv.textContent?.trim() || '';
 }
-// Đảm bảo luôn lấy đáp án đúng dù key là số hay string
 function getAnswer(item) {
   if (!item || !item.lua_chon || item.dap_an_dung === undefined || item.dap_an_dung === null) return "";
   const key = String(item.dap_an_dung);
@@ -173,8 +172,6 @@ function extractFirstLatex(html) {
   if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
   return "";
 }
-
-// Render LaTeX qua API KaTeX server
 async function renderLatexBatch(latexArr) {
   const res = await fetch("https://tracuu-app.hugo.io.vn/api/render-math", {
     method: "POST",
@@ -182,13 +179,11 @@ async function renderLatexBatch(latexArr) {
     body: JSON.stringify({ latexArr })
   });
   const data = await res.json();
-  // Trả về đúng html KaTeX (nếu lỗi thì trả chuỗi rỗng)
   return data.results.map(r =>
     r && r.html && r.html.trim() !== "" ? r.html : ""
   );
 }
 
-// Main
 async function loadSubjects() {
   const subjectList = document.getElementById("subjectList");
   subjectList.innerHTML = "<div>Đang tải...</div>";
@@ -257,7 +252,6 @@ async function exportPDF(subjectId, subjectName) {
     else if (hasMath(getAnswer(item))) hasAnyMath = true;
   });
 
-  // Nếu KHÔNG có công thức ở bất kỳ đâu -> xuất bản gốc, không gọi API, rất nhanh
   if (!hasAnyMath) {
     let html = `
       <div class="pdf-title">Đề cương môn: ${subjectName}</div>
@@ -324,7 +318,6 @@ async function exportPDF(subjectId, subjectName) {
   let idx = 0;
   questions.forEach(item => {
     const stt = getFirstPhrase(item.noi_dung);
-    // Tách phần text không chứa công thức
     let questionText = stripHTML(
       item.noi_dung
         .replace(/<script[^>]*type="math\/tex"[^>]*>[\s\S]*?<\/script>/g, '')
