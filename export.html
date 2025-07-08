@@ -10,7 +10,6 @@
   <style>
     body { padding-top: 70px; font-family: 'Roboto', Arial, sans-serif; }
     .subject-btns .btn { margin-right: 6px; }
-    .table-responsive { max-height: 500px; overflow-y: auto; }
     .navbar-brand, .nav-link { font-family: 'Roboto', Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
     #pdf-content { display: none; }
@@ -29,7 +28,7 @@
     #pdf-content table th, #pdf-content table td {
       border: 1px solid #222;
       padding: 6px;
-      font-size: 14px;
+      font-size: 16px;
       font-family: 'Roboto', Arial, sans-serif;
       word-break: break-word;
       overflow-wrap: break-word;
@@ -40,27 +39,21 @@
       vertical-align: top;
     }
     #pdf-content table th.stt, #pdf-content table td.stt {
-      width: 7%;
+      width: 9%;
       min-width: 35px;
-      max-width: 60px;
+      max-width: 80px;
       text-align: center !important;
     }
     #pdf-content table th.question, #pdf-content table td.question {
-      width: 49%;
+      width: 48%;
       min-width: 120px;
       text-align: left;
     }
     #pdf-content table th.answer, #pdf-content table td.answer {
-      width: 44%;
+      width: 43%;
       min-width: 100px;
       text-align: left;
       overflow: visible;
-    }
-    #pdf-content table td.answer > div, #pdf-content table th.answer > div {
-      display: block;
-      width: 100%;
-      overflow-x: auto;
-      white-space: normal;
     }
     #pdf-content .pdf-title {
       text-align: center;
@@ -142,27 +135,23 @@ function getFirstPhrase(str) {
   if (firstSpaceIdx === -1) return text;
   return text.slice(0, firstSpaceIdx);
 }
-function stripHTML(html) {
-  if (!html) return '';
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
-  return tempDiv.textContent?.trim() || '';
-}
 function getAnswer(item) {
   if (!item || !item.lua_chon || item.dap_an_dung === undefined || item.dap_an_dung === null) return "";
   const key = String(item.dap_an_dung);
   if (!(key in item.lua_chon)) return "";
   return item.lua_chon[key];
 }
-function hasMath(html) {
-  return /\\\(|\\\[|<script[^>]*type="math\/tex"[^>]*>/i.test(html || "");
-}
+// Lấy công thức latex đầu tiên trong 1 html, ưu tiên script type=math/tex, nếu không có thì lấy trong \( ... \) hoặc \[ ... \]
+// Nếu không có công thức trả về rỗng
 function extractFirstLatex(html) {
   if (!html) return "";
+  // <script type="math/tex">
   let match = html.match(/<script[^>]*type="math\/tex"[^>]*>([\s\S]*?)<\/script>/);
   if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
+  // \( ... \)
   match = html.match(/\\\((.*?)\\\)/);
   if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
+  // \[ ... \]
   match = html.match(/\\\[(.*?)\\\]/);
   if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
   return "";
@@ -178,7 +167,6 @@ async function renderLatexBatch(latexArr) {
     r && r.html && r.html.trim() !== "" ? r.html : ""
   );
 }
-
 async function loadSubjects() {
   const subjectList = document.getElementById("subjectList");
   subjectList.innerHTML = "<div>Đang tải...</div>";
@@ -194,104 +182,31 @@ async function loadSubjects() {
     div.innerHTML = `
       <span class="fw-bold"><span class="subject-title-icon">📘</span>${subj.ten_mon}</span>
       <div class="subject-btns">
-        <button class="btn btn-sm btn-outline-secondary" data-type="txt" data-id="${subj.id}" data-name="${subj.ten_mon}">📝 TXT</button>
         <button class="btn btn-sm btn-outline-primary" data-type="pdf" data-id="${subj.id}" data-name="${subj.ten_mon}">📄 PDF</button>
       </div>
     `;
-    div.querySelectorAll("button").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const type = btn.getAttribute("data-type");
-        const subjectId = btn.getAttribute("data-id");
-        const subjectName = btn.getAttribute("data-name");
-        if(type === "txt") {
-          exportTXT(subjectId, subjectName);
-        } else {
-          exportPDF(subjectId, subjectName);
-        }
-      });
+    div.querySelector("button").addEventListener("click", async () => {
+      const subjectId = subj.id;
+      const subjectName = subj.ten_mon;
+      exportPDF(subjectId, subjectName);
     });
     subjectList.appendChild(div);
   });
 }
-
-async function exportTXT(subjectId, subjectName) {
-  const questions = await getQuestionsBySubject(subjectId);
-  if(!questions.length) {
-    alert("Không có dữ liệu câu hỏi cho môn này.");
-    return;
-  }
-  const rows = questions.map(item => ({
-    stt: getFirstPhrase(item.noi_dung),
-    question: stripHTML(item.noi_dung),
-    answer: stripHTML(getAnswer(item))
-  })).sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
-  let content = `Đề cương môn: ${subjectName}\n\n`;
-  rows.forEach(row => {
-    content += `STT: ${row.stt}\nCâu hỏi: ${row.question}\nĐáp án đúng: ${row.answer}\n\n`;
-  });
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-  saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
-}
-
 async function exportPDF(subjectId, subjectName) {
   const questions = await getQuestionsBySubject(subjectId);
   if (!questions.length) {
     alert("Không có dữ liệu câu hỏi cho môn này.");
     return;
   }
-
-  let hasAnyMath = false;
-  questions.forEach(item => {
-    if (hasMath(item.noi_dung)) hasAnyMath = true;
-    else if (hasMath(getAnswer(item))) hasAnyMath = true;
-  });
-
-  if (!hasAnyMath) {
-    let html = `
-      <div class="pdf-title">Đề cương môn: ${subjectName}</div>
-      <div class="pdf-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="stt" style="text-align:center; vertical-align:middle;">STT</th>
-              <th class="question" style="text-align:center; vertical-align:middle;">Câu hỏi</th>
-              <th class="answer" style="text-align:center; vertical-align:middle;">Đáp án đúng</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-    questions.forEach(item => {
-      const stt = getFirstPhrase(item.noi_dung);
-      const questionText = stripHTML(item.noi_dung);
-      const answerText = stripHTML(getAnswer(item));
-      html += `<tr>
-        <td class="stt" style="text-align:center;">${stt}</td>
-        <td class="question">${questionText}</td>
-        <td class="answer"><div>${answerText}</div></td>
-      </tr>`;
-    });
-    html += `</tbody></table></div>`;
-    const pdfDiv = document.getElementById("pdf-content");
-    pdfDiv.innerHTML = html;
-    pdfDiv.style.display = "block";
-    await html2pdf().set({
-      margin: 10,
-      filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-    }).from(pdfDiv).save();
-    pdfDiv.style.display = "none";
-    return;
-  }
-
   document.getElementById('loading-mathjax').style.display = 'block';
+  // Chỉ lấy công thức toán học đầu tiên từ câu hỏi/đáp án (nếu có)
   const latexArr = [];
   questions.forEach(item => {
     latexArr.push(extractFirstLatex(item.noi_dung));
     latexArr.push(extractFirstLatex(getAnswer(item)));
   });
   const htmlArr = await renderLatexBatch(latexArr);
-
   let html = `
     <div class="pdf-title">Đề cương môn: ${subjectName}</div>
     <div class="pdf-table-wrap">
@@ -309,21 +224,14 @@ async function exportPDF(subjectId, subjectName) {
         <tbody>
   `;
   let idx = 0;
-  questions.forEach(item => {
+  questions.forEach((item, i) => {
     const stt = getFirstPhrase(item.noi_dung);
-    let questionText = stripHTML(
-      item.noi_dung
-        .replace(/<script[^>]*type="math\/tex"[^>]*>[\s\S]*?<\/script>/g, '')
-        .replace(/\\\(.+?\\\)/g, '')
-        .replace(/\\\[.+?\\\]/g, '')
-    );
-    const answerText = getAnswer(item);
     const questionHTML = htmlArr[idx];
     const answerHTML = htmlArr[idx + 1];
     html += `<tr>
       <td class="stt" style="text-align:center;">${stt}</td>
-      <td class="question">${questionText}${questionHTML ? "<br>"+questionHTML : ""}</td>
-      <td class="answer"><div>${hasMath(answerText) && answerHTML ? answerHTML : stripHTML(answerText)}</div></td>
+      <td class="question" style="text-align:center;">${questionHTML || ""}</td>
+      <td class="answer" style="text-align:center;"><div>${answerHTML || ""}</div></td>
     </tr>`;
     idx += 2;
   });
@@ -331,18 +239,15 @@ async function exportPDF(subjectId, subjectName) {
   const pdfDiv = document.getElementById("pdf-content");
   pdfDiv.innerHTML = html;
   pdfDiv.style.display = "block";
-
   await html2pdf().set({
     margin: 10,
-    filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
+    filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}_only_formula.pdf`,
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
   }).from(pdfDiv).save();
-
   pdfDiv.style.display = "none";
   document.getElementById('loading-mathjax').style.display = 'none';
 }
-
 loadSubjects();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
