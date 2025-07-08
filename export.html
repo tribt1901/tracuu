@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Đề cương môn: Vi tích phân A2</title>
+  <title>Đề cương môn học</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -108,6 +108,8 @@
 </div>
 <div id="pdf-content"></div>
 <div id="loading-mathjax" class="loading-math" style="display:none;">Đang render công thức toán học, vui lòng chờ...</div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -146,46 +148,6 @@ function getAnswer(item) {
   const key = String(item.dap_an_dung);
   if (!(key in item.lua_chon)) return "";
   return item.lua_chon[key];
-}
-// Kiểm tra xem nội dung có toán học latex không
-function hasMath(str) {
-  if (!str) return false;
-  // Có \(...\) hoặc \[...\] hoặc <script type=math/tex>
-  return /\\\(|\\\[|<script[^>]*type=["']?math\/tex["']?[^>]*>/i.test(str);
-}
-// Render toán học nếu có, không thì trả lại text thường
-async function renderMathContentSmart(htmlArr, rawArr) {
-  if (!Array.isArray(htmlArr) || htmlArr.length === 0) return [];
-  // Xác định xem phần tử nào cần render toán học
-  const needRenderArr = htmlArr.map((v, i) => hasMath(v));
-  // Nếu tất cả là false thì trả về text thường luôn
-  if (needRenderArr.every(v => !v)) return htmlArr;
-  // Chỉ gửi sang API các phần cần render
-  const toRenderArr = htmlArr.map((v, i) => needRenderArr[i] ? v : null);
-  let rendered = [];
-  try {
-    const res = await fetch("https://tracuu-app.hugo.io.vn/api/render-math", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ htmlArr: toRenderArr })
-    });
-    const data = await res.json();
-    // Nếu API lỗi hoặc không đúng, trả lại text gốc
-    if (!data || !Array.isArray(data.results)) return htmlArr;
-    rendered = data.results;
-  } catch (e) {
-    return htmlArr;
-  }
-  // Gộp lại: nếu cần render thì lấy kết quả, không thì lấy text như gốc
-  return htmlArr.map((v, i) => {
-    if (needRenderArr[i]) {
-      // Kiểm tra có render thành công không
-      return rendered[i] && rendered[i].html && rendered[i].html.trim() !== "" ? rendered[i].html : stripHTML(rawArr[i] || v);
-    } else {
-      // Trả về text thường (nếu là HTML thì giữ lại định dạng dòng)
-      return stripHTML(rawArr[i] || v);
-    }
-  });
 }
 async function getSubjects() {
   const snapshot = await db.collection("mon_hoc").get();
@@ -246,6 +208,18 @@ async function exportTXT(subjectId, subjectName) {
   saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
 }
 
+function renderKatexForElement(el) {
+  if (!el) return;
+  // renderMathInElement sẽ tự động render \(...\) và \[...\] trong HTML
+  window.renderMathInElement(el, {
+    delimiters: [
+      {left: "\\[", right: "\\]", display: true},
+      {left: "\\(", right: "\\)", display: false}
+    ],
+    throwOnError: false
+  });
+}
+
 async function exportPDF(subjectId, subjectName) {
   const questions = await getQuestionsBySubject(subjectId);
   if (!questions || !questions.length) {
@@ -258,30 +232,13 @@ async function exportPDF(subjectId, subjectName) {
   const rows = questions.map((item, i) => ({
     stt: getFirstWord(item.noi_dung),
     question: item.noi_dung ? String(item.noi_dung) : "",
-    answer: getAnswer(item) ? String(getAnswer(item)) : "",
-    rawQ: item.noi_dung || "",
-    rawA: getAnswer(item) || ""
+    answer: getAnswer(item) ? String(getAnswer(item)) : ""
   }));
 
   // Sắp xếp theo stt từ A-Z
   rows.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
 
-  // render công thức toán cho cả câu hỏi và đáp án (chỉ render nếu có toán học)
-  const htmlArr = [];
-  const rawArr = [];
-  rows.forEach(row => {
-    htmlArr.push(row.question);
-    htmlArr.push(row.answer);
-    rawArr.push(row.rawQ);
-    rawArr.push(row.rawA);
-  });
-  if (htmlArr.length === 0) {
-    alert("Dữ liệu rỗng.");
-    document.getElementById('loading-mathjax').style.display = 'none';
-    return;
-  }
-  const renderedArr = await renderMathContentSmart(htmlArr, rawArr);
-
+  // Tạo HTML bảng
   let html = `
     <div class="pdf-title">Đề cương môn: ${subjectName}</div>
     <div class="pdf-table-wrap">
@@ -298,29 +255,32 @@ async function exportPDF(subjectId, subjectName) {
         </thead>
         <tbody>
   `;
-  let idx = 0;
-  rows.forEach((row, i) => {
-    const questionHTML = renderedArr[idx] || stripHTML(row.question);
-    const answerHTML = renderedArr[idx + 1] || stripHTML(row.answer);
+  rows.forEach((row) => {
     html += `<tr>
       <td class="stt" style="text-align:center;">${row.stt}</td>
-      <td class="question">${questionHTML}</td>
-      <td class="answer"><div>${answerHTML}</div></td>
+      <td class="question">${row.question}</td>
+      <td class="answer"><div>${row.answer}</div></td>
     </tr>`;
-    idx += 2;
   });
   html += `</tbody></table></div>`;
   const pdfDiv = document.getElementById("pdf-content");
   pdfDiv.innerHTML = html;
   pdfDiv.style.display = "block";
-  await html2pdf().set({
-    margin: 10,
-    filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-  }).from(pdfDiv).save();
-  pdfDiv.style.display = "none";
-  document.getElementById('loading-mathjax').style.display = 'none';
+
+  // Render KaTeX trong vùng pdf-content
+  renderKatexForElement(pdfDiv);
+
+  // Đợi một chút cho KaTeX render xong
+  setTimeout(async () => {
+    await html2pdf().set({
+      margin: 10,
+      filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    }).from(pdfDiv).save();
+    pdfDiv.style.display = "none";
+    document.getElementById('loading-mathjax').style.display = 'none';
+  }, 400);
 }
 
 loadSubjects();
