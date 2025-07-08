@@ -1,26 +1,22 @@
 import katex from "katex";
 
-export default async function handler(req, res) {
-  // Thêm header CORS
-  res.setHeader("Access-Control-Allow-Origin", "https://tracuu.hugo.io.vn");
+export default function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") {
     res.status(200).end();
     return;
   }
-
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
-
   const { latexArr } = req.body;
   if (!Array.isArray(latexArr)) {
     res.status(400).json({ error: "Missing latexArr array" });
     return;
   }
-
   const results = latexArr.map(latex => {
     if (!latex) return { error: "No LaTeX found", html: "", latex: "" };
     try {
@@ -30,6 +26,5 @@ export default async function handler(req, res) {
       return { error: e.message, html: "", latex };
     }
   });
-
   res.status(200).json({ results });
 }
