@@ -164,7 +164,7 @@
 <script type="module">
 // Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 document.addEventListener("DOMContentLoaded", () => {
   // Firebase config
   const firebaseConfig = {
@@ -455,11 +455,12 @@ document.addEventListener("DOMContentLoaded", () => {
       importedQuestions = [];
       let rawQuestions = [];
       docx.querySelectorAll('.que').forEach(q => {
-        let questionText = q.querySelector('.qtext')?.innerText.trim() || '';
+        // SỬA: LẤY NỘI DUNG DƯỚI DẠNG HTML ĐỂ GIỮ LẠI CÔNG THỨC TOÁN
+        let questionText = q.querySelector('.qtext')?.innerHTML.trim() || '';
         const answerNodes = q.querySelectorAll('.answer > div');
         const answers = [];
         answerNodes.forEach((ans, idx) => {
-          let ansText = ans.querySelector('.flex-fill, div.ml-1')?.innerText.trim() || '';
+          let ansText = ans.querySelector('.flex-fill, div.ml-1')?.innerHTML.trim() || '';
           answers.push(ansText);
         });
         let correct = '';
@@ -470,9 +471,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (match) {
           let correctValue = match[1].trim();
           correctIdx = answers.findIndex(a =>
-            a.trim().toLowerCase() === correctValue.trim().toLowerCase()
-            || a.trim().toLowerCase().includes(correctValue.trim().toLowerCase())
-            || correctValue.trim().toLowerCase().includes(a.trim().toLowerCase())
+            a.replace(/<[^>]+>/g,'').trim().toLowerCase() === correctValue.trim().toLowerCase()
+            || a.replace(/<[^>]+>/g,'').trim().toLowerCase().includes(correctValue.trim().toLowerCase())
+            || correctValue.trim().toLowerCase().includes(a.replace(/<[^>]+>/g,'').trim().toLowerCase())
           );
           correctKey = ['a','b','c','d'][correctIdx] || '';
           correct = answers[correctIdx] || '';
@@ -517,8 +518,8 @@ document.addEventListener("DOMContentLoaded", () => {
         htmlResult += `</div>`;
       });
       importHtmlResult.innerHTML = htmlResult;
-      saveImportBtn.style.display = importedQuestions.length>0 ? "inline-block" : "none";
       if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
+      saveImportBtn.style.display = importedQuestions.length>0 ? "inline-block" : "none";
     }
     reader.readAsText(file);
   });
