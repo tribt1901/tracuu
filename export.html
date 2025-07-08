@@ -76,17 +76,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-function getFirstWord(content) {
-  if (!content) return "";
-  const div = document.createElement("div");
-  div.innerHTML = content;
-  const text = div.textContent?.trim() || "";
-  const starts = ["Đặt", "Cho", "Hàm"];
-  for (const s of starts) if (text.startsWith(s)) return s;
-  const idx = text.indexOf(" ");
-  return idx === -1 ? text : text.slice(0, idx);
-}
-
 function stripHTML(html) {
   if (!html) return "";
   const div = document.createElement("div");
@@ -140,11 +129,11 @@ async function exportTXT(subjId, subjName) {
     return;
   }
   const arr = questions.map(q => ({
-    stt: getFirstWord(q.noi_dung),
+    stt: "13",
     question: stripHTML(q.noi_dung),
     answer: getAnswer(q)
   }));
-  arr.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
+  // Không cần sort theo stt vì tất cả đều là 13
   let txt = `Đề cương môn: ${subjName}\n\n`;
   arr.forEach(item => {
     txt += `STT: ${item.stt}\nCâu hỏi: ${item.question}\nĐáp án đúng: ${item.answer}\n\n`;
@@ -172,11 +161,11 @@ async function exportPDF(subjId, subjName) {
   }
   document.getElementById("loading-mathjax").style.display = "block";
   const arr = questions.map(q => ({
-    stt: getFirstWord(q.noi_dung),
+    stt: "13",
     question: q.noi_dung ? String(q.noi_dung) : "",
     answer: getAnswer(q) ? String(getAnswer(q)) : ""
   }));
-  arr.sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
+  // Không cần sort vì STT giống nhau
   let html = `
     <div class="pdf-title">Đề cương môn: ${subjName}</div>
     <div class="pdf-table-wrap">
