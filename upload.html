@@ -183,25 +183,37 @@ async function uploadFile(file) {
   return (await res.json()).url;
 }
 
-// Hàm loại bỏ mọi text toán học dư thừa nếu đã có MathJax trong cùng block
-function removeRedundantMathText(html) {
+// Loại bỏ mọi biểu thức toán học dạng text thông dụng trong text nodes nếu đã có MathJax
+function removeAllMathTextIfHasMathJax(html) {
   let div = document.createElement("div");
   div.innerHTML = html;
-  let maths = div.querySelectorAll(".math-tex");
-  if (maths.length === 0) return html;
-  maths.forEach(mathjax => {
-    let mathContent = mathjax.textContent.replace(/\$/g, '').replace(/\s+/g, ' ').trim();
-    Array.from(div.childNodes).forEach(node => {
-      if (node.nodeType === 3) { // node text
-        let text = node.nodeValue.replace(/\s+/g, ' ').replace(/\$/g, '').trim();
-        // Chỉ loại nếu giống hoàn toàn (text trùng math)
-        if (text && (text === mathContent)) {
-          node.nodeValue = '';
-        }
-      }
-    });
+  let hasMath = div.querySelector(".math-tex");
+  if (!hasMath) return html;
+
+  // Regex các mẫu toán học text: z =, z, R^2, M(0,-1), ZZ, số thứ tự, ... (có thể mở rộng thêm)
+  const mathPatterns = [
+    /\b[zZ]\s*=?\b/g,
+    /\bR\s*\^?\s*2\b/g,
+    /\bM\s*\(\s*-?\d+\s*,\s*-?\d+\s*\)\b/g,
+    /\bZZ\b/g,
+    /\b\d+\s*[.,;:)]*\s*/g
+  ];
+
+  // Xử lý từng text node con trực tiếp
+  Array.from(div.childNodes).forEach(node => {
+    if (node.nodeType === 3) {
+      let txt = node.nodeValue;
+      mathPatterns.forEach(re => {
+        txt = txt.replace(re, '');
+      });
+      node.nodeValue = txt;
+    }
   });
-  return div.innerHTML.trim();
+
+  // Ngoài ra, loại cụm "Cho hàm" nếu ngay sau đó là MathJax
+  let htmlStr = div.innerHTML.replace(/Cho hàm\s*(?=<span[^>]*class="math-tex")/gi, '');
+
+  return htmlStr.trim();
 }
 
 // ==== Hàm loại bỏ lặp công thức toán học và lặp block ====
@@ -404,7 +416,7 @@ importHtmlInput.addEventListener("change", async function(e) {
       let questionText = "";
       if (questionNode) {
         questionText = questionNode.innerHTML.trim();
-        questionText = removeRedundantMathText(questionText);
+        questionText = removeAllMathTextIfHasMathJax(questionText);
         questionText = cleanMathDuplicates(questionText);
       }
       const answerNodes = q.querySelectorAll('.answer > div');
@@ -412,7 +424,7 @@ importHtmlInput.addEventListener("change", async function(e) {
       answerNodes.forEach((ans, idx) => {
         let ansNode = ans.querySelector('.flex-fill, .ml-1');
         let ansText = ansNode ? ansNode.innerHTML.trim() : ans.innerHTML.trim();
-        ansText = removeRedundantMathText(ansText);
+        ansText = removeAllMathTextIfHasMathJax(ansText);
         ansText = cleanMathDuplicates(ansText);
         answers.push(ansText);
       });
