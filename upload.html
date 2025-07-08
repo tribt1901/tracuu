@@ -177,6 +177,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
+  function normalizeText(s) {
+    return (s || "")
+      .replace(/<[^>]+>/g, '') // remove HTML tags
+      .replace(/\\\((.+?)\\\)/g, '$1') // remove \( \)
+      .replace(/\\text\{([^}]+)\}/g, '$1') // remove \text{}
+      .replace(/[{}\[\]().,;:!?'"\\$^_&%~\-+=<>|`]/g, '') // remove special chars
+      .replace(/\s+/g, '') // remove spaces
+      .toLowerCase();
+  }
+
   const manualQuestionImgPreview = document.getElementById("manualQuestionImgPreview");
   const manualRemoveQuestionImgBtn = document.getElementById("manualRemoveQuestionImgBtn");
   const manualAnswerAImgPreview = document.getElementById("manualAnswerAImgPreview");
@@ -287,6 +297,16 @@ document.addEventListener("DOMContentLoaded", () => {
     f=>manualAImgFiles[3]=f, url=>manualAImgUrls[3]=url
   );
 
+  // -- FIXED: normalize for duplicate check --
+  function isDuplicateInSet(question, existSet) {
+    return existSet.some(
+      x =>
+        normalizeText(x.noi_dung) === normalizeText(question.noi_dung)
+        && x.dap_an_dung === question.dap_an_dung
+        && normalizeText(x.dap_an) === normalizeText(question.lua_chon[question.dap_an_dung])
+    );
+  }
+
   let importedQuestions = [];
   let allQuestionsForSubject = [];
   async function loadQuestionsForSubject(mon_hoc_id) {
@@ -302,14 +322,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
     return qs;
-  }
-  function isDuplicateInSet(question, existSet) {
-    return existSet.some(
-      x =>
-        x.noi_dung === question.noi_dung.trim() &&
-        x.dap_an_dung === question.dap_an_dung &&
-        x.dap_an === question.lua_chon[question.dap_an_dung]
-    );
   }
 
   document.getElementById("questionImportHtmlBtn").onclick = () => {
@@ -454,17 +466,10 @@ document.addEventListener("DOMContentLoaded", () => {
         let match = rightAnswerText.match(/The correct answer is: (.+)$/);
         if (match) {
           let correctValue = match[1].trim();
-          function normalize(s) {
-            return s.replace(/<[^>]+>/g, '')
-                    .replace(/[\s\n\r]/g, '')
-                    .replace(/\\\(/g, '').replace(/\\\)/g, '')
-                    .replace(/\\text\{([^}]+)\}/g, '$1')
-                    .toLowerCase();
-          }
           correctIdx = answers.findIndex(a =>
-            normalize(a) === normalize(correctValue) ||
-            normalize(a).includes(normalize(correctValue)) ||
-            normalize(correctValue).includes(normalize(a))
+            normalizeText(a) === normalizeText(correctValue)
+            || normalizeText(a).includes(normalizeText(correctValue))
+            || normalizeText(correctValue).includes(normalizeText(a))
           );
           correctKey = ['a','b','c','d'][correctIdx] || '';
           correct = answers[correctIdx] || '';
