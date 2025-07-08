@@ -183,12 +183,68 @@ async function uploadFile(file) {
   return (await res.json()).url;
 }
 
-// ==== Hàm loại bỏ lặp công thức toán MathJax và lặp toán inline ====
-// Loại bỏ lặp lại dạng "z = ... z = ..." (với cùng công thức hoặc giống nhau)
-function removeDuplicateEquation(text) {
-  // Chỉ giữ lại cụm đầu tiên cho các lặp lại "z = ... z = ...", không quan trọng ký tự kết thúc là gì
-  // (giữa các cụm có thể là khoảng trắng, dấu phẩy, chấm, xuống dòng, v.v.)
-  return text.replace(/(z\s*=\s*[\s\S]+?)(?:\s+z\s*=\s*[\s\S]+?)+(?=\s|\.|,|;|$)/g, '$1');
+// Hàm phát hiện công thức dạng text đầu câu hỏi và loại bỏ nó nếu đã có công thức MathJax phía sau
+function removePlainTextFormulaAtStart(questionHtml) {
+  // Tìm đoạn bắt đầu bằng "z = ..." hoặc "f(x) = ..." dạng text, sau là công thức mathjax giống hệt
+  // Regex: tìm đoạn text đầu câu hỏi, không nằm trong thẻ, và ngay sau nó là mathjax hoặc span.math-tex cùng nội dung
+  // Cách làm: tách lấy text đầu câu hỏi, lấy nội dung công thức mathjax phía sau, so sánh nếu cùng nội dung thì bỏ text phía trước
+  let div = document.createElement("div");
+  div.innerHTML = questionHtml;
+  let txt = div.textContent || div.innerText || "";
+  // Tìm công thức MathJax đầu tiên
+  let mathjax = div.querySelector(".math-tex");
+  if (mathjax) {
+    // Lấy nội dung công thức MathJax (bỏ $ nếu có)
+    let mathContent = mathjax.textContent.replace(/\$/g, '').replace(/\s+/g, ' ').trim();
+    // Xây regex tìm đoạn text đầu giống hệt mathContent (bỏ các ký tự đặc biệt)
+    let regex = new RegExp("^\\s*([\\w\\s=\\-+*/^|.|,;\\[\\]\\(\\)\\{\\}\\\\]+)\\s*");
+    let m = txt.match(regex);
+    if (m && m[1]) {
+      let frontText = m[1].replace(/\s+/g, ' ').replace(/\$/g, '').trim();
+      // Nếu giống nhau thì loại khỏi html gốc
+      if (frontText && (frontText === mathContent)) {
+        // Loại khỏi html gốc: chỉ giữ lại phần sau thẻ math-tex đầu tiên
+        // Tìm vị trí math-tex đầu tiên trong html
+        let idx = questionHtml.indexOf(mathjax.outerHTML);
+        if (idx !== -1) {
+          return questionHtml.slice(idx);
+        }
+      }
+    }
+  }
+  return questionHtml;
+}
+
+// ==== Hàm loại bỏ lặp công thức toán học và lặp block ====
+// Chuẩn hóa block về dạng plain text (bỏ HTML, bỏ MathJax marker)
+function normalizeBlockForCompare(str) {
+  return str
+    .replace(/<[^>]+>/g, '')  // Bỏ tag HTML
+    .replace(/\$+/g, '')      // Bỏ $ nếu có
+    .replace(/\\\(|\\\)/g, '') // Bỏ \( \)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+// Loại toàn bộ các block lặp liền kề, bất kể là text hay math
+function removeConsecutiveDuplicateBlocks(str) {
+  let splitter = /(;|=|<br\s*\/?>|\r?\n|\t)/;
+  let parts = str.split(splitter).map(s => s.trim()).filter(s => s !== "");
+  let changed = false;
+  for (let windowSize = Math.floor(parts.length/2); windowSize >= 1; windowSize--) {
+    for (let i = 0; i <= parts.length - 2*windowSize; i++) {
+      let block1 = parts.slice(i, i+windowSize).map(normalizeBlockForCompare).join("|");
+      let block2 = parts.slice(i+windowSize, i+2*windowSize).map(normalizeBlockForCompare).join("|");
+      if (block1 === block2) {
+        parts.splice(i+windowSize, windowSize);
+        changed = true;
+        break;
+      }
+    }
+    if (changed) break;
+  }
+  let result = parts.join(" ");
+  return changed ? removeConsecutiveDuplicateBlocks(result) : result;
 }
 // Loại bỏ các đoạn <span class="math-tex">...</span> lặp liền kề nhau
 function removeConsecutiveMathJaxDuplicates(html) {
@@ -203,15 +259,20 @@ function removeConsecutiveMathJaxDuplicates(html) {
 function removeDuplicateMathInline(str) {
   return str.replace(/(\$.*?\$)(\s*\1)+/g, '$1');
 }
-// Hàm tổng hợp làm sạch lặp toán học, ưu tiên loại lặp "z = ... z = ..." trước
+// Loại bỏ lặp lại dạng "z = ... z = ..." (với cùng công thức hoặc giống nhau)
+function removeDuplicateEquation(text) {
+  return text.replace(/(z\s*=\s*[\s\S]+?)(?:\s+z\s*=\s*[\s\S]+?)+(?=\s|\.|,|;|$)/g, '$1');
+}
+// Hàm tổng hợp làm sạch lặp toán học
 function cleanMathDuplicates(str) {
   let prev;
   str = ensureMathDelimiters(str);
   do {
     prev = str;
-    str = removeDuplicateEquation(str); // loại z = ... z = ...
+    str = removeDuplicateEquation(str);
     str = removeConsecutiveMathJaxDuplicates(str);
     str = removeDuplicateMathInline(str);
+    str = removeConsecutiveDuplicateBlocks(str);
   } while (str !== prev);
   return str;
 }
@@ -341,8 +402,9 @@ importHtmlInput.addEventListener("change", async function(e) {
       let questionText = "";
       if (questionNode) {
         questionText = questionNode.innerHTML.trim();
+        // Loại text công thức phía trước nếu phía sau đã có mathjax
+        questionText = removePlainTextFormulaAtStart(questionText);
         questionText = cleanMathDuplicates(questionText);
-        // Đã đưa xử lý loại lặp "z = ... z = ..." vào cleanMathDuplicates
       }
       const answerNodes = q.querySelectorAll('.answer > div');
       const answers = [];
