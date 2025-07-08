@@ -139,10 +139,9 @@
   </div>
 </div>
 <script type="module">
+// ---------- Firebase & App Setup ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-// Firebase init
 const firebaseConfig = {
   apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
   authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -155,14 +154,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Helper: Lấy mã bảo mật từ trường code trong collection config
+// ---------- Helper Functions ----------
 async function checkSecurityCode(inputCode) {
   const q = query(collection(db, "config"), where("code", "==", inputCode));
   const snap = await getDocs(q);
   return !snap.empty;
 }
-
-// Dropdown helper
 async function fillSubjectsDropdown(el, withDefault) {
   el.innerHTML = withDefault ? '<option value="">-- Chọn môn học --</option>' : "";
   const snaps = await getDocs(collection(db, "mon_hoc"));
@@ -173,8 +170,6 @@ async function fillSubjectsDropdown(el, withDefault) {
     el.appendChild(opt);
   });
 }
-
-// Upload file/image helper
 async function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
@@ -182,36 +177,42 @@ async function uploadFile(file) {
   if(!res.ok) throw new Error('Upload file thất bại!');
   return (await res.json()).url;
 }
-
-// Loại bỏ mọi ký hiệu toán học dạng text (z, zz, Z, R^2, M(...), ...) nếu đã có MathJax
+// ---- MathJax artifact cleaning ----
+function removeMathJaxArtifacts(html) {
+  let el = document.createElement("div");
+  el.innerHTML = html;
+  el.querySelectorAll('.MathJax_Preview').forEach(e=>e.remove());
+  el.querySelectorAll('.MathJax').forEach(e=>e.remove());
+  el.querySelectorAll('.MJX_Assistive_MathML, math').forEach(e=>e.remove());
+  el.querySelectorAll('nobr').forEach(e=>e.remove());
+  el.querySelectorAll('script[type="math/tex"]').forEach(e=>e.remove());
+  return el.innerHTML;
+}
+// ---- Các hàm xử lý loại bỏ text toán ngắn, lọc trùng ----
 function removeAllMathTextIfHasMathJax(html) {
   let div = document.createElement("div");
   div.innerHTML = html;
   let hasMath = div.querySelector(".math-tex");
   if (!hasMath) return html;
-
-  // Regex mạnh, loại mọi ký hiệu toán học ngắn dạng text (z, zz, Z, ZZ, R^2, M(0,-1), ZZ, vv.), kể cả đầu dòng, cuối dòng, giữa dòng
   const mathPatterns = [
-    /(^|\s|[;:,.\-–])z{1,2}(?=[\s;:,.\-–]|$)/gi,                     // z, zz, Z, ZZ standalone
-    /(^|\s|[;:,.\-–])r\s*\^?\s*2(?=[\s;:,.\-–]|$)/gi,                // R2, R^2
-    /(^|\s|[;:,.\-–])m\s*\(\s*-?\d+\s*,\s*-?\d+\s*\)(?=[\s;:,.\-–]|$)/gi, // M(0,-1)
-    /(^|\s|[;:,.\-–])zz(?=[\s;:,.\-–]|$)/gi,                         // zz
-    /(^|\s|[;:,.\-–])zz(?=[\s;:,.\-–]|$)/gi,                         // ZZ
-    /(^|\s|[;:,.\-–])[A-Z]{1,2}(?=[\s;:,.\-–]|$)/g,                  // Các ký hiệu 1-2 chữ cái in hoa
-    /\d+\s*[.,;:)]*\s*/g,                                            // Số thứ tự
-    /(\s*;+\s*)+/g,                                                  // Liên tiếp dấu chấm phẩy
+    /(^|\s|[;:,.\-–])z{1,2}(?=[\s;:,.\-–]|$)/gi,
+    /(^|\s|[;:,.\-–])r\s*\^?\s*2(?=[\s;:,.\-–]|$)/gi,
+    /(^|\s|[;:,.\-–])m\s*\(\s*-?\d+\s*,\s*-?\d+\s*\)(?=[\s;:,.\-–]|$)/gi,
+    /(^|\s|[;:,.\-–])zz(?=[\s;:,.\-–]|$)/gi,
+    /(^|\s|[;:,.\-–])zz(?=[\s;:,.\-–]|$)/gi,
+    /(^|\s|[;:,.\-–])[A-Z]{1,2}(?=[\s;:,.\-–]|$)/g,
+    /\d+\s*[.,;:)]*\s*/g,
+    /(\s*;+\s*)+/g,
     /(\s*\,+\s*)+/g,
     /(\s*\.+\s*)+/g,
     /(\s*:+\s*)+/g
   ];
-
   function replaceTextMath(node) {
     if (node.nodeType === 3) {
       let txt = node.nodeValue;
       mathPatterns.forEach(re => {
         txt = txt.replace(re, ' ');
       });
-      // Loại luôn dấu ; , . : nếu nó đứng độc lập
       txt = txt.replace(/^[\s;,.:\-–]+$/g, '');
       node.nodeValue = txt;
     } else if (node.nodeType === 1 && node.childNodes) {
@@ -219,27 +220,17 @@ function removeAllMathTextIfHasMathJax(html) {
     }
   }
   replaceTextMath(div);
-
-  // Loại cụm "Cho hàm" nếu ngay sau đó là MathJax hoặc dấu cách + MathJax
   let htmlStr = div.innerHTML.replace(/Cho hàm\s*(?=<span[^>]*class="math-tex")/gi, '');
-
-  // Loại liên tiếp dấu ;,.,, nếu đứng đầu dòng hoặc chỉ còn dấu
   htmlStr = htmlStr.replace(/^[\s;,.:\-–]+/gm, '');
   htmlStr = htmlStr.replace(/[\s;,.:\-–]+$/gm, '');
-
-  // Loại thừa khoảng trắng, các dấu lặp lại
   htmlStr = htmlStr.replace(/\s{2,}/g, ' ');
-
   return htmlStr.trim();
 }
-
-// ==== Hàm loại bỏ lặp công thức toán học và lặp block ====
-// Chuẩn hóa block về dạng plain text (bỏ HTML, bỏ MathJax marker)
 function normalizeBlockForCompare(str) {
   return str
-    .replace(/<[^>]+>/g, '')  // Bỏ tag HTML
-    .replace(/\$+/g, '')      // Bỏ $ nếu có
-    .replace(/\\\(|\\\)/g, '') // Bỏ \( \)
+    .replace(/<[^>]+>/g, '')
+    .replace(/\$+/g, '')
+    .replace(/\\\(|\\\)/g, '')
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
@@ -301,8 +292,6 @@ function cleanMathDuplicates(str) {
   } while (str !== prev);
   return str;
 }
-
-// MathJax wrap
 function ensureMathDelimiters(text) {
   if (!text) return "";
   text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
@@ -310,26 +299,23 @@ function ensureMathDelimiters(text) {
 }
 function normalizeMathText(text) {
   return text
-    .replace(/<[^>]*>/g, '')        // Remove HTML tags
-    .replace(/\\\(|\\\)|\$\$|\$/g, '') // Remove MathJax markers
-    .replace(/&nbsp;|\s+/g, '')     // Remove whitespace and &nbsp;
+    .replace(/<[^>]*>/g, '')
+    .replace(/\\\(|\\\)|\$\$|\$/g, '')
+    .replace(/&nbsp;|\s+/g, '')
     .toLowerCase()
     .trim();
 }
 
-// ========== UI INIT ===========
+// ---------- UI INIT ----------
 const w = document.getElementById("uploadTypeSelect");
 const v = document.getElementById("uploadQuestionSection");
 const f = document.getElementById("uploadSyllabusSection");
-
 const subjectDropdownImport = document.getElementById("subjectDropdownImport");
 const subjectDropdownManual = document.getElementById("subjectDropdownManual");
 const syllabusSubjectDropdown = document.getElementById("syllabusSubjectDropdown");
-
 await fillSubjectsDropdown(subjectDropdownImport, true);
 await fillSubjectsDropdown(subjectDropdownManual, false);
 await fillSubjectsDropdown(syllabusSubjectDropdown, false);
-
 w.addEventListener("change", () => {
   document.querySelectorAll(".mode-section").forEach(e => e.style.display = "none");
   if (w.value === "question") v.style.display = "block";
@@ -337,12 +323,11 @@ w.addEventListener("change", () => {
 });
 w.dispatchEvent(new Event("change"));
 
-// ======== Security code logic ==========
+// ---------- Security Code Logic ----------
 let importCodeOk = false, manualCodeOk = false, syllabusCodeOk = false;
 const saveImportBtn = document.getElementById("saveImportBtn");
 const manualSubmitQuestionBtn = document.getElementById("manualSubmitQuestionBtn");
 const syllabusSubmitBtn = document.getElementById("syllabusSubmitBtn");
-
 document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() {
   const code = this.value.trim();
   const status = document.getElementById("questionSecurityCodeStatusImport");
@@ -392,7 +377,7 @@ document.getElementById("syllabusSecurityCode").addEventListener("input", async 
   }
 });
 
-// ========== Import HTML Moodle ==========
+// ---------- Import HTML Moodle ----------
 let importedQuestions = [];
 let existSet = [];
 subjectDropdownImport.addEventListener("change", async function() {
@@ -416,7 +401,6 @@ importHtmlInput.addEventListener("change", async function(e) {
   }
   existSet = await getQuestionSetForSubject(subjectDropdownImport.value);
 
-  // Cảnh báo nếu quá nhiều câu hỏi (giới hạn 200)
   const reader = new FileReader();
   reader.onload = async function(ev) {
     const html = ev.target.result;
@@ -433,6 +417,7 @@ importHtmlInput.addEventListener("change", async function(e) {
       let questionText = "";
       if (questionNode) {
         questionText = questionNode.innerHTML.trim();
+        questionText = removeMathJaxArtifacts(questionText);
         questionText = removeAllMathTextIfHasMathJax(questionText);
         questionText = cleanMathDuplicates(questionText);
       }
@@ -441,6 +426,7 @@ importHtmlInput.addEventListener("change", async function(e) {
       answerNodes.forEach((ans, idx) => {
         let ansNode = ans.querySelector('.flex-fill, .ml-1');
         let ansText = ansNode ? ansNode.innerHTML.trim() : ans.innerHTML.trim();
+        ansText = removeMathJaxArtifacts(ansText);
         ansText = removeAllMathTextIfHasMathJax(ansText);
         ansText = cleanMathDuplicates(ansText);
         answers.push(ansText);
@@ -463,6 +449,7 @@ importHtmlInput.addEventListener("change", async function(e) {
         answerNodes.forEach((ans, idx) => {
           let ansNode = ans.querySelector('.flex-fill, .ml-1');
           let ansText = ansNode ? ansNode.innerHTML.trim() : ans.innerHTML.trim();
+          ansText = removeMathJaxArtifacts(ansText);
           ansText = cleanMathDuplicates(ansText);
           if (normalizeMathText(ansText) === correctValue) correctIdx = idx;
         });
@@ -470,6 +457,7 @@ importHtmlInput.addEventListener("change", async function(e) {
           answerNodes.forEach((ans, idx) => {
             let ansNode = ans.querySelector('.flex-fill, .ml-1');
             let ansText = ansNode ? ansNode.innerHTML.trim() : ans.innerHTML.trim();
+            ansText = removeMathJaxArtifacts(ansText);
             ansText = cleanMathDuplicates(ansText);
             let ansNorm = normalizeMathText(ansText);
             if (
@@ -520,7 +508,6 @@ importHtmlInput.addEventListener("change", async function(e) {
   }
   reader.readAsText(file);
 });
-
 saveImportBtn.onclick = async function() {
   if (!importCodeOk) return alert("Chưa xác thực mã bảo mật!");
   if (!subjectDropdownImport.value) { alert("Vui lòng chọn môn học để lưu!"); return; }
@@ -540,7 +527,6 @@ saveImportBtn.onclick = async function() {
   alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
   saveImportBtn.disabled = false;
 };
-
 async function getQuestionSetForSubject(mon_hoc_id) {
   const querySnap = await getDocs(query(collection(db, "cau_hoi"), where("mon_hoc_id", "==", mon_hoc_id)));
   const existSet = [];
@@ -563,7 +549,7 @@ function isDuplicateInSet(question, existSet) {
   );
 }
 
-// ========== Manual Add Question ==========
+// ---------- Manual Add Question ----------
 let manualQuestionImgFile = null, manualAnswerAImgFile = null, manualAnswerBImgFile = null, manualAnswerCImgFile = null, manualAnswerDImgFile = null;
 let manualQuestionImgUrl = "", manualAnswerAImgUrl = "", manualAnswerBImgUrl = "", manualAnswerCImgUrl = "", manualAnswerDImgUrl = "";
 function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
@@ -585,7 +571,6 @@ function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
     setUrl("");
   });
 }
-
 handleImgInput(
   document.getElementById("manualQuestionImageInput"),
   document.getElementById("manualQuestionImgPreview"),
@@ -621,7 +606,6 @@ handleImgInput(
   f=>manualAnswerDImgFile=f,
   url=>manualAnswerDImgUrl=url
 );
-
 document.getElementById("manualQuestionForm").addEventListener("submit", async function(e){
   e.preventDefault();
   if (!manualCodeOk) return alert("Chưa xác thực mã bảo mật!");
@@ -670,7 +654,7 @@ document.getElementById("manualQuestionForm").addEventListener("submit", async f
   alert("Đã thêm câu hỏi!");
 });
 
-// ========== Upload Syllabus ==========
+// ---------- Upload Syllabus ----------
 document.getElementById("syllabusForm").addEventListener("submit", async function(e){
   e.preventDefault();
   if(!syllabusCodeOk) return alert("Chưa xác thực mã bảo mật!");
@@ -689,7 +673,7 @@ document.getElementById("syllabusForm").addEventListener("submit", async functio
   } else alert("Điền đầy đủ thông tin và chọn file!");
 });
 
-// ========== UI chuyển màn hình ==========
+// ---------- UI chuyển màn hình ----------
 document.getElementById("questionImportHtmlBtn").onclick = function(){
   document.getElementById("questionUploadChoice").style.display = "none";
   importHtmlSection.style.display = "block";
