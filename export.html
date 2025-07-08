@@ -22,7 +22,9 @@
       font-family: 'Roboto', Arial, sans-serif;
     }
     #pdf-content .pdf-table-wrap {
-      display: inline-block;
+      display: flex;
+      justify-content: center;
+      width: 100%;
       max-width: 100%;
     }
     #pdf-content table {
@@ -30,43 +32,43 @@
       border-collapse: collapse;
       margin: 0 auto;
       width: 100%;
-      table-layout: fixed;
       max-width: 900px;
-    }
-    #pdf-content table th, #pdf-content table td {
-      border: 1px solid #222;
-      padding: 6px;
+      table-layout: fixed;
+      background: #fff;
       font-size: 15px;
-      font-family: 'Roboto', Arial, sans-serif;
+    }
+    #pdf-content th, #pdf-content td {
+      border: 1.5px solid #222 !important;
+      padding: 6px 8px;
       word-break: break-word;
       overflow-wrap: break-word;
       white-space: pre-line;
-      vertical-align: top;
-      text-align: left;
+      vertical-align: middle;
+      background: #fff;
     }
-    #pdf-content table th.stt, #pdf-content table td.stt {
+    #pdf-content th {
+      background: #fff;
+      font-weight: bold;
+      text-align: center;
+    }
+    #pdf-content td.stt, #pdf-content th.stt {
       width: 9%;
-      min-width: 35px;
+      min-width: 40px;
       max-width: 80px;
-      text-align: center !important;
+      text-align: center;
     }
-    #pdf-content table th.question, #pdf-content table td.question {
+    #pdf-content td.question, #pdf-content th.question {
       width: 48%;
       min-width: 120px;
       max-width: 470px;
-      text-align: left;
     }
-    #pdf-content table th.answer, #pdf-content table td.answer {
+    #pdf-content td.answer, #pdf-content th.answer {
       width: 43%;
       min-width: 100px;
       max-width: 350px;
-      text-align: left;
     }
-    #pdf-content table td.answer > div, #pdf-content table th.answer > div {
-      display: block;
-      width: 100%;
-      overflow-x: auto;
-      white-space: normal;
+    #pdf-content tr {
+      height: 1px;
     }
     #pdf-content table, #pdf-content tr, #pdf-content td, #pdf-content th {
       page-break-inside: avoid !important;
