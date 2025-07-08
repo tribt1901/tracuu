@@ -23,19 +23,19 @@
       border: 2px solid #222;
       border-collapse: collapse;
       margin: 0 auto;
-      width: 700px;
+      width: 100%;
+      table-layout: auto;
+      max-width: 900px;
     }
     #pdf-content table th, #pdf-content table td {
       border: 1px solid #222;
       padding: 6px;
-      font-size: 16px;
+      font-size: 15px;
       font-family: 'Roboto', Arial, sans-serif;
       word-break: break-word;
       overflow-wrap: break-word;
       white-space: pre-line;
       text-align: left;
-      max-width: none;
-      overflow: visible;
       vertical-align: top;
     }
     #pdf-content table th.stt, #pdf-content table td.stt {
@@ -47,13 +47,21 @@
     #pdf-content table th.question, #pdf-content table td.question {
       width: 48%;
       min-width: 120px;
+      max-width: 470px;
       text-align: left;
     }
     #pdf-content table th.answer, #pdf-content table td.answer {
       width: 43%;
       min-width: 100px;
+      max-width: 350px;
       text-align: left;
       overflow: visible;
+    }
+    #pdf-content table td.answer > div, #pdf-content table th.answer > div {
+      display: block;
+      width: 100%;
+      overflow-x: auto;
+      white-space: normal;
     }
     #pdf-content .pdf-title {
       text-align: center;
@@ -73,6 +81,10 @@
       margin: 8px 0;
       text-align: center;
     }
+    /* Modal */
+    .modal-backdrop.show { opacity: .2;}
+    .modal-dialog { margin-top: 60px; }
+    .modal-body .btn { margin: 10px 6px 0 0;}
   </style>
 </head>
 <body class="bg-light">
@@ -101,10 +113,26 @@
 </div>
 <div id="pdf-content"></div>
 <div id="loading-mathjax" class="loading-math" style="display:none;">Đang render công thức toán học, vui lòng chờ...</div>
+<!-- Modal chọn loại xuất PDF -->
+<div class="modal fade" id="pdfOptionModal" tabindex="-1" aria-labelledby="pdfOptionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="pdfOptionModalLabel">Chọn kiểu xuất PDF</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+      </div>
+      <div class="modal-body text-center">
+        <button class="btn btn-success" id="btnExportPDFFull">Đầy đủ nội dung</button>
+        <button class="btn btn-outline-primary" id="btnExportPDFFormula">Chỉ công thức</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module">
 // Firebase config
 const firebaseConfig = {
@@ -117,6 +145,8 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+
+let currentExportSubject = {id: "", name: ""};
 
 async function getSubjects() {
   const snapshot = await db.collection("mon_hoc").get();
@@ -135,26 +165,31 @@ function getFirstPhrase(str) {
   if (firstSpaceIdx === -1) return text;
   return text.slice(0, firstSpaceIdx);
 }
+function stripHTML(html) {
+  if (!html) return '';
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  return tempDiv.textContent?.trim() || '';
+}
 function getAnswer(item) {
   if (!item || !item.lua_chon || item.dap_an_dung === undefined || item.dap_an_dung === null) return "";
   const key = String(item.dap_an_dung);
   if (!(key in item.lua_chon)) return "";
   return item.lua_chon[key];
 }
-// Lấy công thức latex đầu tiên trong 1 html, ưu tiên script type=math/tex, nếu không có thì lấy trong \( ... \) hoặc \[ ... \]
-// Nếu không có công thức trả về rỗng
+// Lấy công thức latex đầu tiên trong html (script/tex, \( \), \[ \]), nếu không có thì trả rỗng
 function extractFirstLatex(html) {
   if (!html) return "";
-  // <script type="math/tex">
   let match = html.match(/<script[^>]*type="math\/tex"[^>]*>([\s\S]*?)<\/script>/);
   if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
-  // \( ... \)
   match = html.match(/\\\((.*?)\\\)/);
   if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
-  // \[ ... \]
   match = html.match(/\\\[(.*?)\\\]/);
   if (match && match[1]) return match[1].trim().replace(/\u00A0/g, " ");
   return "";
+}
+function hasMath(html) {
+  return /\\\(|\\\[|<script[^>]*type="math\/tex"[^>]*>/i.test(html || "");
 }
 async function renderLatexBatch(latexArr) {
   const res = await fetch("https://tracuu-app.hugo.io.vn/api/render-math", {
@@ -182,18 +217,146 @@ async function loadSubjects() {
     div.innerHTML = `
       <span class="fw-bold"><span class="subject-title-icon">📘</span>${subj.ten_mon}</span>
       <div class="subject-btns">
+        <button class="btn btn-sm btn-outline-secondary" data-type="txt" data-id="${subj.id}" data-name="${subj.ten_mon}">📝 TXT</button>
         <button class="btn btn-sm btn-outline-primary" data-type="pdf" data-id="${subj.id}" data-name="${subj.ten_mon}">📄 PDF</button>
       </div>
     `;
-    div.querySelector("button").addEventListener("click", async () => {
-      const subjectId = subj.id;
-      const subjectName = subj.ten_mon;
-      exportPDF(subjectId, subjectName);
+    div.querySelector('[data-type="txt"]').addEventListener("click", async () => {
+      exportTXT(subj.id, subj.ten_mon);
+    });
+    div.querySelector('[data-type="pdf"]').addEventListener("click", async () => {
+      currentExportSubject = {id: subj.id, name: subj.ten_mon};
+      const modal = new bootstrap.Modal(document.getElementById('pdfOptionModal'));
+      modal.show();
     });
     subjectList.appendChild(div);
   });
 }
-async function exportPDF(subjectId, subjectName) {
+
+// TXT xuất đầy đủ text
+async function exportTXT(subjectId, subjectName) {
+  const questions = await getQuestionsBySubject(subjectId);
+  if(!questions.length) {
+    alert("Không có dữ liệu câu hỏi cho môn này.");
+    return;
+  }
+  const rows = questions.map(item => ({
+    stt: getFirstPhrase(item.noi_dung),
+    question: stripHTML(item.noi_dung),
+    answer: stripHTML(getAnswer(item))
+  })).sort((a, b) => a.stt.localeCompare(b.stt, "vi"));
+  let content = `Đề cương môn: ${subjectName}\n\n`;
+  rows.forEach(row => {
+    content += `STT: ${row.stt}\nCâu hỏi: ${row.question}\nĐáp án đúng: ${row.answer}\n\n`;
+  });
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  saveAs(blob, `DeCuong_${subjectName.replace(/\s+/g,"_")}.txt`);
+}
+
+// PDF đầy đủ: cả chữ + công thức, như cũ
+async function exportPDFFull(subjectId, subjectName) {
+  const questions = await getQuestionsBySubject(subjectId);
+  if (!questions.length) {
+    alert("Không có dữ liệu câu hỏi cho môn này.");
+    return;
+  }
+  let hasAnyMath = false;
+  questions.forEach(item => {
+    if (hasMath(item.noi_dung)) hasAnyMath = true;
+    else if (hasMath(getAnswer(item))) hasAnyMath = true;
+  });
+
+  if (!hasAnyMath) {
+    let html = `
+      <div class="pdf-title">Đề cương môn: ${subjectName}</div>
+      <div class="pdf-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="stt" style="text-align:center; vertical-align:middle;">STT</th>
+              <th class="question" style="text-align:center; vertical-align:middle;">Câu hỏi</th>
+              <th class="answer" style="text-align:center; vertical-align:middle;">Đáp án đúng</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    questions.forEach(item => {
+      const stt = getFirstPhrase(item.noi_dung);
+      const questionText = stripHTML(item.noi_dung);
+      const answerText = stripHTML(getAnswer(item));
+      html += `<tr>
+        <td class="stt" style="text-align:center;">${stt}</td>
+        <td class="question">${questionText}</td>
+        <td class="answer"><div>${answerText}</div></td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    const pdfDiv = document.getElementById("pdf-content");
+    pdfDiv.innerHTML = html;
+    pdfDiv.style.display = "block";
+    await html2pdf().set({
+      margin: 10,
+      filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    }).from(pdfDiv).save();
+    pdfDiv.style.display = "none";
+    return;
+  }
+
+  document.getElementById('loading-mathjax').style.display = 'block';
+  const latexArr = [];
+  questions.forEach(item => {
+    latexArr.push(item.noi_dung);
+    latexArr.push(getAnswer(item));
+  });
+  // Render toàn bộ nội dung có thể chứa nhiều công thức
+  const htmlArr = await renderLatexBatch(latexArr);
+
+  let html = `
+    <div class="pdf-title">Đề cương môn: ${subjectName}</div>
+    <div class="pdf-table-wrap">
+      <style>
+        @import url('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css');
+      </style>
+      <table>
+        <thead>
+          <tr>
+            <th class="stt" style="text-align:center; vertical-align:middle;">STT</th>
+            <th class="question" style="text-align:center; vertical-align:middle;">Câu hỏi</th>
+            <th class="answer" style="text-align:center; vertical-align:middle;">Đáp án đúng</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+  let idx = 0;
+  questions.forEach(item => {
+    const stt = getFirstPhrase(item.noi_dung);
+    const questionHTML = htmlArr[idx] || "";
+    const answerHTML = htmlArr[idx + 1] || "";
+    html += `<tr>
+      <td class="stt" style="text-align:center;">${stt}</td>
+      <td class="question">${questionHTML}</td>
+      <td class="answer"><div>${answerHTML}</div></td>
+    </tr>`;
+    idx += 2;
+  });
+  html += `</tbody></table></div>`;
+  const pdfDiv = document.getElementById("pdf-content");
+  pdfDiv.innerHTML = html;
+  pdfDiv.style.display = "block";
+  await html2pdf().set({
+    margin: 10,
+    filename: `DeCuong_${subjectName.replace(/\s+/g,"_")}.pdf`,
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+  }).from(pdfDiv).save();
+  pdfDiv.style.display = "none";
+  document.getElementById('loading-mathjax').style.display = 'none';
+}
+
+// PDF chỉ công thức (có thể mở rộng thêm option này)
+async function exportPDFFormula(subjectId, subjectName) {
   const questions = await getQuestionsBySubject(subjectId);
   if (!questions.length) {
     alert("Không có dữ liệu câu hỏi cho môn này.");
@@ -224,14 +387,14 @@ async function exportPDF(subjectId, subjectName) {
         <tbody>
   `;
   let idx = 0;
-  questions.forEach((item, i) => {
+  questions.forEach(item => {
     const stt = getFirstPhrase(item.noi_dung);
-    const questionHTML = htmlArr[idx];
-    const answerHTML = htmlArr[idx + 1];
+    const questionHTML = htmlArr[idx] || "";
+    const answerHTML = htmlArr[idx + 1] || "";
     html += `<tr>
       <td class="stt" style="text-align:center;">${stt}</td>
-      <td class="question" style="text-align:center;">${questionHTML || ""}</td>
-      <td class="answer" style="text-align:center;"><div>${answerHTML || ""}</div></td>
+      <td class="question" style="text-align:center;">${questionHTML}</td>
+      <td class="answer" style="text-align:center;"><div>${answerHTML}</div></td>
     </tr>`;
     idx += 2;
   });
@@ -248,8 +411,20 @@ async function exportPDF(subjectId, subjectName) {
   pdfDiv.style.display = "none";
   document.getElementById('loading-mathjax').style.display = 'none';
 }
+
+// Event cho 2 nút trong modal chọn PDF
+document.getElementById("btnExportPDFFull").addEventListener("click", () => {
+  const modal = bootstrap.Modal.getInstance(document.getElementById('pdfOptionModal'));
+  modal.hide();
+  exportPDFFull(currentExportSubject.id, currentExportSubject.name);
+});
+document.getElementById("btnExportPDFFormula").addEventListener("click", () => {
+  const modal = bootstrap.Modal.getInstance(document.getElementById('pdfOptionModal'));
+  modal.hide();
+  exportPDFFormula(currentExportSubject.id, currentExportSubject.name);
+});
+
 loadSubjects();
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
