@@ -23,6 +23,7 @@ body{padding-top:70px}
 .import-answer{margin-left:2em}
 .import-duplicate-message{color:#c00;font-style:italic}
 .mathjax-content{font-size:1.1em}
+.mathjax-error { background: yellow; color: #b00; padding: 2px 6px; border-radius: 4px; }
 </style>
 <link rel="icon" href="data:,">
 <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -140,10 +141,64 @@ body{padding-top:70px}
   </div>
 </div>
 <script type="module">
-// Firebase import
+// === MathJax helpers ===
+function ensureMathDelimiters(text) {
+  if (!text) return "";
+  text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
+  return text;
+}
+function normalizeMathText(text) {
+  return (text || '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\\\(|\\\)|\$\$|\$/g, '')
+    .replace(/&nbsp;|\s+/g, '')
+    .toLowerCase()
+    .trim();
+}
+function removeAllDuplicateMathExpressions(text) {
+  if (!text) return "";
+  let seen = new Set();
+  text = text.replace(/(\$[^\$]+\$)/g, function(m) {
+    if (seen.has(m)) return "";
+    seen.add(m);
+    return m;
+  });
+  seen = new Set();
+  text = text.replace(/(<math[\s\S]*?<\/math>)/g, function(m) {
+    if (seen.has(m)) return "";
+    seen.add(m);
+    return m;
+  });
+  seen = new Set();
+  text = text.replace(/(\\\([^\)]+\\\))/g, function(m) {
+    if (seen.has(m)) return "";
+    seen.add(m);
+    return m;
+  });
+  return text;
+}
+function isValidMathJax(expr) {
+  if (!expr) return false;
+  if (expr.match(/<[^>]*>/)) return false;
+  if (expr.startsWith("$") && expr.endsWith("$")) return true;
+  if (expr.startsWith("\\(") && expr.endsWith("\\)")) return true;
+  if (expr.startsWith("<math") && expr.endsWith("</math>")) return true;
+  return false;
+}
+function preferMathJaxOnly(text) {
+  if (!text) return "";
+  let mathMatches = [...text.matchAll(/(\$[^\$]+\$|\\\([^\)]+\\\)|<math[\s\S]*?<\/math>)/g)]
+    .map(m => m[0])
+    .filter(isValidMathJax);
+  if (mathMatches.length > 0) {
+    return mathMatches[0].trim();
+  }
+  return text.replace(/<[^>]*>/g, '').trim();
+}
+
+// ==== Firebase (giữ nguyên cũ, chỉ rút gọn code mẫu, không đổi logic) ====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
   authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -156,14 +211,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Helper: Lấy mã bảo mật từ trường code trong collection config
 async function checkSecurityCode(inputCode) {
   const q = query(collection(db, "config"), where("code", "==", inputCode));
   const snap = await getDocs(q);
   return !snap.empty;
 }
-
-// Dropdown helper
 async function fillSubjectsDropdown(el, withDefault) {
   el.innerHTML = withDefault ? '<option value="">-- Chọn môn học --</option>' : "";
   const snaps = await getDocs(collection(db, "mon_hoc"));
@@ -174,8 +226,6 @@ async function fillSubjectsDropdown(el, withDefault) {
     el.appendChild(opt);
   });
 }
-
-// Upload file/image helper
 async function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
@@ -184,93 +234,16 @@ async function uploadFile(file) {
   return (await res.json()).url;
 }
 
-// ===== MathJax & Text Handling ======
-
-// MathJax wrap
-function ensureMathDelimiters(text) {
-  if (!text) return "";
-  text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
-  return text;
-}
-// Normalize MathJax/HTML for answer matching
-function normalizeMathText(text) {
-  return (text || '')
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/\\\(|\\\)|\$\$|\$/g, '') // Remove MathJax markers
-    .replace(/&nbsp;|\s+/g, '') // Remove whitespace and &nbsp;
-    .toLowerCase()
-    .trim();
-}
-// Loại bỏ tất cả các công thức toán học trùng dù không liền kề
-function removeAllDuplicateMathExpressions(text) {
-  if (!text) return "";
-  // $...$
-  let seen = new Set();
-  text = text.replace(/(\$[^\$]+\$)/g, function(m) {
-    if (seen.has(m)) return "";
-    seen.add(m);
-    return m;
-  });
-  // <math>...</math>
-  seen = new Set();
-  text = text.replace(/(<math[\s\S]*?<\/math>)/g, function(m) {
-    if (seen.has(m)) return "";
-    seen.add(m);
-    return m;
-  });
-  // \(...\)
-  seen = new Set();
-  text = text.replace(/(\\\([^\)]+\\\))/g, function(m) {
-    if (seen.has(m)) return "";
-    seen.add(m);
-    return m;
-  });
-  return text;
-}
-// Ưu tiên giữ lại MathJax, loại text thường nếu cùng nội dung
-function preferMathJaxOnly(text) {
-  if (!text) return "";
-  // Find all mathjax expressions
-  let mathMatches = [...text.matchAll(/(\$[^\$]+\$|\\\([^\)]+\\\)|<math[\s\S]*?<\/math>)/g)];
-  if (mathMatches.length === 0) return text; // Không có MathJax, trả nguyên
-  let mathSet = new Set();
-  mathMatches.forEach(m => mathSet.add(m[0]));
-
-  // Loại text thường lặp lại nội dung của MathJax
-  let replaced = text;
-  mathSet.forEach(expr => {
-    // Lấy nội dung bên trong (thường là biểu thức toán học)
-    let exprContent = expr.replace(/^\$|^\s*\\\(|^\s*<math.*?>|<\/math>$|\)$|\$$/g, '').replace(/<[^>]*>/g, '').trim();
-    if (!exprContent) return;
-    // Loại bỏ text lặp lại ngay trước hoặc sau MathJax
-    replaced = replaced.replace(new RegExp(`([\\s\\S]{0,10})${escapeRegExp(exprContent)}([\\s\\S]{0,10})`, 'g'), function(m, p1, p2) {
-      // Nếu trùng với MathJax thì bỏ text, chỉ để lại MathJax
-      return (p1.includes('$') || p1.includes('<math') || p1.includes('\\(') || p2.includes('$') || p2.includes('</math>') || p2.includes('\\)')) ? m : '';
-    });
-  });
-  // Sau đó chỉ giữ một MathJax mỗi loại, loại lặp
-  replaced = removeAllDuplicateMathExpressions(replaced);
-  // Nếu thay hết thành rỗng, trả lại MathJax đầu tiên
-  if (!replaced.trim()) replaced = mathMatches[0][0];
-  return replaced.trim();
-}
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// ========== UI INIT ===========
+// ==== UI INIT ====
 const w = document.getElementById("uploadTypeSelect");
 const v = document.getElementById("uploadQuestionSection");
 const f = document.getElementById("uploadSyllabusSection");
-
 const subjectDropdownImport = document.getElementById("subjectDropdownImport");
 const subjectDropdownManual = document.getElementById("subjectDropdownManual");
 const syllabusSubjectDropdown = document.getElementById("syllabusSubjectDropdown");
-
 await fillSubjectsDropdown(subjectDropdownImport, true);
 await fillSubjectsDropdown(subjectDropdownManual, false);
 await fillSubjectsDropdown(syllabusSubjectDropdown, false);
-
 w.addEventListener("change", () => {
   document.querySelectorAll(".mode-section").forEach(e => e.style.display = "none");
   if (w.value === "question") v.style.display = "block";
@@ -278,12 +251,11 @@ w.addEventListener("change", () => {
 });
 w.dispatchEvent(new Event("change"));
 
-// ======== Security code logic ==========
+// ==== Security code logic (giữ nguyên) ====
 let importCodeOk = false, manualCodeOk = false, syllabusCodeOk = false;
 const saveImportBtn = document.getElementById("saveImportBtn");
 const manualSubmitQuestionBtn = document.getElementById("manualSubmitQuestionBtn");
 const syllabusSubmitBtn = document.getElementById("syllabusSubmitBtn");
-
 document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() {
   const code = this.value.trim();
   const status = document.getElementById("questionSecurityCodeStatusImport");
@@ -300,7 +272,6 @@ document.getElementById("questionSecurityCodeImport").addEventListener("input", 
     status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
   }
 });
-
 document.getElementById("questionSecurityCodeManual").addEventListener("input", async function() {
   const code = this.value.trim();
   const status = document.getElementById("questionSecurityCodeStatusManual");
@@ -317,7 +288,6 @@ document.getElementById("questionSecurityCodeManual").addEventListener("input", 
     status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
   }
 });
-
 document.getElementById("syllabusSecurityCode").addEventListener("input", async function() {
   const code = this.value.trim();
   const status = document.getElementById("syllabusSecurityCodeStatus");
@@ -335,7 +305,7 @@ document.getElementById("syllabusSecurityCode").addEventListener("input", async 
   }
 });
 
-// ========== Import HTML Moodle (chuyển sang XML trung gian, ưu tiên MathJax, chống trùng lặp) ==========
+// ==== Import HTML Moodle ====
 let importedQuestions = [];
 let existSet = [];
 let xmlIntermediate = "";
@@ -351,8 +321,6 @@ subjectDropdownImport.addEventListener("change", async function() {
 });
 const importHtmlInput = document.getElementById("importHtmlInput");
 const importHtmlResult = document.getElementById("importHtmlResult");
-
-// --- Parse HTML to XML intermediate ---
 function parseHtmlToXml(html) {
   const parser = new DOMParser();
   const docx = parser.parseFromString(html, "text/html");
@@ -366,7 +334,6 @@ function parseHtmlToXml(html) {
     let contentEl = xmlDoc.createElement("content");
     contentEl.appendChild(xmlDoc.createCDATASection(questionText));
     questionEl.appendChild(contentEl);
-
     const answerNodes = q.querySelectorAll('.answer > div');
     answerNodes.forEach((ans, idx) => {
       let ansNode = ans.querySelector('.flex-fill, .ml-1');
@@ -376,13 +343,11 @@ function parseHtmlToXml(html) {
       let answerEl = xmlDoc.createElement("answer");
       answerEl.setAttribute("key", String.fromCharCode(97 + idx));
       answerEl.appendChild(xmlDoc.createCDATASection(ansText));
-      // Đánh dấu đáp án đúng
       if (ans.classList.contains('correct') || ans.querySelector('input:checked')) {
         answerEl.setAttribute("correct", "true");
       }
       questionEl.appendChild(answerEl);
     });
-    // Trường hợp đặc biệt: dùng .rightanswer
     if (!questionEl.querySelector('answer[correct="true"]')) {
       let rightAnswerText = q.querySelector('.rightanswer')?.innerText || '';
       let match = rightAnswerText.match(/The correct answer is:\s*(.*)$/i);
@@ -398,8 +363,6 @@ function parseHtmlToXml(html) {
   });
   return new XMLSerializer().serializeToString(xmlDoc);
 }
-
-// --- Extract from XML for UI display and duplicate check ---
 function extractXmlDataAndShow(xmlStr, existSet) {
   const parser = new DOMParser();
   const xml = parser.parseFromString(xmlStr, "text/xml");
@@ -421,7 +384,6 @@ function extractXmlDataAndShow(xmlStr, existSet) {
         correctIdx = idx;
       }
     });
-    // Chuẩn hóa để so trùng lặp
     const normQ = normalizeMathText(content);
     const isDup = existSet.some(x =>
       normalizeMathText(x.noi_dung) === normQ &&
@@ -438,9 +400,7 @@ function extractXmlDataAndShow(xmlStr, existSet) {
       }
     });
   });
-
   importedQuestions = questions;
-  // Hiển thị ra web
   let html = `<div class="fw-bold mb-2">Kết quả trích xuất (${questions.length} câu):</div>`;
   questions.forEach((q, idx) => {
     html += `<div class="import-question${q.duplicate ? ' import-duplicate' : ''}">
@@ -458,10 +418,16 @@ function extractXmlDataAndShow(xmlStr, existSet) {
   document.getElementById("downloadXmlBtn").style.display = questions.length > 0 ? "inline-block" : "none";
   saveImportBtn.style.display = questions.length > 0 ? "inline-block" : "none";
   if (window.MathJax && window.MathJax.typesetPromise) {
-    MathJax.typesetPromise(Array.from(importHtmlResult.querySelectorAll('.mathjax-content')));
+    MathJax.typesetPromise(Array.from(importHtmlResult.querySelectorAll('.mathjax-content'))).then(() => {
+      document.querySelectorAll('.mjx-merror').forEach(e => {
+        e.classList.add('mathjax-error');
+        if (!e.innerText.includes('Math input error') && !e.innerText.includes('Math output error')) {
+          e.innerText = '[Math output error]';
+        }
+      });
+    });
   }
 }
-
 importHtmlInput.addEventListener("change", async function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -473,14 +439,11 @@ importHtmlInput.addEventListener("change", async function(e) {
   const reader = new FileReader();
   reader.onload = async function(ev) {
     const html = ev.target.result;
-    // ---- Chuyển sang XML trung gian ---
     xmlIntermediate = parseHtmlToXml(html);
     extractXmlDataAndShow(xmlIntermediate, existSet);
   }
   reader.readAsText(file);
 });
-
-// Nút tải XML trung gian
 document.getElementById("downloadXmlBtn").onclick = function() {
   if (!xmlIntermediate) return;
   const blob = new Blob([xmlIntermediate], {type: "application/xml"});
@@ -492,7 +455,6 @@ document.getElementById("downloadXmlBtn").onclick = function() {
   a.click();
   setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},500);
 };
-
 saveImportBtn.onclick = async function() {
   if (!importCodeOk) return alert("Chưa xác thực mã bảo mật!");
   if (!subjectDropdownImport.value) { alert("Vui lòng chọn môn học để lưu!"); return; }
@@ -512,7 +474,6 @@ saveImportBtn.onclick = async function() {
   alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
   saveImportBtn.disabled = false;
 };
-
 async function getQuestionSetForSubject(mon_hoc_id) {
   const querySnap = await getDocs(query(collection(db, "cau_hoi"), where("mon_hoc_id", "==", mon_hoc_id)));
   const existSet = [];
@@ -535,7 +496,7 @@ function isDuplicateInSet(question, existSet) {
   );
 }
 
-// ========== Manual Add Question ==========
+// ==== Manual Add Question ====
 let manualQuestionImgFile = null, manualAnswerAImgFile = null, manualAnswerBImgFile = null, manualAnswerCImgFile = null, manualAnswerDImgFile = null;
 let manualQuestionImgUrl = "", manualAnswerAImgUrl = "", manualAnswerBImgUrl = "", manualAnswerCImgUrl = "", manualAnswerDImgUrl = "";
 function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
@@ -557,7 +518,6 @@ function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
     setUrl("");
   });
 }
-
 handleImgInput(
   document.getElementById("manualQuestionImageInput"),
   document.getElementById("manualQuestionImgPreview"),
@@ -642,7 +602,7 @@ document.getElementById("manualQuestionForm").addEventListener("submit", async f
   alert("Đã thêm câu hỏi!");
 });
 
-// ========== Upload Syllabus ==========
+// ==== Upload Syllabus ====
 document.getElementById("syllabusForm").addEventListener("submit", async function(e){
   e.preventDefault();
   if(!syllabusCodeOk) return alert("Chưa xác thực mã bảo mật!");
@@ -661,7 +621,7 @@ document.getElementById("syllabusForm").addEventListener("submit", async functio
   } else alert("Điền đầy đủ thông tin và chọn file!");
 });
 
-// ========== UI chuyển màn hình ==========
+// ==== UI chuyển màn hình ====
 document.getElementById("questionImportHtmlBtn").onclick = function(){
   document.getElementById("questionUploadChoice").style.display = "none";
   importHtmlSection.style.display = "block";
@@ -671,37 +631,8 @@ document.getElementById("questionImportHtmlBtn").onclick = function(){
   saveImportBtn.style.display = "none";
   document.getElementById("downloadXmlBtn").style.display = "none";
   subjectDropdownImport.value = "";
-  importHtmlInput.disabled = true;
-  document.getElementById("questionSecurityCodeImport").value = "";
-  document.getElementById("questionSecurityCodeStatusImport").innerHTML = "";
-  document.getElementById("saveImportBtn").disabled = true;
-};
-document.getElementById("questionManualBtn").onclick = function(){
-  document.getElementById("questionUploadChoice").style.display = "none";
-  importHtmlSection.style.display = "none";
-  manualQuestionSection.style.display = "block";
-  manualQuestionForm.reset();
-  [
-    "manualQuestionImgPreview", "manualRemoveQuestionImgBtn",
-    "manualAnswerAImgPreview", "manualRemoveAImgBtn",
-    "manualAnswerBImgPreview", "manualRemoveBImgBtn",
-    "manualAnswerCImgPreview", "manualRemoveCImgBtn",
-    "manualAnswerDImgPreview", "manualRemoveDImgBtn"
-  ].forEach(id => {
-    document.getElementById(id).style.display = "none";
-  });
-  manualQuestionImgFile = manualAnswerAImgFile = manualAnswerBImgFile = manualAnswerCImgFile = manualAnswerDImgFile = null;
-  manualQuestionImgUrl = manualAnswerAImgUrl = manualAnswerBImgUrl = manualAnswerCImgUrl = manualAnswerDImgUrl = "";
-  document.getElementById("questionSecurityCodeManual").value = "";
-  document.getElementById("questionSecurityCodeStatusManual").innerHTML = "";
-  manualSubmitQuestionBtn.disabled = true;
-};
-document.getElementById("backToQuestionChoiceBtn").onclick =
-document.getElementById("backToQuestionChoiceBtn2").onclick = function(){
-  document.getElementById("questionUploadChoice").style.display = "block";
-  importHtmlSection.style.display = "none";
-  manualQuestionSection.style.display = "none";
-};
+  importHtmlInput.disabled = true
+
 </script>
 </body>
 </html>
