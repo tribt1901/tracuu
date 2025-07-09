@@ -143,162 +143,37 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-// Firebase init
-const firebaseConfig = {
-  apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
-  authDomain: "tracuu-d3ee9.firebaseapp.com",
-  projectId: "tracuu-d3ee9",
-  storageBucket: "tracuu-d3ee9.appspot.com",
-  messagingSenderId: "593568604435",
-  appId: "1:593568604435:web:9a5145457a8ee734143ae6",
-  measurementId: "G-R0M6Y502NP"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// Helper: Lấy mã bảo mật từ trường code trong collection config
-async function checkSecurityCode(inputCode) {
-  const q = query(collection(db, "config"), where("code", "==", inputCode));
-  const snap = await getDocs(q);
-  return !snap.empty;
-}
-
-// Dropdown helper
-async function fillSubjectsDropdown(el, withDefault) {
-  el.innerHTML = withDefault ? '<option value="">-- Chọn môn học --</option>' : "";
-  const snaps = await getDocs(collection(db, "mon_hoc"));
-  snaps.forEach(docSnap => {
-    const opt = document.createElement("option");
-    opt.value = docSnap.id;
-    opt.textContent = docSnap.data().ten_mon;
-    el.appendChild(opt);
-  });
-}
-
-// Upload file/image helper
-async function uploadFile(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await fetch('https://tracuu-app.hugo.io.vn/api/upload', {method:'POST', body:formData});
-  if(!res.ok) throw new Error('Upload file thất bại!');
-  return (await res.json()).url;
-}
-
-// ===== MathJax extraction helper =====
-function extractTeXOrClean(node) {
-  // Clone node để không ảnh hưởng DOM gốc
-  let clone = node.cloneNode(true);
-  // Lấy hết các script[type="math/tex"] ra TeX
-  clone.querySelectorAll('script[type="math/tex"]').forEach(e => {
-    let span = document.createElement('span');
-    span.textContent = `$${e.textContent.trim()}$`;
-    e.parentNode.replaceChild(span, e);
-  });
-  // Xóa các node render của MathJax
-  clone.querySelectorAll('.MathJax, .MathJax_Preview, .MJX_Assistive_MathML, mjx-container').forEach(e => e.remove());
-  return clone.innerHTML.trim();
-}
-
-// ========== UI INIT ===========
+const firebaseConfig = { apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c", authDomain: "tracuu-d3ee9.firebaseapp.com", projectId: "tracuu-d3ee9", storageBucket: "tracuu-d3ee9.appspot.com", messagingSenderId: "593568604435", appId: "1:593568604435:web:9a5145457a8ee734143ae6", measurementId: "G-R0M6Y502NP" };
+const app = initializeApp(firebaseConfig); const db = getFirestore(app);
+async function checkSecurityCode(inputCode) { const q = query(collection(db, "config"), where("code", "==", inputCode)); const snap = await getDocs(q); return !snap.empty; }
+async function fillSubjectsDropdown(el, withDefault) { el.innerHTML = withDefault ? '<option value="">-- Chọn môn học --</option>' : ""; const snaps = await getDocs(collection(db, "mon_hoc")); snaps.forEach(docSnap => { const opt = document.createElement("option"); opt.value = docSnap.id; opt.textContent = docSnap.data().ten_mon; el.appendChild(opt); }); }
+async function uploadFile(file) { const formData = new FormData(); formData.append('file', file); const res = await fetch('https://tracuu-app.hugo.io.vn/api/upload', {method:'POST', body:formData}); if(!res.ok) throw new Error('Upload file thất bại!'); return (await res.json()).url; }
+function extractTeXOrClean(node) { let clone = node.cloneNode(true); clone.querySelectorAll('script[type="math/tex"]').forEach(e => { let span = document.createElement('span'); span.textContent = `$${e.textContent.trim()}$`; e.parentNode.replaceChild(span, e); }); clone.querySelectorAll('.MathJax, .MathJax_Preview, .MJX_Assistive_MathML, mjx-container').forEach(e => e.remove()); return clone.innerHTML.trim(); }
 const w = document.getElementById("uploadTypeSelect");
 const v = document.getElementById("uploadQuestionSection");
 const f = document.getElementById("uploadSyllabusSection");
-
 const subjectDropdownImport = document.getElementById("subjectDropdownImport");
 const subjectDropdownManual = document.getElementById("subjectDropdownManual");
 const syllabusSubjectDropdown = document.getElementById("syllabusSubjectDropdown");
-
 await fillSubjectsDropdown(subjectDropdownImport, true);
 await fillSubjectsDropdown(subjectDropdownManual, false);
 await fillSubjectsDropdown(syllabusSubjectDropdown, false);
-
-w.addEventListener("change", () => {
-  document.querySelectorAll(".mode-section").forEach(e => e.style.display = "none");
-  if (w.value === "question") v.style.display = "block";
-  else if (w.value === "syllabus") f.style.display = "block";
-});
-w.dispatchEvent(new Event("change"));
-
-// ======== Security code logic (reuse for all sections) ==========
+w.addEventListener("change", () => { document.querySelectorAll(".mode-section").forEach(e => e.style.display = "none"); if (w.value === "question") v.style.display = "block"; else if (w.value === "syllabus") f.style.display = "block"; }); w.dispatchEvent(new Event("change"));
 let importCodeOk = false, manualCodeOk = false, syllabusCodeOk = false;
 const saveImportBtn = document.getElementById("saveImportBtn");
 const manualSubmitQuestionBtn = document.getElementById("manualSubmitQuestionBtn");
 const syllabusSubmitBtn = document.getElementById("syllabusSubmitBtn");
-
-document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() {
-  const code = this.value.trim();
-  const status = document.getElementById("questionSecurityCodeStatusImport");
-  status.textContent = code ? "Đang kiểm tra..." : "";
-  importCodeOk = false;
-  saveImportBtn.disabled = true;
-  if (!code) return;
-  const ok = await checkSecurityCode(code);
-  if (ok) {
-    importCodeOk = true;
-    status.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
-    saveImportBtn.disabled = false;
-  } else {
-    status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
-  }
-});
-
-document.getElementById("questionSecurityCodeManual").addEventListener("input", async function() {
-  const code = this.value.trim();
-  const status = document.getElementById("questionSecurityCodeStatusManual");
-  status.textContent = code ? "Đang kiểm tra..." : "";
-  manualCodeOk = false;
-  manualSubmitQuestionBtn.disabled = true;
-  if (!code) return;
-  const ok = await checkSecurityCode(code);
-  if (ok) {
-    manualCodeOk = true;
-    status.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
-    manualSubmitQuestionBtn.disabled = false;
-  } else {
-    status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
-  }
-});
-
-document.getElementById("syllabusSecurityCode").addEventListener("input", async function() {
-  const code = this.value.trim();
-  const status = document.getElementById("syllabusSecurityCodeStatus");
-  status.textContent = code ? "Đang kiểm tra..." : "";
-  syllabusCodeOk = false;
-  syllabusSubmitBtn.disabled = true;
-  if (!code) return;
-  const ok = await checkSecurityCode(code);
-  if (ok) {
-    syllabusCodeOk = true;
-    status.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
-    syllabusSubmitBtn.disabled = false;
-  } else {
-    status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
-  }
-});
-
-// ========== Import HTML Moodle ==========
-let importedQuestions = [];
-let existSet = [];
-subjectDropdownImport.addEventListener("change", async function() {
-  importHtmlInput.value = "";
-  importHtmlResult.innerHTML = "";
-  saveImportBtn.style.display = "none";
-  importHtmlInput.disabled = !subjectDropdownImport.value;
-  if (subjectDropdownImport.value) {
-    existSet = await getQuestionSetForSubject(subjectDropdownImport.value);
-  }
-});
+document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() { const code = this.value.trim(); const status = document.getElementById("questionSecurityCodeStatusImport"); status.textContent = code ? "Đang kiểm tra..." : ""; importCodeOk = false; saveImportBtn.disabled = true; if (!code) return; const ok = await checkSecurityCode(code); if (ok) { importCodeOk = true; status.innerHTML = '<span class="text-success">Mã hợp lệ!</span>'; saveImportBtn.disabled = false; } else { status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>'; } });
+document.getElementById("questionSecurityCodeManual").addEventListener("input", async function() { const code = this.value.trim(); const status = document.getElementById("questionSecurityCodeStatusManual"); status.textContent = code ? "Đang kiểm tra..." : ""; manualCodeOk = false; manualSubmitQuestionBtn.disabled = true; if (!code) return; const ok = await checkSecurityCode(code); if (ok) { manualCodeOk = true; status.innerHTML = '<span class="text-success">Mã hợp lệ!</span>'; manualSubmitQuestionBtn.disabled = false; } else { status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>'; } });
+document.getElementById("syllabusSecurityCode").addEventListener("input", async function() { const code = this.value.trim(); const status = document.getElementById("syllabusSecurityCodeStatus"); status.textContent = code ? "Đang kiểm tra..." : ""; syllabusCodeOk = false; syllabusSubmitBtn.disabled = true; if (!code) return; const ok = await checkSecurityCode(code); if (ok) { syllabusCodeOk = true; status.innerHTML = '<span class="text-success">Mã hợp lệ!</span>'; syllabusSubmitBtn.disabled = false; } else { status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>'; } });
+let importedQuestions = []; let existSet = [];
+subjectDropdownImport.addEventListener("change", async function() { importHtmlInput.value = ""; importHtmlResult.innerHTML = ""; saveImportBtn.style.display = "none"; importHtmlInput.disabled = !subjectDropdownImport.value; if (subjectDropdownImport.value) { existSet = await getQuestionSetForSubject(subjectDropdownImport.value); } });
 const importHtmlInput = document.getElementById("importHtmlInput");
 const importHtmlResult = document.getElementById("importHtmlResult");
-
 importHtmlInput.addEventListener("change", async function(e) {
   const file = e.target.files[0];
   if (!file) return;
-  if (!subjectDropdownImport.value) {
-    alert("Vui lòng chọn môn học để kiểm tra trùng lặp!");
-    return;
-  }
+  if (!subjectDropdownImport.value) { alert("Vui lòng chọn môn học để kiểm tra trùng lặp!"); return; }
   existSet = await getQuestionSetForSubject(subjectDropdownImport.value);
   const reader = new FileReader();
   reader.onload = async function(ev) {
@@ -309,37 +184,34 @@ importHtmlInput.addEventListener("change", async function(e) {
     docx.querySelectorAll('.que').forEach(q => {
       let questionNode = q.querySelector('.qtext');
       let questionText = questionNode ? extractTeXOrClean(questionNode) : '';
-      const answerNodes = q.querySelectorAll('.answer > div');
-      const answers = [];
-      answerNodes.forEach((ans, idx) => {
-        // lấy nội dung đã loại bỏ MathJax render, chỉ giữ TeX
-        let ansNode = ans.querySelector('.flex-fill, div.ml-1');
-        let ansText = ansNode ? extractTeXOrClean(ansNode) : extractTeXOrClean(ans);
+      let answers = [];
+      let correctIdx = -1, correctKey = '', correct = '';
+      let answerDivs = q.querySelectorAll('.answer > div, .r0, .r1');
+      if (answerDivs.length === 0) { answerDivs = q.querySelectorAll('.answer label'); }
+      answerDivs.forEach((ans, i) => {
+        let ansText = extractTeXOrClean(ans);
         answers.push(ansText);
+        if (
+          ans.classList.contains('correct') ||
+          ans.querySelector('.correct') ||
+          ans.querySelector('input[type="radio"]:checked,input[type="checkbox"]:checked')
+        ) { correctIdx = i; }
       });
-      let correct = '';
-      let correctIdx = -1;
-      let correctKey = '';
-      let rightAnswerText = q.querySelector('.rightanswer')?.innerText || '';
-      let match = rightAnswerText.match(/The correct answer is: (.+)$/);
-      if (match) {
-        let correctValue = match[1].trim();
-        correctIdx = answers.findIndex(a =>
-          a.replace(/<[^>]*>/g, '').trim().toLowerCase() === correctValue.trim().toLowerCase()
-          || a.replace(/<[^>]*>/g, '').trim().toLowerCase().includes(correctValue.trim().toLowerCase())
-          || correctValue.trim().toLowerCase().includes(a.replace(/<[^>]*>/g, '').trim().toLowerCase())
-        );
-        correctKey = ['a','b','c','d'][correctIdx] || '';
-        correct = answers[correctIdx] || '';
-      } else {
-        answerNodes.forEach((ans, idx) => {
-          if (ans.classList.contains('correct')) {
-            correct = answers[idx];
-            correctIdx = idx;
-            correctKey = ['a','b','c','d'][correctIdx] || '';
-          }
-        });
+      if (correctIdx === -1) {
+        let rightAnswerText = q.querySelector('.rightanswer')?.innerText || '';
+        let match = rightAnswerText.match(/The correct answer is: (.+)$/);
+        if (match) {
+          let correctValue = match[1].trim();
+          correctIdx = answers.findIndex(a =>
+            a.replace(/<[^>]*>/g, '').trim().toLowerCase() === correctValue.toLowerCase() ||
+            a.replace(/<[^>]*>/g, '').trim().toLowerCase().includes(correctValue.toLowerCase()) ||
+            correctValue.toLowerCase().includes(a.replace(/<[^>]*>/g, '').trim().toLowerCase())
+          );
+        }
       }
+      if (correctIdx===-1 && answerDivs.length > 0) correctIdx=answerDivs.length===1?0:-1;
+      correctKey = ['a','b','c','d'][correctIdx] || '';
+      correct = answers[correctIdx] || '';
       rawQuestions.push({
         questionText, answers,
         correct, correctIdx, correctKey,
@@ -379,7 +251,6 @@ importHtmlInput.addEventListener("change", async function(e) {
   }
   reader.readAsText(file);
 });
-
 saveImportBtn.onclick = async function() {
   if (!importCodeOk) return alert("Chưa xác thực mã bảo mật!");
   if (!subjectDropdownImport.value) { alert("Vui lòng chọn môn học để lưu!"); return; }
@@ -399,7 +270,6 @@ saveImportBtn.onclick = async function() {
   alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
   saveImportBtn.disabled = false;
 };
-
 async function getQuestionSetForSubject(mon_hoc_id) {
   const querySnap = await getDocs(query(collection(db, "cau_hoi"), where("mon_hoc_id", "==", mon_hoc_id)));
   const existSet = [];
@@ -421,8 +291,6 @@ function isDuplicateInSet(question, existSet) {
       x.dap_an === question.lua_chon[question.dap_an_dung]
   );
 }
-
-// ========== Manual Add Question ==========
 let manualQuestionImgFile = null, manualAnswerAImgFile = null, manualAnswerBImgFile = null, manualAnswerCImgFile = null, manualAnswerDImgFile = null;
 let manualQuestionImgUrl = "", manualAnswerAImgUrl = "", manualAnswerBImgUrl = "", manualAnswerCImgUrl = "", manualAnswerDImgUrl = "";
 function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
@@ -444,7 +312,6 @@ function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
     setUrl("");
   });
 }
-
 handleImgInput(
   document.getElementById("manualQuestionImageInput"),
   document.getElementById("manualQuestionImgPreview"),
@@ -480,7 +347,6 @@ handleImgInput(
   f=>manualAnswerDImgFile=f,
   url=>manualAnswerDImgUrl=url
 );
-
 document.getElementById("manualQuestionForm").addEventListener("submit", async function(e){
   e.preventDefault();
   if (!manualCodeOk) return alert("Chưa xác thực mã bảo mật!");
@@ -492,7 +358,6 @@ document.getElementById("manualQuestionForm").addEventListener("submit", async f
         d = manualAnswerD.value.trim();
   const dap_an_dung = manualCorrectAnswerDropdown.value;
   if (!(mon_hoc_id && noi_dung && a && b && c && d && dap_an_dung)) return;
-
   let noi_dung_img = manualQuestionImgUrl;
   let aImg = manualAnswerAImgUrl, bImg = manualAnswerBImgUrl, cImg = manualAnswerCImgUrl, dImg = manualAnswerDImgUrl;
   if (manualQuestionImgFile) noi_dung_img = await uploadFile(manualQuestionImgFile);
@@ -500,7 +365,6 @@ document.getElementById("manualQuestionForm").addEventListener("submit", async f
   if (manualAnswerBImgFile) bImg = await uploadFile(manualAnswerBImgFile);
   if (manualAnswerCImgFile) cImg = await uploadFile(manualAnswerCImgFile);
   if (manualAnswerDImgFile) dImg = await uploadFile(manualAnswerDImgFile);
-
   const lua_chon = {a, aImg: aImg || "", b, bImg: bImg || "", c, cImg: cImg || "", d, dImg: dImg || ""};
   const existSet = await getQuestionSetForSubject(mon_hoc_id);
   if (isDuplicateInSet({noi_dung, dap_an_dung, lua_chon}, existSet)) {
@@ -528,8 +392,6 @@ document.getElementById("manualQuestionForm").addEventListener("submit", async f
   manualQuestionImgUrl = manualAnswerAImgUrl = manualAnswerBImgUrl = manualAnswerCImgUrl = manualAnswerDImgUrl = "";
   alert("Đã thêm câu hỏi!");
 });
-
-// ========== Upload Syllabus ==========
 document.getElementById("syllabusForm").addEventListener("submit", async function(e){
   e.preventDefault();
   if(!syllabusCodeOk) return alert("Chưa xác thực mã bảo mật!");
@@ -547,8 +409,6 @@ document.getElementById("syllabusForm").addEventListener("submit", async functio
     syllabusSubmitBtn.disabled=false;
   } else alert("Điền đầy đủ thông tin và chọn file!");
 });
-
-// ========== UI chuyển màn hình ==========
 document.getElementById("questionImportHtmlBtn").onclick = function(){
   document.getElementById("questionUploadChoice").style.display = "none";
   importHtmlSection.style.display = "block";
