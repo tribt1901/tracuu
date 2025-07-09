@@ -261,7 +261,7 @@ document.getElementById("syllabusSecurityCode").addEventListener("input", async 
   }
 });
 
-// ========== Import HTML Moodle (chuyển sang XML trung gian, hiển thị MathJax, chống trùng lặp) ==========
+// ========== Import HTML Moodle (chuyển sang XML trung gian, hiển thị MathJax, chống trùng lặp & loại trùng MathJax) ==========
 let importedQuestions = [];
 let existSet = [];
 let xmlIntermediate = "";
@@ -293,6 +293,22 @@ function normalizeMathText(text) {
     .toLowerCase()
     .trim();
 }
+// Xóa công thức toán học bị lặp lại liên tiếp
+function removeDuplicateMathExpression(text) {
+  // Xóa các đoạn lặp lại liên tiếp $...$ và <math>...</math>
+  if (!text) return "";
+  // Xóa các đoạn kiểu $...$ $...$
+  text = text.replace(/((\$[^\$]+\$\s*){2,})/g, function(m){
+    let unique = [...new Set(m.match(/\$[^\$]+\$/g) || [])];
+    return unique.join(' ');
+  });
+  // Xóa <math>...</math> lặp lại
+  text = text.replace(/((<math[\s\S]*?<\/math>\s*){2,})/g, function(m){
+    let unique = [...new Set(m.match(/<math[\s\S]*?<\/math>/g) || [])];
+    return unique.join(' ');
+  });
+  return text;
+}
 
 // --- Parse HTML to XML intermediate ---
 function parseHtmlToXml(html) {
@@ -303,6 +319,7 @@ function parseHtmlToXml(html) {
     let questionEl = xmlDoc.createElement("question");
     let questionNode = q.querySelector('.qtext');
     let questionText = questionNode ? ensureMathDelimiters(questionNode.innerHTML.trim()) : '';
+    questionText = removeDuplicateMathExpression(questionText);
     let contentEl = xmlDoc.createElement("content");
     contentEl.appendChild(xmlDoc.createCDATASection(questionText));
     questionEl.appendChild(contentEl);
@@ -311,6 +328,7 @@ function parseHtmlToXml(html) {
     answerNodes.forEach((ans, idx) => {
       let ansNode = ans.querySelector('.flex-fill, .ml-1');
       let ansText = ansNode ? ensureMathDelimiters(ansNode.innerHTML.trim()) : ensureMathDelimiters(ans.innerHTML.trim());
+      ansText = removeDuplicateMathExpression(ansText);
       let answerEl = xmlDoc.createElement("answer");
       answerEl.setAttribute("key", String.fromCharCode(97 + idx));
       answerEl.appendChild(xmlDoc.createCDATASection(ansText));
@@ -344,14 +362,16 @@ function extractXmlDataAndShow(xmlStr, existSet) {
   const questions = [];
   xml.querySelectorAll('question').forEach(q => {
     let content = q.querySelector('content').textContent;
+    content = removeDuplicateMathExpression(content); // fix lặp MathJax
     let answers = [];
     let correctKey = '';
     let correctIdx = -1;
     q.querySelectorAll('answer').forEach((ans, idx) => {
-      const key = ans.getAttribute('key');
-      answers.push(ans.textContent);
+      let ansText = ans.textContent;
+      ansText = removeDuplicateMathExpression(ansText); // fix lặp MathJax
+      answers.push(ansText);
       if (ans.getAttribute('correct') === "true") {
-        correctKey = key;
+        correctKey = ans.getAttribute('key');
         correctIdx = idx;
       }
     });
