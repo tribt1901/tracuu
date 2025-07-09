@@ -184,6 +184,80 @@ async function uploadFile(file) {
   return (await res.json()).url;
 }
 
+// ===== MathJax & Text Handling ======
+
+// MathJax wrap
+function ensureMathDelimiters(text) {
+  if (!text) return "";
+  text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
+  return text;
+}
+// Normalize MathJax/HTML for answer matching
+function normalizeMathText(text) {
+  return (text || '')
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/\\\(|\\\)|\$\$|\$/g, '') // Remove MathJax markers
+    .replace(/&nbsp;|\s+/g, '') // Remove whitespace and &nbsp;
+    .toLowerCase()
+    .trim();
+}
+// Loại bỏ tất cả các công thức toán học trùng dù không liền kề
+function removeAllDuplicateMathExpressions(text) {
+  if (!text) return "";
+  // $...$
+  let seen = new Set();
+  text = text.replace(/(\$[^\$]+\$)/g, function(m) {
+    if (seen.has(m)) return "";
+    seen.add(m);
+    return m;
+  });
+  // <math>...</math>
+  seen = new Set();
+  text = text.replace(/(<math[\s\S]*?<\/math>)/g, function(m) {
+    if (seen.has(m)) return "";
+    seen.add(m);
+    return m;
+  });
+  // \(...\)
+  seen = new Set();
+  text = text.replace(/(\\\([^\)]+\\\))/g, function(m) {
+    if (seen.has(m)) return "";
+    seen.add(m);
+    return m;
+  });
+  return text;
+}
+// Ưu tiên giữ lại MathJax, loại text thường nếu cùng nội dung
+function preferMathJaxOnly(text) {
+  if (!text) return "";
+  // Find all mathjax expressions
+  let mathMatches = [...text.matchAll(/(\$[^\$]+\$|\\\([^\)]+\\\)|<math[\s\S]*?<\/math>)/g)];
+  if (mathMatches.length === 0) return text; // Không có MathJax, trả nguyên
+  let mathSet = new Set();
+  mathMatches.forEach(m => mathSet.add(m[0]));
+
+  // Loại text thường lặp lại nội dung của MathJax
+  let replaced = text;
+  mathSet.forEach(expr => {
+    // Lấy nội dung bên trong (thường là biểu thức toán học)
+    let exprContent = expr.replace(/^\$|^\s*\\\(|^\s*<math.*?>|<\/math>$|\)$|\$$/g, '').replace(/<[^>]*>/g, '').trim();
+    if (!exprContent) return;
+    // Loại bỏ text lặp lại ngay trước hoặc sau MathJax
+    replaced = replaced.replace(new RegExp(`([\\s\\S]{0,10})${escapeRegExp(exprContent)}([\\s\\S]{0,10})`, 'g'), function(m, p1, p2) {
+      // Nếu trùng với MathJax thì bỏ text, chỉ để lại MathJax
+      return (p1.includes('$') || p1.includes('<math') || p1.includes('\\(') || p2.includes('$') || p2.includes('</math>') || p2.includes('\\)')) ? m : '';
+    });
+  });
+  // Sau đó chỉ giữ một MathJax mỗi loại, loại lặp
+  replaced = removeAllDuplicateMathExpressions(replaced);
+  // Nếu thay hết thành rỗng, trả lại MathJax đầu tiên
+  if (!replaced.trim()) replaced = mathMatches[0][0];
+  return replaced.trim();
+}
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // ========== UI INIT ===========
 const w = document.getElementById("uploadTypeSelect");
 const v = document.getElementById("uploadQuestionSection");
@@ -261,7 +335,7 @@ document.getElementById("syllabusSecurityCode").addEventListener("input", async 
   }
 });
 
-// ========== Import HTML Moodle (chuyển sang XML trung gian, hiển thị MathJax, chống trùng lặp & loại trùng MathJax không cần liền kề) ==========
+// ========== Import HTML Moodle (chuyển sang XML trung gian, ưu tiên MathJax, chống trùng lặp) ==========
 let importedQuestions = [];
 let existSet = [];
 let xmlIntermediate = "";
@@ -278,48 +352,6 @@ subjectDropdownImport.addEventListener("change", async function() {
 const importHtmlInput = document.getElementById("importHtmlInput");
 const importHtmlResult = document.getElementById("importHtmlResult");
 
-// MathJax wrap
-function ensureMathDelimiters(text) {
-  if (!text) return "";
-  text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
-  return text;
-}
-// Normalize MathJax/HTML for answer matching
-function normalizeMathText(text) {
-  return (text || '')
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/\\\(|\\\)|\$\$|\$/g, '') // Remove MathJax markers
-    .replace(/&nbsp;|\s+/g, '') // Remove whitespace and &nbsp;
-    .toLowerCase()
-    .trim();
-}
-// Loại bỏ tất cả các công thức toán học trùng dù không liền kề
-function removeAllDuplicateMathExpressions(text) {
-  if (!text) return "";
-  // $...$
-  let seen = new Set();
-  text = text.replace(/(\$[^\$]+\$)/g, function(m) {
-    if (seen.has(m)) return "";
-    seen.add(m);
-    return m;
-  });
-  // <math>...</math>
-  seen = new Set();
-  text = text.replace(/(<math[\s\S]*?<\/math>)/g, function(m) {
-    if (seen.has(m)) return "";
-    seen.add(m);
-    return m;
-  });
-  // \(...\)
-  seen = new Set();
-  text = text.replace(/(\\\([^\)]+\\\))/g, function(m) {
-    if (seen.has(m)) return "";
-    seen.add(m);
-    return m;
-  });
-  return text;
-}
-
 // --- Parse HTML to XML intermediate ---
 function parseHtmlToXml(html) {
   const parser = new DOMParser();
@@ -330,6 +362,7 @@ function parseHtmlToXml(html) {
     let questionNode = q.querySelector('.qtext');
     let questionText = questionNode ? ensureMathDelimiters(questionNode.innerHTML.trim()) : '';
     questionText = removeAllDuplicateMathExpressions(questionText);
+    questionText = preferMathJaxOnly(questionText);
     let contentEl = xmlDoc.createElement("content");
     contentEl.appendChild(xmlDoc.createCDATASection(questionText));
     questionEl.appendChild(contentEl);
@@ -339,6 +372,7 @@ function parseHtmlToXml(html) {
       let ansNode = ans.querySelector('.flex-fill, .ml-1');
       let ansText = ansNode ? ensureMathDelimiters(ansNode.innerHTML.trim()) : ensureMathDelimiters(ans.innerHTML.trim());
       ansText = removeAllDuplicateMathExpressions(ansText);
+      ansText = preferMathJaxOnly(ansText);
       let answerEl = xmlDoc.createElement("answer");
       answerEl.setAttribute("key", String.fromCharCode(97 + idx));
       answerEl.appendChild(xmlDoc.createCDATASection(ansText));
@@ -372,13 +406,15 @@ function extractXmlDataAndShow(xmlStr, existSet) {
   const questions = [];
   xml.querySelectorAll('question').forEach(q => {
     let content = q.querySelector('content').textContent;
-    content = removeAllDuplicateMathExpressions(content); // fix lặp MathJax
+    content = removeAllDuplicateMathExpressions(content);
+    content = preferMathJaxOnly(content);
     let answers = [];
     let correctKey = '';
     let correctIdx = -1;
     q.querySelectorAll('answer').forEach((ans, idx) => {
       let ansText = ans.textContent;
-      ansText = removeAllDuplicateMathExpressions(ansText); // fix lặp MathJax
+      ansText = removeAllDuplicateMathExpressions(ansText);
+      ansText = preferMathJaxOnly(ansText);
       answers.push(ansText);
       if (ans.getAttribute('correct') === "true") {
         correctKey = ans.getAttribute('key');
