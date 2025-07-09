@@ -185,6 +185,21 @@ async function uploadFile(file) {
   return (await res.json()).url;
 }
 
+// ===== MathJax extraction helper =====
+function extractTeXOrClean(node) {
+  // Clone node để không ảnh hưởng DOM gốc
+  let clone = node.cloneNode(true);
+  // Lấy hết các script[type="math/tex"] ra TeX
+  clone.querySelectorAll('script[type="math/tex"]').forEach(e => {
+    let span = document.createElement('span');
+    span.textContent = `$${e.textContent.trim()}$`;
+    e.parentNode.replaceChild(span, e);
+  });
+  // Xóa các node render của MathJax
+  clone.querySelectorAll('.MathJax, .MathJax_Preview, .MJX_Assistive_MathML, mjx-container').forEach(e => e.remove());
+  return clone.innerHTML.trim();
+}
+
 // ========== UI INIT ===========
 const w = document.getElementById("uploadTypeSelect");
 const v = document.getElementById("uploadQuestionSection");
@@ -277,13 +292,6 @@ subjectDropdownImport.addEventListener("change", async function() {
 const importHtmlInput = document.getElementById("importHtmlInput");
 const importHtmlResult = document.getElementById("importHtmlResult");
 
-// MathJax wrap
-function ensureMathDelimiters(text) {
-  if (!text) return "";
-  text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
-  return text;
-}
-
 importHtmlInput.addEventListener("change", async function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -300,12 +308,13 @@ importHtmlInput.addEventListener("change", async function(e) {
     let rawQuestions = [];
     docx.querySelectorAll('.que').forEach(q => {
       let questionNode = q.querySelector('.qtext');
-      let questionText = questionNode ? ensureMathDelimiters(questionNode.innerHTML.trim()) : '';
+      let questionText = questionNode ? extractTeXOrClean(questionNode) : '';
       const answerNodes = q.querySelectorAll('.answer > div');
       const answers = [];
       answerNodes.forEach((ans, idx) => {
+        // lấy nội dung đã loại bỏ MathJax render, chỉ giữ TeX
         let ansNode = ans.querySelector('.flex-fill, div.ml-1');
-        let ansText = ansNode ? ensureMathDelimiters(ansNode.innerHTML.trim()) : ensureMathDelimiters(ans.innerHTML.trim());
+        let ansText = ansNode ? extractTeXOrClean(ansNode) : extractTeXOrClean(ans);
         answers.push(ansText);
       });
       let correct = '';
