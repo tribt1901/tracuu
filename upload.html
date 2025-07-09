@@ -275,7 +275,7 @@ subjectDropdownImport.addEventListener("change", async function() {
 const importHtmlInput = document.getElementById("importHtmlInput");
 const importHtmlResult = document.getElementById("importHtmlResult");
 
-// SỬA HÀM NÀY ĐỂ KHÔNG TRÙNG LẶP CÔNG THỨC TOÁN
+// Không trùng lặp công thức toán học:
 function ensureMathDelimiters(text) {
   if (!text) return "";
   // Nếu đã có $...$, \( ... \), \[ ... \] thì giữ nguyên
@@ -293,6 +293,7 @@ function normalizeMathText(text) {
     .trim();
 }
 
+// Parse đáp án, chỉ lấy công thức đầu (loại lặp lại):
 importHtmlInput.addEventListener("change", async function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -315,7 +316,18 @@ importHtmlInput.addEventListener("change", async function(e) {
       answerNodes.forEach((ans, idx) => {
         let ansNode = ans.querySelector('.flex-fill, .ml-1');
         let ansText = ansNode ? ensureMathDelimiters(ansNode.innerHTML.trim()) : ensureMathDelimiters(ans.innerHTML.trim());
-        answers.push(ansText);
+        // Loại lặp lại công thức toán học:
+        // Nếu có nhiều hơn 1 'dz =' thì chỉ lấy phần đầu
+        const dzMatches = ansText.match(/dz\s*=/g) || [];
+        if (dzMatches.length > 1) {
+          let firstDz = ansText.indexOf('dz =');
+          let secondDz = ansText.indexOf('dz =', firstDz + 1);
+          if (secondDz > 0) ansText = ansText.substring(0, secondDz).trim();
+        }
+        // Nếu phía sau còn lặp lại y hệt, cắt theo dấu cách 2 lần hoặc dấu xuống dòng
+        let parts = ansText.split(/(\s{2,}|\n{1,})/);
+        if (parts.length > 1 && parts[0].trim() === parts[2]?.trim()) ansText = parts[0].trim();
+        answers.push(ansText.trim());
       });
       // === Robust answer detection ===
       let correctIdx = -1;
