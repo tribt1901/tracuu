@@ -25,6 +25,10 @@
     .import-answer{margin-left:2em}
     .import-duplicate-message{color:#c00;font-style:italic}
     .mathjax-content { font-size: 1.1em; }
+    .answer-radio {
+      margin-right: 7px;
+      accent-color: #198754;
+    }
   </style>
   <link rel="icon" href="data:,">
   <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -173,6 +177,24 @@ let importedQuestions = []; let existSet = [];
 subjectDropdownImport.addEventListener("change", async function() { importHtmlInput.value = ""; importHtmlResult.innerHTML = ""; saveImportBtn.style.display = "none"; importHtmlInput.disabled = !subjectDropdownImport.value; if (subjectDropdownImport.value) { existSet = await getQuestionSetForSubject(subjectDropdownImport.value); } });
 const importHtmlInput = document.getElementById("importHtmlInput");
 const importHtmlResult = document.getElementById("importHtmlResult");
+
+// Utility: loại bỏ trùng lặp công thức toán học trong phần câu hỏi (giữ lại dòng đầu)
+function removeDuplicateMath(html) {
+  // Tách các tag <span class="mathjax-content">...</span> lặp lại và giữ lại 1 lần đầu
+  // Ở đây, ta chỉ giữ lại dòng đầu hoặc loại hết các công thức lặp lại hoàn toàn
+  // Nhưng tốt nhất là loại lặp đoạn (block) giống hệt nhau liền kề
+  let temp = document.createElement('div');
+  temp.innerHTML = html;
+  let last = "";
+  let toRemove = [];
+  temp.childNodes.forEach(node => {
+    if (node.outerHTML && last && node.outerHTML === last) toRemove.push(node);
+    else last = node.outerHTML;
+  });
+  toRemove.forEach(n => n.remove());
+  return temp.innerHTML;
+}
+
 importHtmlInput.addEventListener("change", async function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -187,6 +209,12 @@ importHtmlInput.addEventListener("change", async function(e) {
     docx.querySelectorAll('.que').forEach(q => {
       let questionNode = q.querySelector('.qtext');
       let questionText = questionNode ? questionNode.innerHTML.trim() : '';
+      // Loại các block bị lặp hoàn toàn
+      questionText = removeDuplicateMath(questionText);
+
+      // Hoặc chỉ lấy text, nếu bạn muốn cực kỳ sạch
+      // questionText = questionNode ? questionNode.textContent.trim() : '';
+
       const answerNodes = q.querySelectorAll('.answer > div');
       const answers = [];
       answerNodes.forEach((ans, idx) => {
@@ -241,7 +269,8 @@ importHtmlInput.addEventListener("change", async function(e) {
         <div><b>Câu ${idx+1}:</b> <span class="mathjax-content">${q.questionText}</span></div>`;
       q.answers.forEach((a,i) => {
         htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
-          ${String.fromCharCode(97+i)}. <span class="mathjax-content">${a}</span> ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}
+          <input class="answer-radio" type="radio" name="q${idx}" ${i===q.correctIdx?'checked':''} disabled>
+          ${String.fromCharCode(97+i)}. <span class="mathjax-content">${a}</span> ${i===q.correctIdx?'<span class="text-success fw-bold">(Đáp án đúng)</span>':''}
         </div>`;
       });
       if(q.duplicate)
@@ -250,7 +279,6 @@ importHtmlInput.addEventListener("change", async function(e) {
     });
     importHtmlResult.innerHTML = htmlResult;
     saveImportBtn.style.display = importedQuestions.length>0 ? "inline-block" : "none";
-    // MathJax render lại
     if (window.MathJax && window.MathJax.typesetPromise) {
       MathJax.typesetPromise([importHtmlResult]);
     }
