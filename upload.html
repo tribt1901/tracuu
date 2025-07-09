@@ -1,32 +1,31 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="utf-8">
-<title>Upload Dữ Liệu</title>
-<meta content="width=device-width,initial-scale=1" name="viewport">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
-.mode-section{display:none}
-body{padding-top:70px}
-#importHtmlResultContainer{max-height:350px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:5px;padding:12px}
-.img-preview,.img-preview-ans{max-width:120px;max-height:70px;display:inline-block;margin-top:6px;vertical-align:middle}
-.img-preview-ans{max-width:70px;max-height:40px}
-.img-upload-btn{margin-top:3px}
-.remove-img-btn{margin-left:6px;color:red;border:none;background:0 0}
-.subject-scroll-select{max-height:240px!important;overflow-y:auto!important}
-.security-section{max-width:360px;margin-bottom:16px}
-@media (max-width:600px){#importHtmlResultContainer{max-height:210px}}
-.import-duplicate .import-answer,.import-duplicate .import-duplicate-message,.import-duplicate .import-question-title{color:#c00!important}
-.import-duplicate .import-answer-correct{color:#c00!important;font-weight:700}
-.import-question-title{font-weight:500;color:#c00}
-.import-answer-correct{color:#198754;font-weight:700}
-.import-answer{margin-left:2em}
-.import-duplicate-message{color:#c00;font-style:italic}
-.mathjax-content{font-size:1.1em}
-.mathjax-error { background: yellow; color: #b00; padding: 2px 6px; border-radius: 4px; }
-</style>
-<link rel="icon" href="data:,">
-<script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <meta charset="utf-8">
+  <title>Upload Dữ Liệu</title>
+  <meta content="width=device-width,initial-scale=1" name="viewport">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .mode-section{display:none}
+    body{padding-top:70px}
+    #importHtmlResultContainer{max-height:350px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:5px;padding:12px}
+    .img-preview,.img-preview-ans{max-width:120px;max-height:70px;display:inline-block;margin-top:6px;vertical-align:middle}
+    .img-preview-ans{max-width:70px;max-height:40px}
+    .img-upload-btn{margin-top:3px}
+    .remove-img-btn{margin-left:6px;color:red;border:none;background:0 0}
+    .subject-scroll-select{max-height:240px!important;overflow-y:auto!important}
+    .security-section{max-width:360px;margin-bottom:16px}
+    @media (max-width:600px){#importHtmlResultContainer{max-height:210px}}
+    .import-duplicate .import-answer,.import-duplicate .import-duplicate-message,.import-duplicate .import-question-title{color:#c00!important}
+    .import-duplicate .import-answer-correct{color:#c00!important;font-weight:700}
+    .import-question-title{font-weight:500;color:#c00}
+    .import-answer-correct{color:#198754;font-weight:700}
+    .import-answer{margin-left:2em}
+    .import-duplicate-message{color:#c00;font-style:italic}
+    .mathjax-content{font-size:1.1em}
+  </style>
+  <link rel="icon" href="data:,">
+  <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color:#4caf50">
@@ -65,7 +64,6 @@ body{padding-top:70px}
       <div id="importHtmlResultContainer">
         <div id="importHtmlResult" class="mt-3"></div>
       </div>
-      <button class="btn btn-secondary mt-2" id="downloadXmlBtn" style="display:none">⬇️ Tải XML trung gian</button>
       <div class="security-section" style="margin-top:10px">
         <input type="password" class="form-control mb-1" id="questionSecurityCodeImport" placeholder="Nhập mã bảo mật để lưu">
         <div id="questionSecurityCodeStatusImport" style="font-size:.95em" class="mb-2"></div>
@@ -141,102 +139,10 @@ body{padding-top:70px}
   </div>
 </div>
 <script type="module">
-// ==== MathJax helpers ====
-// giải mã các entity HTML
-function decodeHTMLEntities(text) {
-  var txt = document.createElement("textarea");
-  txt.innerHTML = text;
-  return txt.value;
-}
-function ensureMathDelimiters(text) {
-  if (!text) return "";
-  text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
-  return text;
-}
-function normalizeMathText(text) {
-  return (text || '')
-    .replace(/<[^>]*>/g, '')
-    .replace(/\\\(|\\\)|\$\$|\$/g, '')
-    .replace(/&nbsp;|\s+/g, '')
-    .toLowerCase()
-    .trim();
-}
-function removeAllDuplicateMathExpressions(text) {
-  if (!text) return "";
-  let seen = new Set();
-  text = text.replace(/(\$[^\$]+\$)/g, function(m) {
-    if (seen.has(m)) return "";
-    seen.add(m);
-    return m;
-  });
-  seen = new Set();
-  text = text.replace(/(<math[\s\S]*?<\/math>)/g, function(m) {
-    if (seen.has(m)) return "";
-    seen.add(m);
-    return m;
-  });
-  seen = new Set();
-  text = text.replace(/(\\\([^\)]+\\\))/g, function(m) {
-    if (seen.has(m)) return "";
-    seen.add(m);
-    return m;
-  });
-  return text;
-}
-function isValidMathJax(expr) {
-  if (!expr) return false;
-  if (expr.match(/<[^>]*>/)) return false;
-  if (expr.startsWith("$") && expr.endsWith("$")) return true;
-  if (expr.startsWith("\\(") && expr.endsWith("\\)")) return true;
-  if (expr.startsWith("<math") && expr.endsWith("</math>")) return true;
-  return false;
-}
-// Bọc tự động các biểu thức toán học vào $...$ nếu phát hiện là LaTeX
-function autoWrapMath(text) {
-  if (!text) return "";
-  // Bọc các biểu thức LaTeX chưa được bọc
-  // Ví dụ: x^2, \frac, \dfrac, \int, \sum, \lim, \sqrt, \ln, \sin, \cos, \tan, \log, \dfrac{...}{...}
-  return text.replace(/(?<!\$)(\\(?:frac|dfrac|int|sum|lim|sqrt|ln|sin|cos|tan|log)[^$]*)/g, function(m) {
-    return `$${m}$`;
-  })
-  // Bọc các dãy có ^ hoặc _ hoặc chỉ toàn số/chữ/() phép toán
-  .replace(/([a-zA-Z0-9_\\\^\{\}\[\]\(\)\+\-\*\/=<>|]+(?:\^[a-zA-Z0-9_\\\{\}]+)+)/g, function(m) {
-    // Nếu đã có dấu $ thì bỏ qua
-    if (m.startsWith("$") && m.endsWith("$")) return m;
-    return `$${m}$`;
-  });
-}
-// Loại sạch tag, chỉ giữ 1 biểu diễn MathJax hoặc text, và bọc $...$ nếu có thể
-function cleanHtmlMath(text) {
-  text = decodeHTMLEntities(text);
-  // Xóa <span ... role="presentation">...</span>
-  text = text.replace(/<span[^>]*role="presentation"[^>]*>[\s\S]*?<\/span>/gi, '');
-  // Xóa <math>...</math>
-  text = text.replace(/<math[\s\S]*?<\/math>/gi, '');
-  // Xóa tag HTML còn lại (trừ $...$ hoặc \( ... \))
-  text = text.replace(/<\/?[^>]+(>|$)/g, "");
-  // Xóa lặp MathJax
-  text = removeAllDuplicateMathExpressions(text);
-  // Chỉ giữ lại một biểu diễn chuẩn, ưu tiên MathJax nếu có
-  text = preferMathJaxOnly(text);
-  // Tự động bọc biểu thức toán học vào $...$ nếu phát hiện LaTeX
-  text = autoWrapMath(text);
-  return text.trim();
-}
-function preferMathJaxOnly(text) {
-  if (!text) return "";
-  let mathMatches = [...text.matchAll(/(\$[^\$]+\$|\\\([^\)]+\\\)|<math[\s\S]*?<\/math>)/g)]
-    .map(m => m[0])
-    .filter(isValidMathJax);
-  if (mathMatches.length > 0) {
-    return mathMatches[0].trim();
-  }
-  return text.replace(/<[^>]*>/g, '').trim();
-}
-
-// ==== Firebase ====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// Firebase init
 const firebaseConfig = {
   apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
   authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -249,11 +155,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Helper: Lấy mã bảo mật từ trường code trong collection config
 async function checkSecurityCode(inputCode) {
   const q = query(collection(db, "config"), where("code", "==", inputCode));
   const snap = await getDocs(q);
   return !snap.empty;
 }
+
+// Dropdown helper
 async function fillSubjectsDropdown(el, withDefault) {
   el.innerHTML = withDefault ? '<option value="">-- Chọn môn học --</option>' : "";
   const snaps = await getDocs(collection(db, "mon_hoc"));
@@ -264,6 +173,8 @@ async function fillSubjectsDropdown(el, withDefault) {
     el.appendChild(opt);
   });
 }
+
+// Upload file/image helper
 async function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
@@ -272,16 +183,19 @@ async function uploadFile(file) {
   return (await res.json()).url;
 }
 
-// ==== UI INIT ====
+// ========== UI INIT ===========
 const w = document.getElementById("uploadTypeSelect");
 const v = document.getElementById("uploadQuestionSection");
 const f = document.getElementById("uploadSyllabusSection");
+
 const subjectDropdownImport = document.getElementById("subjectDropdownImport");
 const subjectDropdownManual = document.getElementById("subjectDropdownManual");
 const syllabusSubjectDropdown = document.getElementById("syllabusSubjectDropdown");
+
 await fillSubjectsDropdown(subjectDropdownImport, true);
 await fillSubjectsDropdown(subjectDropdownManual, false);
 await fillSubjectsDropdown(syllabusSubjectDropdown, false);
+
 w.addEventListener("change", () => {
   document.querySelectorAll(".mode-section").forEach(e => e.style.display = "none");
   if (w.value === "question") v.style.display = "block";
@@ -289,11 +203,12 @@ w.addEventListener("change", () => {
 });
 w.dispatchEvent(new Event("change"));
 
-// ==== Security code logic ====
+// ======== Security code logic ==========
 let importCodeOk = false, manualCodeOk = false, syllabusCodeOk = false;
 const saveImportBtn = document.getElementById("saveImportBtn");
 const manualSubmitQuestionBtn = document.getElementById("manualSubmitQuestionBtn");
 const syllabusSubmitBtn = document.getElementById("syllabusSubmitBtn");
+
 document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() {
   const code = this.value.trim();
   const status = document.getElementById("questionSecurityCodeStatusImport");
@@ -310,6 +225,7 @@ document.getElementById("questionSecurityCodeImport").addEventListener("input", 
     status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
   }
 });
+
 document.getElementById("questionSecurityCodeManual").addEventListener("input", async function() {
   const code = this.value.trim();
   const status = document.getElementById("questionSecurityCodeStatusManual");
@@ -326,6 +242,7 @@ document.getElementById("questionSecurityCodeManual").addEventListener("input", 
     status.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
   }
 });
+
 document.getElementById("syllabusSecurityCode").addEventListener("input", async function() {
   const code = this.value.trim();
   const status = document.getElementById("syllabusSecurityCodeStatus");
@@ -343,15 +260,13 @@ document.getElementById("syllabusSecurityCode").addEventListener("input", async 
   }
 });
 
-// ==== Import HTML Moodle ====
+// ========== Import HTML Moodle (robust MathJax answer detection) ==========
 let importedQuestions = [];
 let existSet = [];
-let xmlIntermediate = "";
 subjectDropdownImport.addEventListener("change", async function() {
   importHtmlInput.value = "";
   importHtmlResult.innerHTML = "";
   saveImportBtn.style.display = "none";
-  document.getElementById("downloadXmlBtn").style.display = "none";
   importHtmlInput.disabled = !subjectDropdownImport.value;
   if (subjectDropdownImport.value) {
     existSet = await getQuestionSetForSubject(subjectDropdownImport.value);
@@ -359,107 +274,25 @@ subjectDropdownImport.addEventListener("change", async function() {
 });
 const importHtmlInput = document.getElementById("importHtmlInput");
 const importHtmlResult = document.getElementById("importHtmlResult");
-function parseHtmlToXml(html) {
-  const parser = new DOMParser();
-  const docx = parser.parseFromString(html, "text/html");
-  let xmlDoc = document.implementation.createDocument(null, "quiz");
-  docx.querySelectorAll('.que').forEach(q => {
-    let questionEl = xmlDoc.createElement("question");
-    let questionNode = q.querySelector('.qtext');
-    // Dùng cleanHtmlMath mới
-    let questionText = questionNode ? cleanHtmlMath(questionNode.innerHTML.trim()) : '';
-    let contentEl = xmlDoc.createElement("content");
-    contentEl.appendChild(xmlDoc.createCDATASection(questionText));
-    questionEl.appendChild(contentEl);
-    const answerNodes = q.querySelectorAll('.answer > div');
-    answerNodes.forEach((ans, idx) => {
-      let ansNode = ans.querySelector('.flex-fill, .ml-1');
-      let ansText = ansNode ? cleanHtmlMath(ansNode.innerHTML.trim()) : cleanHtmlMath(ans.innerHTML.trim());
-      let answerEl = xmlDoc.createElement("answer");
-      answerEl.setAttribute("key", String.fromCharCode(97 + idx));
-      answerEl.appendChild(xmlDoc.createCDATASection(ansText));
-      if (ans.classList.contains('correct') || ans.querySelector('input:checked')) {
-        answerEl.setAttribute("correct", "true");
-      }
-      questionEl.appendChild(answerEl);
-    });
-    if (!questionEl.querySelector('answer[correct="true"]')) {
-      let rightAnswerText = q.querySelector('.rightanswer')?.innerText || '';
-      let match = rightAnswerText.match(/The correct answer is:\s*(.*)$/i);
-      let correctValue = match ? match[1] : '';
-      correctValue = normalizeMathText(correctValue);
-      questionEl.querySelectorAll('answer').forEach(ans => {
-        if (normalizeMathText(ans.textContent) === correctValue) {
-          ans.setAttribute("correct", "true");
-        }
-      });
-    }
-    xmlDoc.documentElement.appendChild(questionEl);
-  });
-  return new XMLSerializer().serializeToString(xmlDoc);
+
+// SỬA HÀM NÀY ĐỂ KHÔNG TRÙNG LẶP CÔNG THỨC TOÁN
+function ensureMathDelimiters(text) {
+  if (!text) return "";
+  // Nếu đã có $...$, \( ... \), \[ ... \] thì giữ nguyên
+  if (/\$[\s\S]*?\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/.test(text)) return text;
+  // Chuyển [tex]...[/tex] thành $...$
+  return text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
 }
-function extractXmlDataAndShow(xmlStr, existSet) {
-  const parser = new DOMParser();
-  const xml = parser.parseFromString(xmlStr, "text/xml");
-  const questions = [];
-  xml.querySelectorAll('question').forEach(q => {
-    let content = q.querySelector('content').textContent;
-    content = cleanHtmlMath(content);
-    let answers = [];
-    let correctKey = '';
-    let correctIdx = -1;
-    q.querySelectorAll('answer').forEach((ans, idx) => {
-      let ansText = cleanHtmlMath(ans.textContent);
-      answers.push(ansText);
-      if (ans.getAttribute('correct') === "true") {
-        correctKey = ans.getAttribute('key');
-        correctIdx = idx;
-      }
-    });
-    const normQ = normalizeMathText(content);
-    const isDup = existSet.some(x =>
-      normalizeMathText(x.noi_dung) === normQ &&
-      x.dap_an_dung === correctKey
-    );
-    questions.push({
-      questionText: content,
-      answers,
-      correctKey,
-      correctIdx,
-      duplicate: isDup,
-      lua_chon: {
-        a: answers[0]||"", b: answers[1]||"", c: answers[2]||"", d: answers[3]||""
-      }
-    });
-  });
-  importedQuestions = questions;
-  let html = `<div class="fw-bold mb-2">Kết quả trích xuất (${questions.length} câu):</div>`;
-  questions.forEach((q, idx) => {
-    html += `<div class="import-question${q.duplicate ? ' import-duplicate' : ''}">
-      <div><b>Câu ${idx+1}:</b> <span class="mathjax-content">${q.questionText}</span></div>`;
-    q.answers.forEach((a,i) => {
-      html += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
-        ${String.fromCharCode(97+i)}. <span class="mathjax-content">${a}</span> ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}
-      </div>`;
-    });
-    if(q.duplicate)
-      html += `<span class="import-duplicate-message">[Trùng] Câu hỏi này sẽ không được lưu!</span>`;
-    html += `</div>`;
-  });
-  importHtmlResult.innerHTML = html;
-  document.getElementById("downloadXmlBtn").style.display = questions.length > 0 ? "inline-block" : "none";
-  saveImportBtn.style.display = questions.length > 0 ? "inline-block" : "none";
-  if (window.MathJax && window.MathJax.typesetPromise) {
-    MathJax.typesetPromise(Array.from(importHtmlResult.querySelectorAll('.mathjax-content'))).then(() => {
-      document.querySelectorAll('.mjx-merror').forEach(e => {
-        e.classList.add('mathjax-error');
-        if (!e.innerText.includes('Math input error') && !e.innerText.includes('Math output error')) {
-          e.innerText = '[Math output error]';
-        }
-      });
-    });
-  }
+// Normalize MathJax/HTML for answer matching
+function normalizeMathText(text) {
+  return text
+    .replace(/<[^>]*>/g, '')        // Remove HTML tags
+    .replace(/\\\(|\\\)|\$\$|\$/g, '') // Remove MathJax markers
+    .replace(/&nbsp;|\s+/g, '')     // Remove whitespace and &nbsp;
+    .toLowerCase()
+    .trim();
 }
+
 importHtmlInput.addEventListener("change", async function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -471,22 +304,98 @@ importHtmlInput.addEventListener("change", async function(e) {
   const reader = new FileReader();
   reader.onload = async function(ev) {
     const html = ev.target.result;
-    xmlIntermediate = parseHtmlToXml(html);
-    extractXmlDataAndShow(xmlIntermediate, existSet);
+    const parser = new DOMParser();
+    const docx = parser.parseFromString(html, "text/html");
+    let rawQuestions = [];
+    docx.querySelectorAll('.que').forEach(q => {
+      let questionNode = q.querySelector('.qtext');
+      let questionText = questionNode ? ensureMathDelimiters(questionNode.innerHTML.trim()) : '';
+      const answerNodes = q.querySelectorAll('.answer > div');
+      const answers = [];
+      answerNodes.forEach((ans, idx) => {
+        let ansNode = ans.querySelector('.flex-fill, .ml-1');
+        let ansText = ansNode ? ensureMathDelimiters(ansNode.innerHTML.trim()) : ensureMathDelimiters(ans.innerHTML.trim());
+        answers.push(ansText);
+      });
+      // === Robust answer detection ===
+      let correctIdx = -1;
+      // 1. By class "correct"
+      answerNodes.forEach((ans, idx) => {
+        if (ans.classList.contains('correct')) correctIdx = idx;
+      });
+      // 2. By checked radio/checkbox
+      if (correctIdx === -1) {
+        answerNodes.forEach((ans, idx) => {
+          const radio = ans.querySelector('input[type="radio"],input[type="checkbox"]');
+          if (radio && radio.checked) correctIdx = idx;
+        });
+      }
+      // 3. By comparing with .rightanswer text
+      if (correctIdx === -1) {
+        let rightAnswerText = q.querySelector('.rightanswer')?.innerText || '';
+        let match = rightAnswerText.match(/The correct answer is:\s*(.*)$/i);
+        let correctValue = match ? match[1] : '';
+        correctValue = normalizeMathText(correctValue);
+        answerNodes.forEach((ans, idx) => {
+          let ansNode = ans.querySelector('.flex-fill, .ml-1');
+          let ansText = ansNode ? ansNode.innerHTML.trim() : ans.innerHTML.trim();
+          if (normalizeMathText(ansText) === correctValue) correctIdx = idx;
+        });
+        // 4. If not exact, try contains
+        if (correctIdx === -1 && correctValue) {
+          answerNodes.forEach((ans, idx) => {
+            let ansNode = ans.querySelector('.flex-fill, .ml-1');
+            let ansText = ansNode ? ansNode.innerHTML.trim() : ans.innerHTML.trim();
+            let ansNorm = normalizeMathText(ansText);
+            if (
+              ansNorm && correctValue &&
+              (ansNorm.includes(correctValue) || correctValue.includes(ansNorm))
+            ) correctIdx = idx;
+          });
+        }
+      }
+      let correctKey = ['a','b','c','d'][correctIdx] || '';
+      let correct = answers[correctIdx] || '';
+      rawQuestions.push({
+        questionText, answers,
+        correct, correctIdx, correctKey,
+        lua_chon: {
+          a: answers[0]||"", b: answers[1]||"", c: answers[2]||"", d: answers[3]||""
+        }
+      });
+    });
+    importedQuestions = rawQuestions.map(q => ({
+      ...q,
+      duplicate: q.correctKey && q.questionText
+        ? isDuplicateInSet({
+            noi_dung: q.questionText,
+            dap_an_dung: q.correctKey,
+            lua_chon: q.lua_chon
+          }, existSet)
+        : false
+    }));
+    let htmlResult = `<div class="fw-bold mb-2">Kết quả trích xuất (${importedQuestions.length} câu):</div>`;
+    importedQuestions.forEach((q, idx) => {
+      htmlResult += `<div class="import-question${q.duplicate ? ' import-duplicate' : ''}">
+        <div><b>Câu ${idx+1}:</b> <span class="mathjax-content">${q.questionText}</span></div>`;
+      q.answers.forEach((a,i) => {
+        htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
+          ${String.fromCharCode(97+i)}. <span class="mathjax-content">${a}</span> ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}
+        </div>`;
+      });
+      if(q.duplicate)
+        htmlResult += `<span class="import-duplicate-message">[Trùng] Câu hỏi này sẽ không được lưu!</span>`;
+      htmlResult += `</div>`;
+    });
+    importHtmlResult.innerHTML = htmlResult;
+    saveImportBtn.style.display = importedQuestions.length>0 ? "inline-block" : "none";
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      MathJax.typesetPromise(Array.from(importHtmlResult.querySelectorAll('.mathjax-content')));
+    }
   }
   reader.readAsText(file);
 });
-document.getElementById("downloadXmlBtn").onclick = function() {
-  if (!xmlIntermediate) return;
-  const blob = new Blob([xmlIntermediate], {type: "application/xml"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "quiz_intermediate.xml";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},500);
-};
+
 saveImportBtn.onclick = async function() {
   if (!importCodeOk) return alert("Chưa xác thực mã bảo mật!");
   if (!subjectDropdownImport.value) { alert("Vui lòng chọn môn học để lưu!"); return; }
@@ -506,6 +415,7 @@ saveImportBtn.onclick = async function() {
   alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
   saveImportBtn.disabled = false;
 };
+
 async function getQuestionSetForSubject(mon_hoc_id) {
   const querySnap = await getDocs(query(collection(db, "cau_hoi"), where("mon_hoc_id", "==", mon_hoc_id)));
   const existSet = [];
@@ -528,8 +438,7 @@ function isDuplicateInSet(question, existSet) {
   );
 }
 
-// ==== Manual Add Question, Syllabus, chuyển màn hình, ... (giữ nguyên các hàm version cũ) ====
-// ... phần này không đổi, giữ nguyên các hàm đã cung cấp ở những bản trước ...
+// ========== Manual Add Question ==========
 let manualQuestionImgFile = null, manualAnswerAImgFile = null, manualAnswerBImgFile = null, manualAnswerCImgFile = null, manualAnswerDImgFile = null;
 let manualQuestionImgUrl = "", manualAnswerAImgUrl = "", manualAnswerBImgUrl = "", manualAnswerCImgUrl = "", manualAnswerDImgUrl = "";
 function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
@@ -551,6 +460,7 @@ function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
     setUrl("");
   });
 }
+
 handleImgInput(
   document.getElementById("manualQuestionImageInput"),
   document.getElementById("manualQuestionImgPreview"),
@@ -635,6 +545,7 @@ document.getElementById("manualQuestionForm").addEventListener("submit", async f
   alert("Đã thêm câu hỏi!");
 });
 
+// ========== Upload Syllabus ==========
 document.getElementById("syllabusForm").addEventListener("submit", async function(e){
   e.preventDefault();
   if(!syllabusCodeOk) return alert("Chưa xác thực mã bảo mật!");
@@ -653,6 +564,7 @@ document.getElementById("syllabusForm").addEventListener("submit", async functio
   } else alert("Điền đầy đủ thông tin và chọn file!");
 });
 
+// ========== UI chuyển màn hình ==========
 document.getElementById("questionImportHtmlBtn").onclick = function(){
   document.getElementById("questionUploadChoice").style.display = "none";
   importHtmlSection.style.display = "block";
@@ -660,7 +572,6 @@ document.getElementById("questionImportHtmlBtn").onclick = function(){
   importHtmlResult.innerHTML = "";
   importHtmlInput.value = "";
   saveImportBtn.style.display = "none";
-  document.getElementById("downloadXmlBtn").style.display = "none";
   subjectDropdownImport.value = "";
   importHtmlInput.disabled = true;
   document.getElementById("questionSecurityCodeImport").value = "";
