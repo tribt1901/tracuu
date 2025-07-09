@@ -297,10 +297,8 @@ function isDuplicateInSet(question, existSet) {
       x.dap_an === question.lua_chon[question.dap_an_dung]
   );
 }
-<script type="module">
-// ... các đoạn code phía trên giữ nguyên ...
 
-// ---------- Manual Add Question ----------
+// --------- Manual Add Question ----------
 let manualQuestionImgFile = null, manualAnswerAImgFile = null, manualAnswerBImgFile = null, manualAnswerCImgFile = null, manualAnswerDImgFile = null;
 let manualQuestionImgUrl = "", manualAnswerAImgUrl = "", manualAnswerBImgUrl = "", manualAnswerCImgUrl = "", manualAnswerDImgUrl = "";
 function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
@@ -322,7 +320,6 @@ function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
     setUrl("");
   });
 }
-
 handleImgInput(
   document.getElementById("manualQuestionImageInput"),
   document.getElementById("manualQuestionImgPreview"),
@@ -383,7 +380,6 @@ document.getElementById("manualQuestionForm").addEventListener("submit", async f
   const existSet = await getQuestionSetForSubject(mon_hoc_id);
   if (isDuplicateInSet({noi_dung, dap_an_dung, lua_chon}, existSet)) {
     alert("Câu hỏi này đã tồn tại trong môn học với đáp án đúng giống nhau!");
-    // Tự động load lại trang nếu bị trùng
     setTimeout(() => location.reload(), 1000);
     return;
   }
@@ -407,11 +403,10 @@ document.getElementById("manualQuestionForm").addEventListener("submit", async f
   manualQuestionImgFile = manualAnswerAImgFile = manualAnswerBImgFile = manualAnswerCImgFile = manualAnswerDImgFile = null;
   manualQuestionImgUrl = manualAnswerAImgUrl = manualAnswerBImgUrl = manualAnswerCImgUrl = manualAnswerDImgUrl = "";
   alert("Đã thêm câu hỏi!");
-  // Tự động load lại sau khi thêm thành công
   setTimeout(() => location.reload(), 1000);
 });
 
-// ---------- Upload Syllabus ----------
+// --------- Upload Syllabus ----------
 document.getElementById("syllabusForm").addEventListener("submit", async function(e){
   e.preventDefault();
   if(!syllabusCodeOk) return alert("Chưa xác thực mã bảo mật!");
@@ -431,7 +426,7 @@ document.getElementById("syllabusForm").addEventListener("submit", async functio
   } else alert("Điền đầy đủ thông tin và chọn file!");
 });
 
-// ---------- UI chuyển màn hình ----------
+// --------- UI chuyển màn hình ----------
 document.getElementById("questionImportHtmlBtn").onclick = function(){
   document.getElementById("questionUploadChoice").style.display = "none";
   importHtmlSection.style.display = "block";
