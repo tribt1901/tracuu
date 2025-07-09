@@ -191,7 +191,22 @@ function isValidMathJax(expr) {
   if (expr.startsWith("<math") && expr.endsWith("</math>")) return true;
   return false;
 }
-// Loại sạch tag, chỉ giữ 1 biểu diễn MathJax hoặc text
+// Bọc tự động các biểu thức toán học vào $...$ nếu phát hiện là LaTeX
+function autoWrapMath(text) {
+  if (!text) return "";
+  // Bọc các biểu thức LaTeX chưa được bọc
+  // Ví dụ: x^2, \frac, \dfrac, \int, \sum, \lim, \sqrt, \ln, \sin, \cos, \tan, \log, \dfrac{...}{...}
+  return text.replace(/(?<!\$)(\\(?:frac|dfrac|int|sum|lim|sqrt|ln|sin|cos|tan|log)[^$]*)/g, function(m) {
+    return `$${m}$`;
+  })
+  // Bọc các dãy có ^ hoặc _ hoặc chỉ toàn số/chữ/() phép toán
+  .replace(/([a-zA-Z0-9_\\\^\{\}\[\]\(\)\+\-\*\/=<>|]+(?:\^[a-zA-Z0-9_\\\{\}]+)+)/g, function(m) {
+    // Nếu đã có dấu $ thì bỏ qua
+    if (m.startsWith("$") && m.endsWith("$")) return m;
+    return `$${m}$`;
+  });
+}
+// Loại sạch tag, chỉ giữ 1 biểu diễn MathJax hoặc text, và bọc $...$ nếu có thể
 function cleanHtmlMath(text) {
   text = decodeHTMLEntities(text);
   // Xóa <span ... role="presentation">...</span>
@@ -204,6 +219,8 @@ function cleanHtmlMath(text) {
   text = removeAllDuplicateMathExpressions(text);
   // Chỉ giữ lại một biểu diễn chuẩn, ưu tiên MathJax nếu có
   text = preferMathJaxOnly(text);
+  // Tự động bọc biểu thức toán học vào $...$ nếu phát hiện LaTeX
+  text = autoWrapMath(text);
   return text.trim();
 }
 function preferMathJaxOnly(text) {
@@ -511,7 +528,7 @@ function isDuplicateInSet(question, existSet) {
   );
 }
 
-// ==== Manual Add Question, Syllabus, chuyển màn hình, ... (giữ nguyên như bản cũ) ====
+// ==== Manual Add Question, Syllabus, chuyển màn hình, ... (giữ nguyên các hàm version cũ) ====
 // ... phần này không đổi, giữ nguyên các hàm đã cung cấp ở những bản trước ...
 let manualQuestionImgFile = null, manualAnswerAImgFile = null, manualAnswerBImgFile = null, manualAnswerCImgFile = null, manualAnswerDImgFile = null;
 let manualQuestionImgUrl = "", manualAnswerAImgUrl = "", manualAnswerBImgUrl = "", manualAnswerCImgUrl = "", manualAnswerDImgUrl = "";
