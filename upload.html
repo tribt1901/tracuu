@@ -142,6 +142,12 @@ body{padding-top:70px}
 </div>
 <script type="module">
 // ==== MathJax helpers ====
+// giải mã các entity HTML
+function decodeHTMLEntities(text) {
+  var txt = document.createElement("textarea");
+  txt.innerHTML = text;
+  return txt.value;
+}
 function ensureMathDelimiters(text) {
   if (!text) return "";
   text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
@@ -185,6 +191,21 @@ function isValidMathJax(expr) {
   if (expr.startsWith("<math") && expr.endsWith("</math>")) return true;
   return false;
 }
+// Loại sạch tag, chỉ giữ 1 biểu diễn MathJax hoặc text
+function cleanHtmlMath(text) {
+  text = decodeHTMLEntities(text);
+  // Xóa <span ... role="presentation">...</span>
+  text = text.replace(/<span[^>]*role="presentation"[^>]*>[\s\S]*?<\/span>/gi, '');
+  // Xóa <math>...</math>
+  text = text.replace(/<math[\s\S]*?<\/math>/gi, '');
+  // Xóa tag HTML còn lại (trừ $...$ hoặc \( ... \))
+  text = text.replace(/<\/?[^>]+(>|$)/g, "");
+  // Xóa lặp MathJax
+  text = removeAllDuplicateMathExpressions(text);
+  // Chỉ giữ lại một biểu diễn chuẩn, ưu tiên MathJax nếu có
+  text = preferMathJaxOnly(text);
+  return text.trim();
+}
 function preferMathJaxOnly(text) {
   if (!text) return "";
   let mathMatches = [...text.matchAll(/(\$[^\$]+\$|\\\([^\)]+\\\)|<math[\s\S]*?<\/math>)/g)]
@@ -196,7 +217,7 @@ function preferMathJaxOnly(text) {
   return text.replace(/<[^>]*>/g, '').trim();
 }
 
-// ==== Firebase (giữ nguyên cũ, chỉ rút gọn code mẫu, không đổi logic) ====
+// ==== Firebase ====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 const firebaseConfig = {
@@ -328,18 +349,15 @@ function parseHtmlToXml(html) {
   docx.querySelectorAll('.que').forEach(q => {
     let questionEl = xmlDoc.createElement("question");
     let questionNode = q.querySelector('.qtext');
-    let questionText = questionNode ? ensureMathDelimiters(questionNode.innerHTML.trim()) : '';
-    questionText = removeAllDuplicateMathExpressions(questionText);
-    questionText = preferMathJaxOnly(questionText);
+    // Dùng cleanHtmlMath mới
+    let questionText = questionNode ? cleanHtmlMath(questionNode.innerHTML.trim()) : '';
     let contentEl = xmlDoc.createElement("content");
     contentEl.appendChild(xmlDoc.createCDATASection(questionText));
     questionEl.appendChild(contentEl);
     const answerNodes = q.querySelectorAll('.answer > div');
     answerNodes.forEach((ans, idx) => {
       let ansNode = ans.querySelector('.flex-fill, .ml-1');
-      let ansText = ansNode ? ensureMathDelimiters(ansNode.innerHTML.trim()) : ensureMathDelimiters(ans.innerHTML.trim());
-      ansText = removeAllDuplicateMathExpressions(ansText);
-      ansText = preferMathJaxOnly(ansText);
+      let ansText = ansNode ? cleanHtmlMath(ansNode.innerHTML.trim()) : cleanHtmlMath(ans.innerHTML.trim());
       let answerEl = xmlDoc.createElement("answer");
       answerEl.setAttribute("key", String.fromCharCode(97 + idx));
       answerEl.appendChild(xmlDoc.createCDATASection(ansText));
@@ -369,15 +387,12 @@ function extractXmlDataAndShow(xmlStr, existSet) {
   const questions = [];
   xml.querySelectorAll('question').forEach(q => {
     let content = q.querySelector('content').textContent;
-    content = removeAllDuplicateMathExpressions(content);
-    content = preferMathJaxOnly(content);
+    content = cleanHtmlMath(content);
     let answers = [];
     let correctKey = '';
     let correctIdx = -1;
     q.querySelectorAll('answer').forEach((ans, idx) => {
-      let ansText = ans.textContent;
-      ansText = removeAllDuplicateMathExpressions(ansText);
-      ansText = preferMathJaxOnly(ansText);
+      let ansText = cleanHtmlMath(ans.textContent);
       answers.push(ansText);
       if (ans.getAttribute('correct') === "true") {
         correctKey = ans.getAttribute('key');
@@ -496,7 +511,8 @@ function isDuplicateInSet(question, existSet) {
   );
 }
 
-// ==== Manual Add Question ====
+// ==== Manual Add Question, Syllabus, chuyển màn hình, ... (giữ nguyên như bản cũ) ====
+// ... phần này không đổi, giữ nguyên các hàm đã cung cấp ở những bản trước ...
 let manualQuestionImgFile = null, manualAnswerAImgFile = null, manualAnswerBImgFile = null, manualAnswerCImgFile = null, manualAnswerDImgFile = null;
 let manualQuestionImgUrl = "", manualAnswerAImgUrl = "", manualAnswerBImgUrl = "", manualAnswerCImgUrl = "", manualAnswerDImgUrl = "";
 function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
@@ -602,7 +618,6 @@ document.getElementById("manualQuestionForm").addEventListener("submit", async f
   alert("Đã thêm câu hỏi!");
 });
 
-// ==== Upload Syllabus ====
 document.getElementById("syllabusForm").addEventListener("submit", async function(e){
   e.preventDefault();
   if(!syllabusCodeOk) return alert("Chưa xác thực mã bảo mật!");
@@ -621,7 +636,6 @@ document.getElementById("syllabusForm").addEventListener("submit", async functio
   } else alert("Điền đầy đủ thông tin và chọn file!");
 });
 
-// ==== UI chuyển màn hình ====
 document.getElementById("questionImportHtmlBtn").onclick = function(){
   document.getElementById("questionUploadChoice").style.display = "none";
   importHtmlSection.style.display = "block";
