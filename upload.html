@@ -141,7 +141,7 @@ body{padding-top:70px}
   </div>
 </div>
 <script type="module">
-// === MathJax helpers ===
+// ==== MathJax helpers ====
 function ensureMathDelimiters(text) {
   if (!text) return "";
   text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
@@ -251,7 +251,7 @@ w.addEventListener("change", () => {
 });
 w.dispatchEvent(new Event("change"));
 
-// ==== Security code logic (giữ nguyên) ====
+// ==== Security code logic ====
 let importCodeOk = false, manualCodeOk = false, syllabusCodeOk = false;
 const saveImportBtn = document.getElementById("saveImportBtn");
 const manualSubmitQuestionBtn = document.getElementById("manualSubmitQuestionBtn");
@@ -631,8 +631,37 @@ document.getElementById("questionImportHtmlBtn").onclick = function(){
   saveImportBtn.style.display = "none";
   document.getElementById("downloadXmlBtn").style.display = "none";
   subjectDropdownImport.value = "";
-  importHtmlInput.disabled = true
-
+  importHtmlInput.disabled = true;
+  document.getElementById("questionSecurityCodeImport").value = "";
+  document.getElementById("questionSecurityCodeStatusImport").innerHTML = "";
+  document.getElementById("saveImportBtn").disabled = true;
+};
+document.getElementById("questionManualBtn").onclick = function(){
+  document.getElementById("questionUploadChoice").style.display = "none";
+  importHtmlSection.style.display = "none";
+  manualQuestionSection.style.display = "block";
+  manualQuestionForm.reset();
+  [
+    "manualQuestionImgPreview", "manualRemoveQuestionImgBtn",
+    "manualAnswerAImgPreview", "manualRemoveAImgBtn",
+    "manualAnswerBImgPreview", "manualRemoveBImgBtn",
+    "manualAnswerCImgPreview", "manualRemoveCImgBtn",
+    "manualAnswerDImgPreview", "manualRemoveDImgBtn"
+  ].forEach(id => {
+    document.getElementById(id).style.display = "none";
+  });
+  manualQuestionImgFile = manualAnswerAImgFile = manualAnswerBImgFile = manualAnswerCImgFile = manualAnswerDImgFile = null;
+  manualQuestionImgUrl = manualAnswerAImgUrl = manualAnswerBImgUrl = manualAnswerCImgUrl = manualAnswerDImgUrl = "";
+  document.getElementById("questionSecurityCodeManual").value = "";
+  document.getElementById("questionSecurityCodeStatusManual").innerHTML = "";
+  manualSubmitQuestionBtn.disabled = true;
+};
+document.getElementById("backToQuestionChoiceBtn").onclick =
+document.getElementById("backToQuestionChoiceBtn2").onclick = function(){
+  document.getElementById("questionUploadChoice").style.display = "block";
+  importHtmlSection.style.display = "none";
+  manualQuestionSection.style.display = "none";
+};
 </script>
 </body>
 </html>
