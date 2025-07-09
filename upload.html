@@ -149,7 +149,6 @@ const app = initializeApp(firebaseConfig); const db = getFirestore(app);
 async function checkSecurityCode(inputCode) { const q = query(collection(db, "config"), where("code", "==", inputCode)); const snap = await getDocs(q); return !snap.empty; }
 async function fillSubjectsDropdown(el, withDefault) { el.innerHTML = withDefault ? '<option value="">-- Chọn môn học --</option>' : ""; const snaps = await getDocs(collection(db, "mon_hoc")); snaps.forEach(docSnap => { const opt = document.createElement("option"); opt.value = docSnap.id; opt.textContent = docSnap.data().ten_mon; el.appendChild(opt); }); }
 async function uploadFile(file) { const formData = new FormData(); formData.append('file', file); const res = await fetch('https://tracuu-app.hugo.io.vn/api/upload', {method:'POST', body:formData}); if(!res.ok) throw new Error('Upload file thất bại!'); return (await res.json()).url; }
-function extractTeXOrClean(node) { let clone = node.cloneNode(true); clone.querySelectorAll('script[type="math/tex"]').forEach(e => { let span = document.createElement('span'); span.textContent = `$${e.textContent.trim()}$`; e.parentNode.replaceChild(span, e); }); clone.querySelectorAll('.MathJax, .MathJax_Preview, .MJX_Assistive_MathML, mjx-container').forEach(e => e.remove()); return clone.innerHTML.trim(); }
 
 const w = document.getElementById("uploadTypeSelect");
 const v = document.getElementById("uploadQuestionSection");
@@ -187,34 +186,37 @@ importHtmlInput.addEventListener("change", async function(e) {
     let rawQuestions = [];
     docx.querySelectorAll('.que').forEach(q => {
       let questionNode = q.querySelector('.qtext');
-      let questionText = questionNode ? extractTeXOrClean(questionNode) : '';
-      let answers = [];
-      let correctIdx = -1, correctKey = '', correct = '';
-      let answerDivs = q.querySelectorAll('.answer > div, .r0, .r1'); if (answerDivs.length === 0) { answerDivs = q.querySelectorAll('.answer label'); }
-      answerDivs.forEach((ans, i) => {
-        let ansText = extractTeXOrClean(ans);
+      let questionText = questionNode ? questionNode.innerHTML.trim() : '';
+      const answerNodes = q.querySelectorAll('.answer > div');
+      const answers = [];
+      answerNodes.forEach((ans, idx) => {
+        let ansNode = ans.querySelector('.flex-fill, div.ml-1');
+        let ansText = ansNode ? ansNode.innerHTML.trim() : ans.innerHTML.trim();
         answers.push(ansText);
-        if (
-          ans.classList.contains('correct') ||
-          ans.querySelector('.correct') ||
-          ans.querySelector('input[type="radio"]:checked,input[type="checkbox"]:checked')
-        ) { correctIdx = i; }
       });
-      if (correctIdx === -1) {
-        let rightAnswerText = q.querySelector('.rightanswer')?.innerText || '';
-        let match = rightAnswerText.match(/The correct answer is: (.+)$/);
-        if (match) {
-          let correctValue = match[1].trim();
-          correctIdx = answers.findIndex(a =>
-            a.replace(/<[^>]*>/g, '').trim().toLowerCase() === correctValue.toLowerCase() ||
-            a.replace(/<[^>]*>/g, '').trim().toLowerCase().includes(correctValue.toLowerCase()) ||
-            correctValue.toLowerCase().includes(a.replace(/<[^>]*>/g, '').trim().toLowerCase())
-          );
-        }
+      let correct = '';
+      let correctIdx = -1;
+      let correctKey = '';
+      let rightAnswerText = q.querySelector('.rightanswer')?.innerText || '';
+      let match = rightAnswerText.match(/The correct answer is: (.+)$/);
+      if (match) {
+        let correctValue = match[1].trim();
+        correctIdx = answers.findIndex(a =>
+          a.replace(/<[^>]*>/g, '').trim().toLowerCase() === correctValue.trim().toLowerCase()
+          || a.replace(/<[^>]*>/g, '').trim().toLowerCase().includes(correctValue.trim().toLowerCase())
+          || correctValue.trim().toLowerCase().includes(a.replace(/<[^>]*>/g, '').trim().toLowerCase())
+        );
+        correctKey = ['a','b','c','d'][correctIdx] || '';
+        correct = answers[correctIdx] || '';
+      } else {
+        answerNodes.forEach((ans, idx) => {
+          if (ans.classList.contains('correct')) {
+            correct = answers[idx];
+            correctIdx = idx;
+            correctKey = ['a','b','c','d'][correctIdx] || '';
+          }
+        });
       }
-      if (correctIdx===-1 && answerDivs.length > 0) correctIdx=answerDivs.length===1?0:-1;
-      correctKey = ['a','b','c','d'][correctIdx] || '';
-      correct = answers[correctIdx] || '';
       rawQuestions.push({
         questionText, answers,
         correct, correctIdx, correctKey,
@@ -248,8 +250,9 @@ importHtmlInput.addEventListener("change", async function(e) {
     });
     importHtmlResult.innerHTML = htmlResult;
     saveImportBtn.style.display = importedQuestions.length>0 ? "inline-block" : "none";
+    // MathJax render lại
     if (window.MathJax && window.MathJax.typesetPromise) {
-      MathJax.typesetPromise(Array.from(importHtmlResult.querySelectorAll('.mathjax-content')));
+      MathJax.typesetPromise([importHtmlResult]);
     }
   }
   reader.readAsText(file);
@@ -270,16 +273,8 @@ saveImportBtn.onclick = async function() {
       dap_an_dung: q.correctKey
     }).then(()=>success++).catch(()=>fail++);
   }
-  if (success > 0) {
-    alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}. Trang sẽ tải lại...`);
-    location.reload();
-  } else if (skip > 0 || fail > 0) {
-    alert(`Không lưu được câu hỏi mới nào (tất cả đều trùng hoặc lỗi)! Trang sẽ tải lại.`);
-    location.reload();
-  } else {
-    alert("Không có dữ liệu để lưu!");
-    saveImportBtn.disabled = false;
-  }
+  alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
+  setTimeout(() => location.reload(), 1000);
 };
 async function getQuestionSetForSubject(mon_hoc_id) {
   const querySnap = await getDocs(query(collection(db, "cau_hoi"), where("mon_hoc_id", "==", mon_hoc_id)));
@@ -302,8 +297,141 @@ function isDuplicateInSet(question, existSet) {
       x.dap_an === question.lua_chon[question.dap_an_dung]
   );
 }
+<script type="module">
+// ... các đoạn code phía trên giữ nguyên ...
 
-// Các phần thêm thủ công, syllabus và chuyển UI giữ nguyên như các bản trước
+// ---------- Manual Add Question ----------
+let manualQuestionImgFile = null, manualAnswerAImgFile = null, manualAnswerBImgFile = null, manualAnswerCImgFile = null, manualAnswerDImgFile = null;
+let manualQuestionImgUrl = "", manualAnswerAImgUrl = "", manualAnswerBImgUrl = "", manualAnswerCImgUrl = "", manualAnswerDImgUrl = "";
+function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
+  input.addEventListener("change", function() {
+    if(this.files && this.files[0]) {
+      setFile(this.files[0]);
+      preview.src = URL.createObjectURL(this.files[0]);
+      preview.style.display = "";
+      removeBtn.style.display = "";
+      setUrl("");
+    }
+  });
+  removeBtn.addEventListener("click", function() {
+    setFile(null);
+    preview.src = "";
+    preview.style.display = "none";
+    removeBtn.style.display = "none";
+    input.value = "";
+    setUrl("");
+  });
+}
+
+handleImgInput(
+  document.getElementById("manualQuestionImageInput"),
+  document.getElementById("manualQuestionImgPreview"),
+  document.getElementById("manualRemoveQuestionImgBtn"),
+  f=>manualQuestionImgFile=f,
+  url=>manualQuestionImgUrl=url
+);
+handleImgInput(
+  document.getElementById("manualAnswerAImgInput"),
+  document.getElementById("manualAnswerAImgPreview"),
+  document.getElementById("manualRemoveAImgBtn"),
+  f=>manualAnswerAImgFile=f,
+  url=>manualAnswerAImgUrl=url
+);
+handleImgInput(
+  document.getElementById("manualAnswerBImgInput"),
+  document.getElementById("manualAnswerBImgPreview"),
+  document.getElementById("manualRemoveBImgBtn"),
+  f=>manualAnswerBImgFile=f,
+  url=>manualAnswerBImgUrl=url
+);
+handleImgInput(
+  document.getElementById("manualAnswerCImgInput"),
+  document.getElementById("manualAnswerCImgPreview"),
+  document.getElementById("manualRemoveCImgBtn"),
+  f=>manualAnswerCImgFile=f,
+  url=>manualAnswerCImgUrl=url
+);
+handleImgInput(
+  document.getElementById("manualAnswerDImgInput"),
+  document.getElementById("manualAnswerDImgPreview"),
+  document.getElementById("manualRemoveDImgBtn"),
+  f=>manualAnswerDImgFile=f,
+  url=>manualAnswerDImgUrl=url
+);
+
+document.getElementById("manualQuestionForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  if (!manualCodeOk) return alert("Chưa xác thực mã bảo mật!");
+  const mon_hoc_id = subjectDropdownManual.value;
+  const noi_dung = manualQuestionText.value.trim();
+  const a = manualAnswerA.value.trim(),
+        b = manualAnswerB.value.trim(),
+        c = manualAnswerC.value.trim(),
+        d = manualAnswerD.value.trim();
+  const dap_an_dung = manualCorrectAnswerDropdown.value;
+  if (!(mon_hoc_id && noi_dung && a && b && c && d && dap_an_dung)) return;
+
+  let noi_dung_img = manualQuestionImgUrl;
+  let aImg = manualAnswerAImgUrl, bImg = manualAnswerBImgUrl, cImg = manualAnswerCImgUrl, dImg = manualAnswerDImgUrl;
+  if (manualQuestionImgFile) noi_dung_img = await uploadFile(manualQuestionImgFile);
+  if (manualAnswerAImgFile) aImg = await uploadFile(manualAnswerAImgFile);
+  if (manualAnswerBImgFile) bImg = await uploadFile(manualAnswerBImgFile);
+  if (manualAnswerCImgFile) cImg = await uploadFile(manualAnswerCImgFile);
+  if (manualAnswerDImgFile) dImg = await uploadFile(manualAnswerDImgFile);
+
+  const lua_chon = {a, aImg: aImg || "", b, bImg: bImg || "", c, cImg: cImg || "", d, dImg: dImg || ""};
+  const existSet = await getQuestionSetForSubject(mon_hoc_id);
+  if (isDuplicateInSet({noi_dung, dap_an_dung, lua_chon}, existSet)) {
+    alert("Câu hỏi này đã tồn tại trong môn học với đáp án đúng giống nhau!");
+    // Tự động load lại trang nếu bị trùng
+    setTimeout(() => location.reload(), 1000);
+    return;
+  }
+  await addDoc(collection(db, "cau_hoi"), {
+    mon_hoc_id,
+    noi_dung,
+    noi_dung_img: noi_dung_img || "",
+    lua_chon,
+    dap_an_dung
+  });
+  manualQuestionForm.reset();
+  [
+    "manualQuestionImgPreview", "manualRemoveQuestionImgBtn",
+    "manualAnswerAImgPreview", "manualRemoveAImgBtn",
+    "manualAnswerBImgPreview", "manualRemoveBImgBtn",
+    "manualAnswerCImgPreview", "manualRemoveCImgBtn",
+    "manualAnswerDImgPreview", "manualRemoveDImgBtn"
+  ].forEach(id => {
+    document.getElementById(id).style.display = "none";
+  });
+  manualQuestionImgFile = manualAnswerAImgFile = manualAnswerBImgFile = manualAnswerCImgFile = manualAnswerDImgFile = null;
+  manualQuestionImgUrl = manualAnswerAImgUrl = manualAnswerBImgUrl = manualAnswerCImgUrl = manualAnswerDImgUrl = "";
+  alert("Đã thêm câu hỏi!");
+  // Tự động load lại sau khi thêm thành công
+  setTimeout(() => location.reload(), 1000);
+});
+
+// ---------- Upload Syllabus ----------
+document.getElementById("syllabusForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  if(!syllabusCodeOk) return alert("Chưa xác thực mã bảo mật!");
+  const n = syllabusSubjectDropdown.value, a = syllabusOwner.value.trim(), o = syllabusFileInput.files[0];
+  if(n && o){
+    syllabusSubmitBtn.disabled=true;
+    try{
+      const url = await uploadFile(o);
+      await addDoc(collection(db,"syllabus"),{
+        mon_hoc_id:n, owner:a, file_url:url, file_name:o.name, uploaded_at:(new Date).toISOString()
+      });
+      syllabusForm.reset();
+      alert("Đã upload đề cương!");
+      setTimeout(() => location.reload(), 1000);
+    }catch(err){ alert("Upload thất bại: "+err); }
+    syllabusSubmitBtn.disabled=false;
+  } else alert("Điền đầy đủ thông tin và chọn file!");
+});
+
+// ---------- UI chuyển màn hình ----------
 document.getElementById("questionImportHtmlBtn").onclick = function(){
   document.getElementById("questionUploadChoice").style.display = "none";
   importHtmlSection.style.display = "block";
@@ -331,6 +459,8 @@ document.getElementById("questionManualBtn").onclick = function(){
   ].forEach(id => {
     document.getElementById(id).style.display = "none";
   });
+  manualQuestionImgFile = manualAnswerAImgFile = manualAnswerBImgFile = manualAnswerCImgFile = manualAnswerDImgFile = null;
+  manualQuestionImgUrl = manualAnswerAImgUrl = manualAnswerBImgUrl = manualAnswerCImgUrl = manualAnswerDImgUrl = "";
   document.getElementById("questionSecurityCodeManual").value = "";
   document.getElementById("questionSecurityCodeStatusManual").innerHTML = "";
   manualSubmitQuestionBtn.disabled = true;
