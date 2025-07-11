@@ -283,20 +283,24 @@ function ensureMathDelimiters(text) {
 }
 // Normalize MathJax/HTML for answer matching
 function normalizeText(text) {
-  return text
+  return (text || "")
     .replace(/<[^>]*>/g, '')        // Remove HTML tags
     .replace(/\\\(|\\\)|\$\$|\$/g, '') // Remove MathJax markers
     .replace(/&nbsp;|\s+/g, '')     // Remove whitespace and &nbsp;
+    .replace(/\r?\n|\r/g, '')       // Remove line breaks
     .toLowerCase()
     .trim();
 }
 
 function isDuplicateInSet(question, existSet) {
+  const nd = normalizeText(question.noi_dung);
+  const dapan = question.dap_an_dung;
+  const ndDapan = normalizeText(question.lua_chon[dapan]);
   return existSet.some(
     x =>
-      normalizeText(x.noi_dung) === normalizeText(question.noi_dung) &&
-      x.dap_an_dung === question.dap_an_dung &&
-      normalizeText(x.dap_an) === normalizeText(question.lua_chon[question.dap_an_dung])
+      normalizeText(x.noi_dung) === nd &&
+      x.dap_an_dung === dapan &&
+      normalizeText(x.dap_an) === ndDapan
   );
 }
 
@@ -409,15 +413,30 @@ saveImportBtn.onclick = async function() {
   if (!importedQuestions.length) { alert("Chưa có dữ liệu để lưu!"); return; }
   saveImportBtn.disabled = true;
   let success = 0, fail = 0, skip = 0;
+  let existSet = await getQuestionSetForSubject(subjectDropdownImport.value);
+
   for (let q of importedQuestions) {
-    if(q.duplicate) { skip++; continue; }
+    // Kiểm tra lại với cả dữ liệu mới nhất, kể cả các câu vừa lưu ở vòng lặp trước
+    if(isDuplicateInSet({
+      noi_dung: q.questionText,
+      dap_an_dung: q.correctKey,
+      lua_chon: q.lua_chon
+    }, existSet)) { skip++; continue; }
     await addDoc(collection(db, "cau_hoi"), {
       mon_hoc_id: subjectDropdownImport.value,
       noi_dung: q.questionText,
       noi_dung_img: "",
       lua_chon: q.lua_chon,
       dap_an_dung: q.correctKey
-    }).then(()=>success++).catch(()=>fail++);
+    }).then(()=>{
+      success++;
+      // Sau khi lưu thành công, cập nhật existSet luôn
+      existSet.push({
+        noi_dung: q.questionText,
+        dap_an_dung: q.correctKey,
+        dap_an: q.lua_chon[q.correctKey]
+      });
+    }).catch(()=>fail++);
   }
   alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
   saveImportBtn.disabled = false;
