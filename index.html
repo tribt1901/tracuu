@@ -1,179 +1,53 @@
-<!DOCTYPE html>
-<html lang="vi">
+<!doctype html>
+<html lang=vi>
 <head>
-  <meta charset="UTF-8">
-  <title>Tra cứu câu hỏi</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <style>
-    body { padding-top: 70px; }
-    .answer-correct { background-color: #e6ffe6; font-weight: bold; color: green; }
-    .question-img, .answer-img { max-height: 80px; margin: 6px 0 6px 16px; display: block; }
-  </style>
+<meta charset=UTF-8>
+<title>Tra cứu câu hỏi</title>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<link href=https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css rel=stylesheet>
+<script id=MathJax-script async src=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js></script>
+<style>body{padding-top:70px}.answer-correct{background-color:#e6ffe6;font-weight:700;color:green}.answer-img,.question-img{max-height:80px;margin:6px 0 6px 16px;display:block}</style>
 </head>
-<body class="bg-light">
-
-<!-- Thanh menu -->
-<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
-  <div class="container-fluid">
-    <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
-      </ul>
-    </div>
-  </div>
-</nav>
-
-<div class="container py-4">
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <h5 class="card-title">🔍 Tra cứu câu hỏi</h5>
-      <form id="searchForm">
-        <div class="mb-3">
-          <label class="form-label">Chọn môn học</label>
-          <select id="subjectSelect" class="form-select"></select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Từ khóa</label>
-          <input type="text" id="keywordInput" class="form-control" placeholder="Nhập từ khóa...">
-        </div>
-        <button type="submit" class="btn btn-success w-100">🔎 Tìm kiếm</button>
-      </form>
-    </div>
-  </div>
-
-  <div id="resultSection">
-    <h6 class="mb-3">📋 Kết quả tìm thấy: <span id="resultCount">0</span></h6>
-    <div id="resultList"></div>
-  </div>
+<body class=bg-light>
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style=background-color:#4caf50>
+<div class=container-fluid>
+<a class="navbar-brand text-white" href=/ >📘 Hệ thống tra cứu</a>
+<button class=navbar-toggler type=button data-bs-toggle=collapse data-bs-target=#navbarNav>
+<span class=navbar-toggler-icon></span>
+</button>
+<div class="collapse navbar-collapse" id=navbarNav>
+<ul class="navbar-nav ms-auto">
+<li class=nav-item><a class="nav-link text-white" href=/upload>Upload</a></li>
+<li class=nav-item><a class="nav-link text-white" href=/subjects>Môn học</a></li>
+<li class=nav-item><a class="nav-link text-white" href=/export>Tài liệu học ở đây nè!!!</a></li>
+<li class=nav-item><a class="nav-link text-white" href=/outline>Hủ Đề cương</a></li>
+</ul>
 </div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
-    authDomain: "tracuu-d3ee9.firebaseapp.com",
-    projectId: "tracuu-d3ee9",
-    storageBucket: "tracuu-d3ee9.appspot.com",
-    messagingSenderId: "593568604435",
-    appId: "1:593568604435:web:9a5145457a8ee734143ae6",
-    measurementId: "G-R0M6Y502NP"
-  };
-
-  // Chuyển link Google Drive sang dạng thumbnail để đảm bảo hiển thị được ảnh
-  function convertToThumbnail(url) {
-    if (!url) return "";
-    const match = url.match(/uc\?id=([a-zA-Z0-9_-]{20,})/);
-    if (match) {
-      return `https://drive.google.com/thumbnail?id=${match[1]}`;
-    }
-    const match2 = url.match(/id=([a-zA-Z0-9_-]{20,})/);
-    if (match2) {
-      return `https://drive.google.com/thumbnail?id=${match2[1]}`;
-    }
-    return url;
-  }
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  const subjectSelect = document.getElementById("subjectSelect");
-  const searchForm = document.getElementById("searchForm");
-  const keywordInput = document.getElementById("keywordInput");
-  const resultList = document.getElementById("resultList");
-  const resultCount = document.getElementById("resultCount");
-
-  async function loadSubjects() {
-    subjectSelect.innerHTML = ""; // clear any previous
-    const snapshot = await getDocs(collection(db, "mon_hoc"));
-    snapshot.forEach(doc => {
-      const option = document.createElement("option");
-      option.value = doc.id;
-      option.textContent = doc.data().ten_mon;
-      subjectSelect.appendChild(option);
-    });
-  }
-
-  function renderQuestion(data) {
-    const div = document.createElement("div");
-    div.className = "card mb-3 shadow-sm";
-    const content = document.createElement("div");
-    content.className = "card-body";
-    // Nội dung câu hỏi
-    const question = document.createElement("p");
-    question.className = "mb-2 fw-semibold";
-    question.innerHTML = "📌 " + data.noi_dung;
-    content.appendChild(question);
-    // Ảnh của câu hỏi (nếu có)
-    if (data.noi_dung_img) {
-      const qimg = document.createElement("img");
-      qimg.src = convertToThumbnail(data.noi_dung_img);
-      qimg.className = "question-img";
-      qimg.alt = "Ảnh câu hỏi";
-      content.appendChild(qimg);
-    }
-    // Đáp án
-    const ul = document.createElement("ul");
-    ul.className = "list-group list-group-flush";
-    const choices = data.lua_chon || {};
-    for (const key of ["a", "b", "c", "d"]) {
-      if (choices[key]) {
-        const li = document.createElement("li");
-        li.className = "list-group-item";
-        let answerHtml = `${key}. ${choices[key]}`;
-        if (choices[key + "Img"]) {
-          answerHtml += `<br><img src="${convertToThumbnail(choices[key + "Img"])}" class="answer-img" alt="Ảnh đáp án ${key}">`;
-        }
-        if (key === data.dap_an_dung) {
-          li.classList.add("answer-correct");
-          answerHtml = `✅ ${answerHtml}`;
-        }
-        li.innerHTML = answerHtml;
-        ul.appendChild(li);
-      }
-    }
-    content.appendChild(ul);
-    div.appendChild(content);
-    return div;
-  }
-
-  searchForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    resultList.innerHTML = "";
-    const subjectId = subjectSelect.value;
-    const keyword = keywordInput.value.trim().toLowerCase();
-    let count = 0;
-    const snapshot = await getDocs(collection(db, "cau_hoi"));
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      // Tìm kiếm theo môn và keyword
-      if (
-        data.mon_hoc_id === subjectId &&
-        (keyword === "" ||
-         (data.noi_dung && data.noi_dung.toLowerCase().includes(keyword)) ||
-         (data.lua_chon && Object.values(data.lua_chon).some(val => typeof val === "string" && val.toLowerCase().includes(keyword)))
-        )
-      ) {
-        resultList.appendChild(renderQuestion(data));
-        count++;
-      }
-    });
-    resultCount.textContent = count;
-    if (window.MathJax && window.MathJax.typeset) MathJax.typeset();
-  });
-
-  loadSubjects();
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+</nav>
+<div class="container py-4">
+<div class="card shadow-sm mb-4">
+<div class=card-body>
+<h5 class=card-title>🔍 Tra cứu câu hỏi</h5>
+<form id=searchForm>
+<div class=mb-3>
+<label class=form-label>Chọn môn học</label>
+<select id=subjectSelect class=form-select></select>
+</div>
+<div class=mb-3>
+<label class=form-label>Từ khóa</label>
+<input id=keywordInput class=form-control placeholder="Nhập từ khóa...">
+</div>
+<button type=submit class="btn btn-success w-100">🔎 Tìm kiếm</button>
+</form>
+</div>
+</div>
+<div id=resultSection>
+<h6 class=mb-3>📋 Kết quả tìm thấy: <span id=resultCount>0</span></h6>
+<div id=resultList></div>
+</div>
+</div>
+<script type=module>import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";import{getFirestore,collection,getDocs}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";const firebaseConfig={apiKey:"AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",authDomain:"tracuu-d3ee9.firebaseapp.com",projectId:"tracuu-d3ee9",storageBucket:"tracuu-d3ee9.appspot.com",messagingSenderId:"593568604435",appId:"1:593568604435:web:9a5145457a8ee734143ae6",measurementId:"G-R0M6Y502NP"};function convertToThumbnail(e){if(!e)return"";const t=e.match(/uc\?id=([a-zA-Z0-9_-]{20,})/);if(t)return`https://drive.google.com/thumbnail?id=${t[1]}`;const n=e.match(/id=([a-zA-Z0-9_-]{20,})/);return n?`https://drive.google.com/thumbnail?id=${n[1]}`:e}const app=initializeApp(firebaseConfig),db=getFirestore(app),subjectSelect=document.getElementById("subjectSelect"),searchForm=document.getElementById("searchForm"),keywordInput=document.getElementById("keywordInput"),resultList=document.getElementById("resultList"),resultCount=document.getElementById("resultCount");async function loadSubjects(){subjectSelect.innerHTML="";(await getDocs(collection(db,"mon_hoc"))).forEach((e=>{const t=document.createElement("option");t.value=e.id,t.textContent=e.data().ten_mon,subjectSelect.appendChild(t)}))}function renderQuestion(e){const t=document.createElement("div");t.className="card mb-3 shadow-sm";const n=document.createElement("div");n.className="card-body";const o=document.createElement("p");if(o.className="mb-2 fw-semibold",o.innerHTML="📌 "+e.noi_dung,n.appendChild(o),e.noi_dung_img){const t=document.createElement("img");t.src=convertToThumbnail(e.noi_dung_img),t.className="question-img",t.alt="Ảnh câu hỏi",n.appendChild(t)}const a=document.createElement("ul");a.className="list-group list-group-flush";const c=e.lua_chon||{};for(const t of["a","b","c","d"])if(c[t]){const n=document.createElement("li");n.className="list-group-item";let o=`${t}. ${c[t]}`;c[t+"Img"]&&(o+=`<br><img src="${convertToThumbnail(c[t+"Img"])}" class="answer-img" alt="Ảnh đáp án ${t}">`),t===e.dap_an_dung&&(n.classList.add("answer-correct"),o=`✅ ${o}`),n.innerHTML=o,a.appendChild(n)}return n.appendChild(a),t.appendChild(n),t}searchForm.addEventListener("submit",(async e=>{e.preventDefault(),resultList.innerHTML="";const t=subjectSelect.value,n=keywordInput.value.trim().toLowerCase();let o=0;(await getDocs(collection(db,"cau_hoi"))).forEach((e=>{const a=e.data();a.mon_hoc_id===t&&(""===n||a.noi_dung&&a.noi_dung.toLowerCase().includes(n)||a.lua_chon&&Object.values(a.lua_chon).some((e=>"string"==typeof e&&e.toLowerCase().includes(n))))&&(resultList.appendChild(renderQuestion(a)),o++)})),resultCount.textContent=o,window.MathJax&&window.MathJax.typeset&&MathJax.typeset()})),loadSubjects()</script>
+<script src=https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js></script>
 </body>
 </html>
