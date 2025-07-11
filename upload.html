@@ -281,13 +281,17 @@ function ensureMathDelimiters(text) {
   text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
   return text;
 }
-// Normalize MathJax/HTML for answer matching
+
+// Normalize mạnh, loại bỏ mọi ký tự rác, HTML, entity, xuống dòng, Unicode ẩn, khoảng trắng thừa v.v.
 function normalizeText(text) {
   return (text || "")
-    .replace(/<[^>]*>/g, '')        // Remove HTML tags
-    .replace(/\\\(|\\\)|\$\$|\$/g, '') // Remove MathJax markers
-    .replace(/&nbsp;|\s+/g, '')     // Remove whitespace and &nbsp;
-    .replace(/\r?\n|\r/g, '')       // Remove line breaks
+    .replace(/&nbsp;/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&#?\w+;/g, '')
+    .replace(/\r?\n|\r/g, '')
+    .replace(/\t/g, '')
+    .replace(/\\\(|\\\)|\$\$|\$/g, '')
+    .replace(/[\s\u200B-\u200D\uFEFF]+/g, '')
     .toLowerCase()
     .trim();
 }
@@ -375,7 +379,19 @@ importHtmlInput.addEventListener("change", async function(e) {
         }
       });
     });
-    importedQuestions = rawQuestions.map(q => ({
+
+    // Lọc trùng trong chính file import (giữ duy nhất)
+    let uniqueQuestions = [];
+    let uniqueMap = {};
+    for (let q of rawQuestions) {
+      const key = normalizeText(q.questionText) + '_' + q.correctKey + '_' + normalizeText(q.lua_chon[q.correctKey]);
+      if (!uniqueMap[key]) {
+        uniqueQuestions.push(q);
+        uniqueMap[key] = true;
+      }
+    }
+
+    importedQuestions = uniqueQuestions.map(q => ({
       ...q,
       duplicate: q.correctKey && q.questionText
         ? isDuplicateInSet({
@@ -385,6 +401,7 @@ importHtmlInput.addEventListener("change", async function(e) {
           }, existSet)
         : false
     }));
+
     let htmlResult = `<div class="fw-bold mb-2">Kết quả trích xuất (${importedQuestions.length} câu):</div>`;
     importedQuestions.forEach((q, idx) => {
       htmlResult += `<div class="import-question${q.duplicate ? ' import-duplicate' : ''}">
@@ -415,8 +432,18 @@ saveImportBtn.onclick = async function() {
   let success = 0, fail = 0, skip = 0;
   let existSet = await getQuestionSetForSubject(subjectDropdownImport.value);
 
+  // Loại bỏ trùng trong file import
+  let uniqueQuestions = [];
+  let uniqueMap = {};
   for (let q of importedQuestions) {
-    // Kiểm tra lại với cả dữ liệu mới nhất, kể cả các câu vừa lưu ở vòng lặp trước
+    const key = normalizeText(q.questionText) + '_' + q.correctKey + '_' + normalizeText(q.lua_chon[q.correctKey]);
+    if (!uniqueMap[key]) {
+      uniqueQuestions.push(q);
+      uniqueMap[key] = true;
+    }
+  }
+
+  for (let q of uniqueQuestions) {
     if(isDuplicateInSet({
       noi_dung: q.questionText,
       dap_an_dung: q.correctKey,
@@ -430,7 +457,6 @@ saveImportBtn.onclick = async function() {
       dap_an_dung: q.correctKey
     }).then(()=>{
       success++;
-      // Sau khi lưu thành công, cập nhật existSet luôn
       existSet.push({
         noi_dung: q.questionText,
         dap_an_dung: q.correctKey,
