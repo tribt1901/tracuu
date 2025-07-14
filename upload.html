@@ -141,6 +141,7 @@
   </div>
 </div>
 <script type="module">
+// Firebase CDN
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -186,11 +187,14 @@ async function uploadFile(file) {
 }
 
 // ========== MathJax/Toán học: Lấy nội dung toán học thô ==========
-function extractMathText(html) {
-  const scriptMatch = html.match(/<script[^>]*type="math\/tex"[^>]*>([\s\S]*?)<\/script>/);
-  if (scriptMatch) return scriptMatch[1].trim();
+function extractMathTextAll(html) {
+  // Lấy tất cả các đoạn <script type="math/tex">...</script> trong html, nối lại
+  const scripts = Array.from(html.matchAll(/<script[^>]*type="math\/tex"[^>]*>([\s\S]*?)<\/script>/g));
+  if (scripts.length) return scripts.map(s => s[1].trim()).join(' ');
+  // Nếu có MathML trong data-mathml
   const dataMathml = html.match(/data-mathml="([^"]*)"/);
   if (dataMathml) return dataMathml[1].replace(/&quot;/g,'"');
+  // Nếu không, loại bỏ tag để lấy text
   return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 }
 
@@ -307,14 +311,14 @@ function normalizeText(str) {
 
 // Phát hiện trùng lặp: Chuẩn hóa nội dung câu hỏi và nội dung đáp án đúng (ưu tiên toán học thô nếu có)
 function isDuplicateInSet(question, existSet) {
-  const qNoiDung = normalizeText(extractMathText(question.noi_dung));
+  const qNoiDung = normalizeText(extractMathTextAll(question.noi_dung));
   const qDapAnDung = question.dap_an_dung;
-  const qDapAn = normalizeText(extractMathText(question.lua_chon[qDapAnDung]));
+  const qDapAn = normalizeText(extractMathTextAll(question.lua_chon[qDapAnDung]));
   return existSet.some(x => {
-    const xNoiDung = normalizeText(extractMathText(x.noi_dung));
+    const xNoiDung = normalizeText(extractMathTextAll(x.noi_dung));
     let xDapAn = "";
-    if (x.lua_chon && x.dap_an_dung) xDapAn = normalizeText(extractMathText(x.lua_chon[x.dap_an_dung]));
-    else if (x.dap_an) xDapAn = normalizeText(extractMathText(x.dap_an));
+    if (x.lua_chon && x.dap_an_dung) xDapAn = normalizeText(extractMathTextAll(x.lua_chon[x.dap_an_dung]));
+    else if (x.dap_an) xDapAn = normalizeText(extractMathTextAll(x.dap_an));
     return (qNoiDung === xNoiDung && qDapAn === xDapAn);
   });
 }
@@ -352,9 +356,9 @@ importHtmlInput.addEventListener("change", async function(e) {
         let correctValue = match[1].trim();
         // So sánh bằng nội dung toán học thô nếu có
         correctIdx = answers.findIndex(a =>
-          normalizeText(extractMathText(a)) === normalizeText(extractMathText(correctValue)) ||
-          normalizeText(extractMathText(a)).includes(normalizeText(extractMathText(correctValue))) ||
-          normalizeText(extractMathText(correctValue)).includes(normalizeText(extractMathText(a)))
+          normalizeText(extractMathTextAll(a)) === normalizeText(extractMathTextAll(correctValue)) ||
+          normalizeText(extractMathTextAll(a)).includes(normalizeText(extractMathTextAll(correctValue))) ||
+          normalizeText(extractMathTextAll(correctValue)).includes(normalizeText(extractMathTextAll(a)))
         );
         correctKey = ['a','b','c','d'][correctIdx] || '';
         correct = answers[correctIdx] || '';
@@ -389,7 +393,13 @@ importHtmlInput.addEventListener("change", async function(e) {
     importedQuestions.forEach((q, idx) => {
       htmlResult += `<div class="import-question${q.duplicate ? ' import-duplicate' : ''}">
         <div><b>Câu ${idx+1}:</b> <span class="mathjax-content">${q.questionText}</span></div>`;
+      // Đảm bảo không lặp lại các biểu thức toán học trong các đáp án
+      const renderSet = new Set();
       q.answers.forEach((a,i) => {
+        // Tách math thô để kiểm tra trùng
+        const mathThuo = extractMathTextAll(a);
+        if (renderSet.has(mathThuo)) return;
+        renderSet.add(mathThuo);
         htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
           ${String.fromCharCode(97+i)}. <span class="mathjax-content">${a}</span> ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}
         </div>`;
