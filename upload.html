@@ -287,11 +287,31 @@ function ensureMathDelimiters(text) {
 // ====== Normalization function for duplicate detection ======
 function normalizeText(str) {
   if (!str) return "";
-  return str.replace(/<[^>]+>/g, '') // Remove HTML tags
-            .replace(/\s+/g, ' ')    // Collapse whitespace
-            .replace(/[\r\n]+/g, '') // Remove newlines
-            .trim()
-            .toLowerCase();
+  return str
+    .replace(/<[^>]*>/g, '')
+    .replace(/&[a-z]+;/gi, " ")
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s]|_/g, "")
+    .replace(/\s+/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function getQuestionKey(question) {
+  const q = normalizeText(question.noi_dung);
+  const ans = normalizeText(question.lua_chon[question.dap_an_dung]);
+  return `${q}|||${question.dap_an_dung}|||${ans}`;
+}
+
+function isDuplicateInSet(question, existSet) {
+  const key = getQuestionKey(question);
+  return existSet.some(x =>
+    getQuestionKey({
+      noi_dung: x.noi_dung,
+      dap_an_dung: x.dap_an_dung,
+      lua_chon: { [x.dap_an_dung]: x.dap_an }
+    }) === key
+  );
 }
 
 importHtmlInput.addEventListener("change", async function(e) {
@@ -413,18 +433,6 @@ async function getQuestionSetForSubject(mon_hoc_id) {
     });
   });
   return existSet;
-}
-
-function isDuplicateInSet(question, existSet) {
-  const qNoiDung = normalizeText(question.noi_dung);
-  const qDapAnDung = question.dap_an_dung;
-  const qDapAn = normalizeText(question.lua_chon[question.dap_an_dung]);
-  return existSet.some(
-    x =>
-      normalizeText(x.noi_dung) === qNoiDung &&
-      x.dap_an_dung === qDapAnDung &&
-      normalizeText(x.dap_an) === qDapAn
-  );
 }
 
 // ========== Manual Add Question ==========
