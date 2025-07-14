@@ -284,34 +284,31 @@ function ensureMathDelimiters(text) {
   return text;
 }
 
-// ====== Normalization function for duplicate detection ======
+// Hàm chuẩn hóa mạnh nhất cho tiếng Việt: giữ lại chữ/số Unicode, bỏ hết dấu, loại trắng, ký tự đặc biệt
 function normalizeText(str) {
   if (!str) return "";
   return str
     .replace(/<[^>]*>/g, '')
     .replace(/&[a-z]+;/gi, " ")
     .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s]|_/g, "")
-    .replace(/\s+/g, '')
+    .replace(/[^\p{L}\p{N}]/gu, "")
     .toLowerCase()
     .trim();
 }
 
-function getQuestionKey(question) {
-  const q = normalizeText(question.noi_dung);
-  const ans = normalizeText(question.lua_chon[question.dap_an_dung]);
-  return `${q}|||${question.dap_an_dung}|||${ans}`;
-}
-
+// Kiểm tra trùng: chỉ cần giống nội dung câu hỏi và đáp án đúng (dù thứ tự đáp án là gì)
 function isDuplicateInSet(question, existSet) {
-  const key = getQuestionKey(question);
-  return existSet.some(x =>
-    getQuestionKey({
-      noi_dung: x.noi_dung,
-      dap_an_dung: x.dap_an_dung,
-      lua_chon: { [x.dap_an_dung]: x.dap_an }
-    }) === key
-  );
+  const qNoiDung = normalizeText(question.noi_dung);
+  const qDapAnDung = question.dap_an_dung;
+  const qDapAn = normalizeText(question.lua_chon[qDapAnDung]);
+  return existSet.some(x => {
+    const xNoiDung = normalizeText(x.noi_dung);
+    // Xác định vị trí đáp án đúng của câu đã lưu
+    let xDapAn = "";
+    if (x.lua_chon && x.dap_an_dung) xDapAn = normalizeText(x.lua_chon[x.dap_an_dung]);
+    else if (x.dap_an) xDapAn = normalizeText(x.dap_an);
+    return (qNoiDung === xNoiDung && qDapAn === xDapAn);
+  });
 }
 
 importHtmlInput.addEventListener("change", async function(e) {
@@ -429,7 +426,7 @@ async function getQuestionSetForSubject(mon_hoc_id) {
     existSet.push({
       noi_dung: (data.noi_dung || '').trim(),
       dap_an_dung: data.dap_an_dung,
-      dap_an: (data.lua_chon && data.lua_chon[data.dap_an_dung]) ? data.lua_chon[data.dap_an_dung] : ''
+      lua_chon: data.lua_chon
     });
   });
   return existSet;
