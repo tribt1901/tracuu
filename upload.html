@@ -141,7 +141,6 @@
   </div>
 </div>
 <script type="module">
-// Firebase CDN
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -188,13 +187,10 @@ async function uploadFile(file) {
 
 // ========== MathJax/Toán học: Lấy nội dung toán học thô ==========
 function extractMathText(html) {
-  // Lấy nội dung toán học từ <script type="math/tex">...</script>
   const scriptMatch = html.match(/<script[^>]*type="math\/tex"[^>]*>([\s\S]*?)<\/script>/);
   if (scriptMatch) return scriptMatch[1].trim();
-  // Nếu có MathML trong data-mathml
   const dataMathml = html.match(/data-mathml="([^"]*)"/);
   if (dataMathml) return dataMathml[1].replace(/&quot;/g,'"');
-  // Nếu không, loại bỏ tag để lấy text
   return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 }
 
