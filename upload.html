@@ -398,7 +398,7 @@ saveImportBtn.onclick = async function() {
     }).then(()=>success++).catch(()=>fail++);
   }
   alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
-  saveImportBtn.disabled = false;
+  location.reload();
 };
 
 async function getQuestionSetForSubject(mon_hoc_id) {
@@ -532,6 +532,7 @@ document.getElementById("manualQuestionForm").addEventListener("submit", async f
   manualQuestionImgFile = manualAnswerAImgFile = manualAnswerBImgFile = manualAnswerCImgFile = manualAnswerDImgFile = null;
   manualQuestionImgUrl = manualAnswerAImgUrl = manualAnswerBImgUrl = manualAnswerCImgUrl = manualAnswerDImgUrl = "";
   alert("Đã thêm câu hỏi!");
+  location.reload();
 });
 
 // ========== Upload Syllabus ==========
@@ -548,6 +549,7 @@ document.getElementById("syllabusForm").addEventListener("submit", async functio
       });
       syllabusForm.reset();
       alert("Đã upload đề cương!");
+      location.reload();
     }catch(err){ alert("Upload thất bại: "+err); }
     syllabusSubmitBtn.disabled=false;
   } else alert("Điền đầy đủ thông tin và chọn file!");
