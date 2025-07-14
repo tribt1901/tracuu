@@ -284,6 +284,16 @@ function ensureMathDelimiters(text) {
   return text;
 }
 
+// ====== Normalization function for duplicate detection ======
+function normalizeText(str) {
+  if (!str) return "";
+  return str.replace(/<[^>]+>/g, '') // Remove HTML tags
+            .replace(/\s+/g, ' ')    // Collapse whitespace
+            .replace(/[\r\n]+/g, '') // Remove newlines
+            .trim()
+            .toLowerCase();
+}
+
 importHtmlInput.addEventListener("change", async function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -316,9 +326,9 @@ importHtmlInput.addEventListener("change", async function(e) {
       if (match) {
         let correctValue = match[1].trim();
         correctIdx = answers.findIndex(a =>
-          a.replace(/<[^>]*>/g, '').trim().toLowerCase() === correctValue.trim().toLowerCase()
-          || a.replace(/<[^>]*>/g, '').trim().toLowerCase().includes(correctValue.trim().toLowerCase())
-          || correctValue.trim().toLowerCase().includes(a.replace(/<[^>]*>/g, '').trim().toLowerCase())
+          normalizeText(a) === normalizeText(correctValue)
+          || normalizeText(a).includes(normalizeText(correctValue))
+          || normalizeText(correctValue).includes(normalizeText(a))
         );
         correctKey = ['a','b','c','d'][correctIdx] || '';
         correct = answers[correctIdx] || '';
@@ -404,12 +414,16 @@ async function getQuestionSetForSubject(mon_hoc_id) {
   });
   return existSet;
 }
+
 function isDuplicateInSet(question, existSet) {
+  const qNoiDung = normalizeText(question.noi_dung);
+  const qDapAnDung = question.dap_an_dung;
+  const qDapAn = normalizeText(question.lua_chon[question.dap_an_dung]);
   return existSet.some(
     x =>
-      x.noi_dung === question.noi_dung.trim() &&
-      x.dap_an_dung === question.dap_an_dung &&
-      x.dap_an === question.lua_chon[question.dap_an_dung]
+      normalizeText(x.noi_dung) === qNoiDung &&
+      x.dap_an_dung === qDapAnDung &&
+      normalizeText(x.dap_an) === qDapAn
   );
 }
 
