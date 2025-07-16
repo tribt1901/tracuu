@@ -145,7 +145,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
   authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -158,14 +157,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Helper: Lấy mã bảo mật từ trường code trong collection config
 async function checkSecurityCode(inputCode) {
   const q = query(collection(db, "config"), where("code", "==", inputCode));
   const snap = await getDocs(q);
   return !snap.empty;
 }
 
-// Dropdown helper
 async function fillSubjectsDropdown(el, withDefault) {
   el.innerHTML = withDefault ? '<option value="">-- Chọn môn học --</option>' : "";
   const snaps = await getDocs(collection(db, "mon_hoc"));
@@ -177,7 +174,6 @@ async function fillSubjectsDropdown(el, withDefault) {
   });
 }
 
-// Upload file/image helper
 async function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
@@ -186,7 +182,6 @@ async function uploadFile(file) {
   return (await res.json()).url;
 }
 
-// ========== MathJax/Toán học: Lấy nội dung toán học thô ==========
 function extractMathTextAll(html) {
   const scripts = Array.from(html.matchAll(/<script[^>]*type="math\/tex"[^>]*>([\s\S]*?)<\/script>/g));
   if (scripts.length) return scripts.map(s => s[1].trim()).join(' ');
@@ -195,7 +190,6 @@ function extractMathTextAll(html) {
   return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 }
 
-// ========== UI INIT ===========
 const w = document.getElementById("uploadTypeSelect");
 const v = document.getElementById("uploadQuestionSection");
 const f = document.getElementById("uploadSyllabusSection");
@@ -215,7 +209,6 @@ w.addEventListener("change", () => {
 });
 w.dispatchEvent(new Event("change"));
 
-// ======== Security code logic (reuse for all sections) ==========
 let importCodeOk = false, manualCodeOk = false, syllabusCodeOk = false;
 const saveImportBtn = document.getElementById("saveImportBtn");
 const manualSubmitQuestionBtn = document.getElementById("manualSubmitQuestionBtn");
@@ -386,10 +379,11 @@ importHtmlInput.addEventListener("change", async function(e) {
     importedQuestions.forEach((q, idx) => {
       htmlResult += `<div class="import-question${q.duplicate ? ' import-duplicate' : ''}">
         <div><b>Câu ${idx+1}:</b> <span class="mathjax-content">${q.questionText}</span></div>`;
+      // SỬA ĐOẠN NÀY: Đảm bảo không lặp lại các biểu thức toán học trong đáp án
       const renderSet = new Set();
       q.answers.forEach((a,i) => {
         const mathThuo = extractMathTextAll(a);
-        if (renderSet.has(mathThuo)) return;
+        if (renderSet.has(mathThuo)) return; // Nếu đã render rồi thì bỏ qua
         renderSet.add(mathThuo);
         htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
           ${String.fromCharCode(97+i)}. <span class="mathjax-content">${a}</span> ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}
@@ -550,7 +544,6 @@ document.getElementById("manualQuestionForm").addEventListener("submit", async f
   location.reload();
 });
 
-// ========== Upload Syllabus ==========
 document.getElementById("syllabusForm").addEventListener("submit", async function(e){
   e.preventDefault();
   if(!syllabusCodeOk) return alert("Chưa xác thực mã bảo mật!");
@@ -570,12 +563,10 @@ document.getElementById("syllabusForm").addEventListener("submit", async functio
   } else alert("Điền đầy đủ thông tin và chọn file!");
 });
 
-// ====== DOM biến chuyển màn hình ======
 const importHtmlSection = document.getElementById("importHtmlSection");
 const manualQuestionSection = document.getElementById("manualQuestionSection");
 const manualQuestionForm = document.getElementById("manualQuestionForm");
 
-// ========== UI chuyển màn hình ==========
 document.getElementById("questionImportHtmlBtn").onclick = function(){
   document.getElementById("questionUploadChoice").style.display = "none";
   importHtmlSection.style.display = "block";
