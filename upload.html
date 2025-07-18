@@ -220,15 +220,19 @@ function isDuplicateInSet(question, existSet) {
   });
 }
 
-// --- Sửa lỗi lặp lại công thức khi import đáp án ---
-function getUniqueAnswers(answers) {
+// Đảm bảo không loại đáp án đúng khi loại trùng
+function getUniqueAnswersWithCorrect(answers, correctIdx) {
   const seen = new Set();
-  return answers.filter(a => {
+  return answers.map((a, idx) => {
     const math = extractMathTextAll(a);
-    if (seen.has(math)) return false;
+    if (idx === correctIdx) {
+      seen.add(math); // Đánh dấu đã gặp đáp án này
+      return a;
+    }
+    if (seen.has(math)) return null;
     seen.add(math);
-    return true;
-  });
+    return a;
+  }).filter(a => a !== null);
 }
 
 const w = document.getElementById("uploadTypeSelect");
@@ -338,7 +342,6 @@ importHtmlInput.addEventListener("change", async function(e) {
     docx.querySelectorAll('.que').forEach(q => {
       let questionNode = q.querySelector('.qtext');
       let questionText = questionNode ? ensureMathDelimiters(questionNode.innerHTML.trim()) : '';
-      // Xử lý đáp án, loại trùng lặp công thức
       const answerNodes = q.querySelectorAll('.answer > div');
       const answers = [];
       answerNodes.forEach((ans, idx) => {
@@ -346,8 +349,8 @@ importHtmlInput.addEventListener("change", async function(e) {
         let ansText = ansNode ? ensureMathDelimiters(ansNode.innerHTML.trim()) : ensureMathDelimiters(ans.innerHTML.trim());
         answers.push(ansText);
       });
-      // Loại bỏ đáp án lặp công thức
-      const uniqueAnswers = getUniqueAnswers(answers);
+
+      // Xác định index đáp án đúng
       let correct = '';
       let correctIdx = -1;
       let correctKey = '';
@@ -355,26 +358,38 @@ importHtmlInput.addEventListener("change", async function(e) {
       let match = rightAnswerText.match(/The correct answer is: (.+)$/);
       if (match) {
         let correctValue = match[1].trim();
-        correctIdx = uniqueAnswers.findIndex(a =>
+        correctIdx = answers.findIndex(a =>
           normalizeText(extractMathTextAll(a)) === normalizeText(extractMathTextAll(correctValue)) ||
           normalizeText(extractMathTextAll(a)).includes(normalizeText(extractMathTextAll(correctValue))) ||
           normalizeText(extractMathTextAll(correctValue)).includes(normalizeText(extractMathTextAll(a)))
         );
         correctKey = ['a','b','c','d'][correctIdx] || '';
-        correct = uniqueAnswers[correctIdx] || '';
+        correct = answers[correctIdx] || '';
       } else {
         answerNodes.forEach((ans, idx) => {
           if (ans.classList.contains('correct')) {
-            correct = uniqueAnswers[idx];
+            correct = answers[idx];
             correctIdx = idx;
             correctKey = ['a','b','c','d'][correctIdx] || '';
           }
         });
       }
+
+      // Loại đáp án sai bị lặp, giữ đáp án đúng
+      const uniqueAnswers = getUniqueAnswersWithCorrect(answers, correctIdx);
+
+      // Sau khi loại, cập nhật lại index đáp án đúng
+      let newCorrectIdx = uniqueAnswers.findIndex(a =>
+        normalizeText(extractMathTextAll(a)) === normalizeText(extractMathTextAll(answers[correctIdx]))
+      );
+      if (newCorrectIdx === -1) newCorrectIdx = 0;
+      let newCorrectKey = ['a','b','c','d'][newCorrectIdx] || '';
+      let newCorrect = uniqueAnswers[newCorrectIdx] || '';
+
       rawQuestions.push({
         questionText, 
         answers: uniqueAnswers,
-        correct, correctIdx, correctKey,
+        correct: newCorrect, correctIdx: newCorrectIdx, correctKey: newCorrectKey,
         lua_chon: {
           a: uniqueAnswers[0]||"", b: uniqueAnswers[1]||"", c: uniqueAnswers[2]||"", d: uniqueAnswers[3]||""
         }
