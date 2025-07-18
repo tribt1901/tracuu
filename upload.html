@@ -23,7 +23,7 @@
     .import-question-title{font-weight:500;color:#c00}
     .import-answer-correct{color:#198754;font-weight:700}
     .import-answer{margin-left:2em}
-    .import-duplicate-message{color:#c00;font-style:italic}
+    .import-duplicate-message{color:#c00!important;font-style:italic}
     .mathjax-content { font-size: 1.1em; }
   </style>
   <link rel="icon" href="data:,">
@@ -190,6 +190,47 @@ function extractMathTextAll(html) {
   return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 }
 
+function ensureMathDelimiters(text) {
+  if (!text) return "";
+  text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
+  return text;
+}
+
+function normalizeText(str) {
+  if (!str) return "";
+  return str
+      .replace(/<[^>]*>/g, '')
+      .replace(/&[a-z]+;/gi, " ")
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\p{L}\p{N}]/gu, "")
+      .toLowerCase()
+      .trim();
+}
+
+function isDuplicateInSet(question, existSet) {
+  const qNoiDung = normalizeText(extractMathTextAll(question.noi_dung));
+  const qDapAnDung = question.dap_an_dung;
+  const qDapAn = normalizeText(extractMathTextAll(question.lua_chon[qDapAnDung]));
+  return existSet.some(x => {
+    const xNoiDung = normalizeText(extractMathTextAll(x.noi_dung));
+    let xDapAn = "";
+    if (x.lua_chon && x.dap_an_dung) xDapAn = normalizeText(extractMathTextAll(x.lua_chon[x.dap_an_dung]));
+    else if (x.dap_an) xDapAn = normalizeText(extractMathTextAll(x.dap_an));
+    return (qNoiDung === xNoiDung && qDapAn === xDapAn);
+  });
+}
+
+// --- Sửa lỗi lặp lại công thức khi import đáp án ---
+function getUniqueAnswers(answers) {
+  const seen = new Set();
+  return answers.filter(a => {
+    const math = extractMathTextAll(a);
+    if (seen.has(math)) return false;
+    seen.add(math);
+    return true;
+  });
+}
+
 const w = document.getElementById("uploadTypeSelect");
 const v = document.getElementById("uploadQuestionSection");
 const f = document.getElementById("uploadSyllabusSection");
@@ -280,36 +321,6 @@ subjectDropdownImport.addEventListener("change", async function() {
 const importHtmlInput = document.getElementById("importHtmlInput");
 const importHtmlResult = document.getElementById("importHtmlResult");
 
-function ensureMathDelimiters(text) {
-  if (!text) return "";
-  text = text.replace(/\[tex\]([\s\S]*?)\[\/tex\]/g, (_, expr) => `$${expr.trim()}$`);
-  return text;
-}
-
-function normalizeText(str) {
-  if (!str) return "";
-  return str
-      .replace(/<[^>]*>/g, '')
-      .replace(/&[a-z]+;/gi, " ")
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\p{L}\p{N}]/gu, "")
-      .toLowerCase()
-      .trim();
-}
-
-function isDuplicateInSet(question, existSet) {
-  const qNoiDung = normalizeText(extractMathTextAll(question.noi_dung));
-  const qDapAnDung = question.dap_an_dung;
-  const qDapAn = normalizeText(extractMathTextAll(question.lua_chon[qDapAnDung]));
-  return existSet.some(x => {
-    const xNoiDung = normalizeText(extractMathTextAll(x.noi_dung));
-    let xDapAn = "";
-    if (x.lua_chon && x.dap_an_dung) xDapAn = normalizeText(extractMathTextAll(x.lua_chon[x.dap_an_dung]));
-    else if (x.dap_an) xDapAn = normalizeText(extractMathTextAll(x.dap_an));
-    return (qNoiDung === xNoiDung && qDapAn === xDapAn);
-  });
-}
-
 importHtmlInput.addEventListener("change", async function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -327,6 +338,7 @@ importHtmlInput.addEventListener("change", async function(e) {
     docx.querySelectorAll('.que').forEach(q => {
       let questionNode = q.querySelector('.qtext');
       let questionText = questionNode ? ensureMathDelimiters(questionNode.innerHTML.trim()) : '';
+      // Xử lý đáp án, loại trùng lặp công thức
       const answerNodes = q.querySelectorAll('.answer > div');
       const answers = [];
       answerNodes.forEach((ans, idx) => {
@@ -334,6 +346,8 @@ importHtmlInput.addEventListener("change", async function(e) {
         let ansText = ansNode ? ensureMathDelimiters(ansNode.innerHTML.trim()) : ensureMathDelimiters(ans.innerHTML.trim());
         answers.push(ansText);
       });
+      // Loại bỏ đáp án lặp công thức
+      const uniqueAnswers = getUniqueAnswers(answers);
       let correct = '';
       let correctIdx = -1;
       let correctKey = '';
@@ -341,27 +355,28 @@ importHtmlInput.addEventListener("change", async function(e) {
       let match = rightAnswerText.match(/The correct answer is: (.+)$/);
       if (match) {
         let correctValue = match[1].trim();
-        correctIdx = answers.findIndex(a =>
+        correctIdx = uniqueAnswers.findIndex(a =>
           normalizeText(extractMathTextAll(a)) === normalizeText(extractMathTextAll(correctValue)) ||
           normalizeText(extractMathTextAll(a)).includes(normalizeText(extractMathTextAll(correctValue))) ||
           normalizeText(extractMathTextAll(correctValue)).includes(normalizeText(extractMathTextAll(a)))
         );
         correctKey = ['a','b','c','d'][correctIdx] || '';
-        correct = answers[correctIdx] || '';
+        correct = uniqueAnswers[correctIdx] || '';
       } else {
         answerNodes.forEach((ans, idx) => {
           if (ans.classList.contains('correct')) {
-            correct = answers[idx];
+            correct = uniqueAnswers[idx];
             correctIdx = idx;
             correctKey = ['a','b','c','d'][correctIdx] || '';
           }
         });
       }
       rawQuestions.push({
-        questionText, answers,
+        questionText, 
+        answers: uniqueAnswers,
         correct, correctIdx, correctKey,
         lua_chon: {
-          a: answers[0]||"", b: answers[1]||"", c: answers[2]||"", d: answers[3]||""
+          a: uniqueAnswers[0]||"", b: uniqueAnswers[1]||"", c: uniqueAnswers[2]||"", d: uniqueAnswers[3]||""
         }
       });
     });
@@ -379,12 +394,7 @@ importHtmlInput.addEventListener("change", async function(e) {
     importedQuestions.forEach((q, idx) => {
       htmlResult += `<div class="import-question${q.duplicate ? ' import-duplicate' : ''}">
         <div><b>Câu ${idx+1}:</b> <span class="mathjax-content">${q.questionText}</span></div>`;
-      // SỬA ĐOẠN NÀY: Đảm bảo không lặp lại các biểu thức toán học trong đáp án
-      const renderSet = new Set();
       q.answers.forEach((a,i) => {
-        const mathThuo = extractMathTextAll(a);
-        if (renderSet.has(mathThuo)) return; // Nếu đã render rồi thì bỏ qua
-        renderSet.add(mathThuo);
         htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
           ${String.fromCharCode(97+i)}. <span class="mathjax-content">${a}</span> ${i===q.correctIdx?'<span>(Đáp án đúng)</span>':''}
         </div>`;
