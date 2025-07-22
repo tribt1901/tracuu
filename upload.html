@@ -424,30 +424,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ====== Extract đáp án và câu hỏi: ưu tiên LaTeX, loại lặp, nhận diện đúng đáp án ======
-  function extractLaTeXOrText(node) {
-    let latex = "";
-    let text = "";
+  // ====== Extract đáp án và câu hỏi: GHÉP ĐÚNG TEXT + LATEX, NHẬN DIỆN ĐÁP ÁN ======
+  function extractTextAndLaTeX(node) {
+    let result = "";
     node && node.childNodes.forEach(child => {
       if (child.nodeType === Node.ELEMENT_NODE) {
         if ((child.tagName === "SPAN" && child.classList.contains("math-tex")) ||
             (child.tagName === "SCRIPT" && child.type.startsWith("math/tex"))) {
-          latex += child.textContent.trim();
+          result += `\\(${child.textContent.trim()}\\)`;
         } else if (child.tagName === "IMG" && child.alt) {
-          latex += child.alt.trim();
+          result += `\\(${child.alt.trim()}\\)`;
         } else {
-          let inner = extractLaTeXOrText(child);
-          if (inner.latex) latex += inner.latex;
-          else text += inner.text;
+          result += extractTextAndLaTeX(child);
         }
       } else if (child.nodeType === Node.TEXT_NODE) {
-        text += child.textContent.replace(/\s+/g, " ");
+        result += child.textContent.replace(/\s+/g, " ");
       }
     });
-    return { latex: latex, text: text.trim() };
+    return result.trim();
   }
   function normalize(str) {
-    return str.replace(/[\s\\\(\)\{\}\[\]\^]/g, "").toLowerCase();
+    return str.replace(/[\s\\\(\)\{\}\[\]\^]/g, '').toLowerCase();
   }
 
   importHtmlInput.addEventListener("change", async function(e) {
@@ -469,16 +466,14 @@ document.addEventListener("DOMContentLoaded", () => {
       docx.querySelectorAll('.que').forEach(q => {
         // Câu hỏi
         let qtextNode = q.querySelector('.qtext');
-        let questionExtract = extractLaTeXOrText(qtextNode);
-        let questionText = questionExtract.latex ? `\\(${questionExtract.latex}\\)` : questionExtract.text;
+        let questionText = extractTextAndLaTeX(qtextNode);
 
         // Đáp án
         const answerNodes = q.querySelectorAll('.answer > div');
         const answers = [];
         answerNodes.forEach((ans, idx) => {
           let ansNode = ans.querySelector('.flex-fill, div.ml-1');
-          let ansExtract = extractLaTeXOrText(ansNode);
-          answers.push(ansExtract.latex ? `\\(${ansExtract.latex}\\)` : ansExtract.text);
+          answers.push(extractTextAndLaTeX(ansNode));
         });
 
         // Đáp án đúng
