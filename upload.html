@@ -152,7 +152,6 @@
     <form id="syllabusForm" autocomplete="off">
       <select class="form-select mb-2 subject-scroll-select" id="syllabusSubjectDropdown" required></select>
       <input type="text" class="form-control mb-2" id="syllabusOwner" placeholder="Tài liệu này của ai? (Không bắt buộc)">
-      <!-- Thay thế input file bằng input nhập link -->
       <input type="url" class="form-control mb-2" id="syllabusFileUrlInput" placeholder="Nhập đường link đề cương (Google Drive, OneDrive, v.v.)" required>
       <div class="security-section" style="margin-top:10px;">
         <input type="password" class="form-control mb-1" id="syllabusSecurityCode" placeholder="Nhập mã bảo mật để lưu">
@@ -323,7 +322,6 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  // ==== Button logic cho Upload Câu hỏi ====
   document.getElementById("questionImportHtmlBtn").onclick = () => {
     document.getElementById("questionUploadChoice").style.display = "none";
     importHtmlSection.style.display = "block";
@@ -360,7 +358,6 @@ document.addEventListener("DOMContentLoaded", () => {
     manualQuestionSection.style.display = "none";
   };
 
-  // ==== Import HTML: mã bảo mật từng form ====
   let questionSecOKImport = false;
   document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() {
     const val = this.value.trim();
@@ -382,7 +379,6 @@ document.addEventListener("DOMContentLoaded", () => {
       statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
     }
   });
-  // ==== Mã bảo mật Manual ====
   let questionSecOKManual = false;
   document.getElementById("questionSecurityCodeManual").addEventListener("input", async function() {
     const val = this.value.trim();
@@ -404,7 +400,6 @@ document.addEventListener("DOMContentLoaded", () => {
       statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
     }
   });
-  // ==== Mã bảo mật Đề cương ====
   let syllabusSecOK = false;
   document.getElementById("syllabusSecurityCode").addEventListener("input", async function() {
     const val = this.value.trim();
@@ -427,7 +422,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ==== Import HTML ====
   subjectDropdownImport.addEventListener("change", async function() {
     importHtmlInput.value = "";
     importHtmlResult.innerHTML = "";
@@ -440,31 +434,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ======= HÀM TRÍCH XUẤT TEXT ĐÃ FIX LỖI LẶP VÀ HIỆN ĐÚNG LA TEX =======
+  // ======= HÀM TRÍCH XUẤT TEXT ĐÚNG ĐỊNH DẠNG TOÁN HỌC =======
   function extractCleanText(node) {
-    // Tách text và công thức, ghép lại đúng thứ tự, không bị lặp
     let parts = [];
     node.childNodes.forEach(child => {
       if (child.nodeType === Node.TEXT_NODE) {
         let txt = child.textContent.replace(/\s+/g, " ").trim();
         if (txt) parts.push(txt);
       } else if (child.nodeType === Node.ELEMENT_NODE) {
-        // Nếu là công thức LaTeX (MathJax, KaTeX) thường nằm trong <span class="math-tex"> hoặc <script type="math/tex">
-        if (child.tagName === "SPAN" && child.classList.contains("math-tex")) {
+        if (
+          (child.tagName === "SPAN" && child.classList.contains("math-tex")) ||
+          (child.tagName === "SCRIPT" && child.type.startsWith("math/tex"))
+        ) {
           let latex = child.textContent.trim();
-          if (latex) parts.push(latex);
-        } else if ((child.tagName === "SCRIPT" && child.type.startsWith("math/tex")) || child.tagName === "IMG") {
-          // Nếu là script hoặc ảnh chứa công thức thì lấy alt hoặc text
-          let latex = child.textContent.trim() || child.alt || "";
-          if (latex) parts.push(latex);
+          if (latex) parts.push(`\\(${latex}\\)`);
+        } else if (child.tagName === "IMG" && child.alt) {
+          let latex = child.alt.trim();
+          if (latex) parts.push(`\\(${latex}\\)`);
         } else {
-          // Nếu là thẻ khác, đệ quy lấy tiếp
           let inner = extractCleanText(child);
           if (inner) parts.push(inner);
         }
       }
     });
-    // Xử lý loại bỏ các phần bị lặp liên tiếp (ví dụ: "M(45,35) M(45,35) M\\left ..." => giữ 1)
     let result = [];
     for (let i = 0; i < parts.length; i++) {
       if (i === 0 || parts[i] !== parts[i-1]) result.push(parts[i]);
@@ -472,7 +464,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return result.join(" ");
   }
 
-  // ==== Import HTML Input ====
   importHtmlInput.addEventListener("change", async function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -490,7 +481,6 @@ document.addEventListener("DOMContentLoaded", () => {
       importedQuestions = [];
       let rawQuestions = [];
       docx.querySelectorAll('.que').forEach(q => {
-        // ==== LẤY TEXT ĐÃ FIX LỖI LẶP ====
         let questionText = "";
         let qtextNode = q.querySelector('.qtext');
         if (qtextNode) questionText = extractCleanText(qtextNode);
@@ -557,12 +547,12 @@ document.addEventListener("DOMContentLoaded", () => {
         htmlResult += `</div>`;
       });
       importHtmlResult.innerHTML = htmlResult;
-      saveImportBtn.style.display = importedQuestions.length>0 ? "inline-block" : "none";
       if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
+      saveImportBtn.style.display = importedQuestions.length>0 ? "inline-block" : "none";
     }
     reader.readAsText(file);
   });
-  // ==== Lưu Import ====
+
   saveImportBtn.onclick = async function() {
     if (!questionSecOKImport) { alert("Chưa xác thực mã bảo mật!"); return; }
     const mon_hoc_id = subjectDropdownImport.value;
@@ -570,7 +560,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!importedQuestions.length) { alert("Chưa có dữ liệu để lưu!"); return; }
     saveImportBtn.disabled = true;
     let success = 0, fail = 0, skip = 0;
-    // Lấy lại danh sách câu hỏi hiện tại cho kiểm tra trùng lặp mới nhất
     const existSet = await loadQuestionsForSubject(mon_hoc_id);
     for (let q of importedQuestions) {
       if(q.duplicate || isDuplicateInSet({noi_dung: q.questionText, dap_an_dung: q.correctKey, lua_chon: q.lua_chon}, existSet)) {
@@ -586,11 +575,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }).then(()=>success++).catch(()=>fail++);
     }
     alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
-    // Reload lại trang sau khi lưu
     window.location.reload();
   };
 
-  // ==== Thêm thủ công ====
   document.getElementById("manualQuestionForm").addEventListener("submit", async function(e) {
     e.preventDefault();
     if (!questionSecOKManual) { alert("Chưa xác thực mã bảo mật!"); return; }
@@ -626,11 +613,9 @@ document.addEventListener("DOMContentLoaded", () => {
       dap_an_dung: correct
     });
     alert("Đã thêm câu hỏi!");
-    // Reload lại trang sau khi lưu
     window.location.reload();
   });
 
-  // ==== Upload Đề cương ====
   document.getElementById("syllabusForm").addEventListener("submit", async function(e) {
     e.preventDefault();
     if (!syllabusSecOK) { alert("Chưa xác thực mã bảo mật!"); return; }
@@ -647,7 +632,6 @@ document.addEventListener("DOMContentLoaded", () => {
         uploaded_at: (new Date()).toISOString()
       });
       alert("Đã lưu đề cương!");
-      // Reload lại trang sau khi lưu
       window.location.reload();
     } catch (e) {
       alert("Lưu thất bại: " + e);
