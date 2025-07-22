@@ -162,11 +162,9 @@
   </div>
 </div>
 <script type="module">
-// Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 document.addEventListener("DOMContentLoaded", () => {
-  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
     authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -179,8 +177,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // ==== DOM SELECTORS ====
-  // Câu hỏi
   const manualQuestionImgPreview = document.getElementById("manualQuestionImgPreview");
   const manualRemoveQuestionImgBtn = document.getElementById("manualRemoveQuestionImgBtn");
   const manualAnswerAImgPreview = document.getElementById("manualAnswerAImgPreview");
@@ -198,7 +194,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const manualAnswerDImgInput = document.getElementById("manualAnswerDImgInput");
   const manualSubmitQuestionBtn = document.getElementById("manualSubmitQuestionBtn");
 
-  // ==== Chuyển mode ====
   const uploadTypeSelect = document.getElementById("uploadTypeSelect");
   const uploadQuestionSection = document.getElementById("uploadQuestionSection");
   const uploadSyllabusSection = document.getElementById("uploadSyllabusSection");
@@ -212,7 +207,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   uploadTypeSelect.dispatchEvent(new Event("change"));
 
-  // ==== Load Subjects vào Dropdown ====
   async function loadSubjectsToDropdown(dropdown, allowEmpty = false) {
     dropdown.innerHTML = allowEmpty ? `<option value="">-- Chọn môn học --</option>` : "";
     const snapshot = await getDocs(collection(db, "mon_hoc"));
@@ -227,7 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
   loadSubjectsToDropdown(document.getElementById("subjectDropdownManual"));
   loadSubjectsToDropdown(document.getElementById("syllabusSubjectDropdown"));
 
-  // ==== Upload ảnh/file lên Vercel server ====
   async function uploadToDrive(file) {
     const formData = new FormData();
     formData.append('file', file);
@@ -237,7 +230,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return result.url;
   }
 
-  // ==== Ảnh Google Drive helper ====
   function getDisplayableImgUrl(url) {
     if (!url) return "";
     let m = url.match(/https:\/\/drive\.google\.com\/file\/d\/([^/]+)/);
@@ -253,7 +245,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return url;
   }
 
-  // ==== Ảnh Preview cho thêm thủ công ====
   let manualQImgFile = null, manualAImgFiles = [null, null, null, null];
   let manualQImgUrl = "", manualAImgUrls = ["","","",""];
   function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
@@ -296,7 +287,6 @@ document.addEventListener("DOMContentLoaded", () => {
     f=>manualAImgFiles[3]=f, url=>manualAImgUrls[3]=url
   );
 
-  // ==== Import HTML: kiểm tra trùng ====
   let importedQuestions = [];
   let allQuestionsForSubject = [];
   async function loadQuestionsForSubject(mon_hoc_id) {
@@ -434,34 +424,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ======= HÀM TRÍCH XUẤT TEXT ĐÚNG ĐỊNH DẠNG TOÁN HỌC =======
-  function extractCleanText(node) {
-    let parts = [];
-    node.childNodes.forEach(child => {
-      if (child.nodeType === Node.TEXT_NODE) {
-        let txt = child.textContent.replace(/\s+/g, " ").trim();
-        if (txt) parts.push(txt);
-      } else if (child.nodeType === Node.ELEMENT_NODE) {
-        if (
-          (child.tagName === "SPAN" && child.classList.contains("math-tex")) ||
-          (child.tagName === "SCRIPT" && child.type.startsWith("math/tex"))
-        ) {
-          let latex = child.textContent.trim();
-          if (latex) parts.push(`\\(${latex}\\)`);
+  // ====== Extract đáp án và câu hỏi: ưu tiên LaTeX, loại lặp, nhận diện đúng đáp án ======
+  function extractLaTeXOrText(node) {
+    let latex = "";
+    let text = "";
+    node && node.childNodes.forEach(child => {
+      if (child.nodeType === Node.ELEMENT_NODE) {
+        if ((child.tagName === "SPAN" && child.classList.contains("math-tex")) ||
+            (child.tagName === "SCRIPT" && child.type.startsWith("math/tex"))) {
+          latex += child.textContent.trim();
         } else if (child.tagName === "IMG" && child.alt) {
-          let latex = child.alt.trim();
-          if (latex) parts.push(`\\(${latex}\\)`);
+          latex += child.alt.trim();
         } else {
-          let inner = extractCleanText(child);
-          if (inner) parts.push(inner);
+          let inner = extractLaTeXOrText(child);
+          if (inner.latex) latex += inner.latex;
+          else text += inner.text;
         }
+      } else if (child.nodeType === Node.TEXT_NODE) {
+        text += child.textContent.replace(/\s+/g, " ");
       }
     });
-    let result = [];
-    for (let i = 0; i < parts.length; i++) {
-      if (i === 0 || parts[i] !== parts[i-1]) result.push(parts[i]);
-    }
-    return result.join(" ");
+    return { latex: latex, text: text.trim() };
+  }
+  function normalize(str) {
+    return str.replace(/[\s\\\(\)\{\}\[\]\^]/g, "").toLowerCase();
   }
 
   importHtmlInput.addEventListener("change", async function(e) {
@@ -481,17 +467,21 @@ document.addEventListener("DOMContentLoaded", () => {
       importedQuestions = [];
       let rawQuestions = [];
       docx.querySelectorAll('.que').forEach(q => {
-        let questionText = "";
+        // Câu hỏi
         let qtextNode = q.querySelector('.qtext');
-        if (qtextNode) questionText = extractCleanText(qtextNode);
+        let questionExtract = extractLaTeXOrText(qtextNode);
+        let questionText = questionExtract.latex ? `\\(${questionExtract.latex}\\)` : questionExtract.text;
 
+        // Đáp án
         const answerNodes = q.querySelectorAll('.answer > div');
         const answers = [];
         answerNodes.forEach((ans, idx) => {
           let ansNode = ans.querySelector('.flex-fill, div.ml-1');
-          answers.push(ansNode ? extractCleanText(ansNode) : "");
+          let ansExtract = extractLaTeXOrText(ansNode);
+          answers.push(ansExtract.latex ? `\\(${ansExtract.latex}\\)` : ansExtract.text);
         });
 
+        // Đáp án đúng
         let correct = '';
         let correctIdx = -1;
         let correctKey = '';
@@ -500,9 +490,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (match) {
           let correctValue = match[1].trim();
           correctIdx = answers.findIndex(a =>
-            a.trim().toLowerCase() === correctValue.trim().toLowerCase()
-            || a.trim().toLowerCase().includes(correctValue.trim().toLowerCase())
-            || correctValue.trim().toLowerCase().includes(a.trim().toLowerCase())
+            normalize(a) === normalize(correctValue) ||
+            normalize(a).includes(normalize(correctValue)) ||
+            normalize(correctValue).includes(normalize(a))
           );
           correctKey = ['a','b','c','d'][correctIdx] || '';
           correct = answers[correctIdx] || '';
