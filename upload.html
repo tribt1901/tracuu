@@ -1,199 +1,115 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Upload Dữ Liệu</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Upload</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <style>
-    body { padding-top:70px; }
-    .mode-section { display:none; }
-    .img-preview { max-width:120px; max-height:70px; display:inline-block; margin-top:6px; }
-    .btn-remove { background:none;border:none;color:red; }
-    .feedback { margin-top:10px; }
-  </style>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+      apiKey: "AIzaSyCfv6NMe_2oGLaXxt-uA0v7emWcxbHgI-M",
+      authDomain: "webtracuu-7f09a.firebaseapp.com",
+      projectId: "webtracuu-7f09a",
+      storageBucket: "webtracuu-7f09a.appspot.com",
+      messagingSenderId: "616666801965",
+      appId: "1:616666801965:web:ca5956d55f83969f6b55a4",
+      measurementId: "G-FZ1PHD50BP"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const subjectsRef = collection(db, "mon_hoc");
+    const questionsRef = collection(db, "cau_hoi");
+
+    const ADMIN_PASSWORD = "123456";
+
+    window.onload = async function () {
+      const select = document.getElementById("subjectSelect");
+      const snapshot = await getDocs(subjectsRef);
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const option = document.createElement("option");
+        option.value = data.ten_mon;
+        option.textContent = data.ten_mon;
+        select.appendChild(option);
+      });
+    };
+
+    window.submitQuestion = async function () {
+      const password = document.getElementById("adminPassword").value.trim();
+      if (password !== ADMIN_PASSWORD) {
+        alert("❌ Sai mật mã. Không thể upload câu hỏi.");
+        return;
+      }
+
+      const subject = document.getElementById("subjectSelect").value;
+      const question = document.getElementById("questionContent").value.trim();
+      const answer = document.getElementById("correctAnswer").value.trim();
+
+      if (!subject || !question || !answer) {
+        alert("⚠️ Vui lòng nhập đầy đủ thông tin.");
+        return;
+      }
+
+      await addDoc(questionsRef, {
+        mon_hoc: subject,
+        noi_dung: question,
+        dap_an: answer
+      });
+
+      alert("✅ Câu hỏi đã được upload thành công.");
+      document.getElementById("questionForm").reset();
+    };
+  </script>
 </head>
-<body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-success fixed-top">
-  <div class="container-fluid"><a class="navbar-brand" href="#">📥 Upload Dữ Liệu</a></div>
+<body class="bg-light">
+<!-- Thanh menu -->
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #4CAF50;">
+    <div class="container-fluid">
+        <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
+            </ul>
+        </div>
+    </div>
 </nav>
 
-<div class="container py-4">
-  <h3>Chọn loại upload:</h3>
-  <select id="uploadTypeSelect" class="form-select mb-3" style="max-width:400px;">
-    <option value="question">Câu hỏi</option>
-    <option value="syllabus">Đề cương</option>
-  </select>
-
-  <!-- Upload Câu hỏi -->
-  <div id="uploadQuestionSection" class="mode-section">
-    <button id="btnImportHtml" class="btn btn-primary me-2">Import HTML Moodle</button>
-    <button id="btnManual" class="btn btn-secondary">Thêm thủ công</button>
-
-    <!-- Import HTML Section -->
-    <div id="sectionImport" class="mode-section mt-3">
-      <label>Môn học:</label>
-      <select id="subjectImport" class="form-select mb-2" style="max-width:400px;"></select>
-      <input id="fileImport" type="file" accept=".html" class="form-control mb-2">
-      <button id="submitImport" class="btn btn-success">Import</button>
-      <div id="feedbackImport" class="feedback"></div>
+<div class='container py-4'>
+  <h2 class='mb-3'>📤 Upload câu hỏi</h2>
+  <form id="questionForm" onsubmit="event.preventDefault(); submitQuestion();">
+    <div class="mb-3">
+      <label class="form-label">🔐 Mật mã quản trị</label>
+      <input type="password" id="adminPassword" class="form-control" placeholder="Nhập mật mã để xác thực">
     </div>
-
-    <!-- Manual Section -->
-    <div id="sectionManual" class="mode-section mt-3">
-      <form id="formManual">
-        <label>Môn học:</label>
-        <select id="subjectManual" class="form-select mb-2" style="max-width:400px;"></select>
-        <textarea id="manualQuestionText" class="form-control mb-2" placeholder="Câu hỏi (hỗ trợ MathJax)" required rows="3"></textarea>
-        <button type="submit" class="btn btn-success">Lưu câu hỏi</button>
-        <div id="feedbackManual" class="feedback"></div>
-      </form>
+    <div class="mb-3">
+      <label class="form-label">📘 Chọn môn học</label>
+      <select id="subjectSelect" class="form-select" required>
+        <option value="">-- Chọn môn học --</option>
+      </select>
     </div>
-  </div>
-
-  <!-- Upload Đề cương -->
-  <div id="uploadSyllabusSection" class="mode-section">
-    <label>Môn học:</label>
-    <select id="subjectSyllabus" class="form-select mb-2" style="max-width:400px;"></select>
-    <input id="syllabusLink" type="url" placeholder="Link đề cương (PDF...)" class="form-control mb-2">
-    <button id="btnSyllabus" class="btn btn-success">Lưu link</button>
-    <div id="feedbackSyllabus" class="feedback"></div>
-  </div>
+    <div class="mb-3">
+      <label class="form-label">📝 Nội dung câu hỏi (hỗ trợ MathML)</label>
+      <textarea id="questionContent" class="form-control" rows="6" placeholder="Nhập nội dung câu hỏi..." required></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">✅ Đáp án đúng</label>
+      <input type="text" id="correctAnswer" class="form-control" placeholder="Nhập đáp án đúng" required>
+    </div>
+    <button class="btn btn-primary">Tải lên</button>
+  </form>
 </div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  // Cấu hình Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
-    authDomain: "tracuu-d3ee9.firebaseapp.com",
-    projectId: "tracuu-d3ee9",
-    storageBucket: "tracuu-d3ee9.appspot.com",
-    messagingSenderId: "593568604435",
-    appId: "1:593568604435:web:9a5145457a8ee734143ae6",
-    measurementId: "G-R0M6Y502NP"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // Danh sách môn giả lập (bạn có thể fetch firestore collection "mon_hoc")
-  const subjects = ["Toán", "Lý", "Hóa", "Sinh"];
-  const elImport = document.getElementById("subjectImport");
-  const elManual = document.getElementById("subjectManual");
-  const elSyllabus = document.getElementById("subjectSyllabus");
-  subjects.forEach(s => {
-    const o = new Option(s, s);
-    elImport.add(o);
-    elManual.add(new Option(s, s));
-    elSyllabus.add(new Option(s, s));
-  });
-
-  const typeSel = document.getElementById("uploadTypeSelect");
-  const secQ = document.getElementById("uploadQuestionSection");
-  const secS = document.getElementById("uploadSyllabusSection");
-  const secImport = document.getElementById("sectionImport");
-  const secManual = document.getElementById("sectionManual");
-
-  function showSection() {
-    secQ.style.display = typeSel.value === "question" ? "block" : "none";
-    secS.style.display = typeSel.value === "syllabus" ? "block" : "none";
-  }
-
-  typeSel.addEventListener("change", showSection);
-  typeSel.dispatchEvent(new Event("change"));
-
-  // import vs manual toggle
-  document.getElementById("btnImportHtml").addEventListener("click", () => {
-    secImport.style.display = "block";
-    secManual.style.display = "none";
-  });
-  document.getElementById("btnManual").addEventListener("click", () => {
-    secImport.style.display = "none";
-    secManual.style.display = "block";
-  });
-
-  // Upload đề cương
-  document.getElementById("btnSyllabus").addEventListener("click", async () => {
-    const subj = elSyllabus.value;
-    const link = document.getElementById("syllabusLink").value.trim();
-    const fb = document.getElementById("feedbackSyllabus");
-    fb.textContent = "";
-    if (!subj || !link.startsWith("http")) {
-      fb.textContent = "❗ Vui lòng chọn môn và nhập link đúng.";
-      fb.className = "feedback text-danger";
-      return;
-    }
-    try {
-      await addDoc(collection(db, "syllabus"), {
-        mon_hoc: subj,
-        link: link,
-        created_at: new Date().toISOString()
-      });
-      fb.textContent = "✅ Đã lưu link đề cương!";
-      fb.className = "feedback text-success";
-    } catch(e) {
-      fb.textContent = "❌ Lỗi lưu đề cương.";
-      fb.className = "feedback text-danger";
-    }
-  });
-
-  // Import file HTML
-  document.getElementById("submitImport").addEventListener("click", async () => {
-    const subj = elImport.value;
-    const file = document.getElementById("fileImport").files[0];
-    const fb = document.getElementById("feedbackImport");
-    fb.textContent = "";
-    if (!subj || !file) {
-      fb.textContent = "❗ Chọn môn và chọn file HTML.";
-      fb.className = "feedback text-danger";
-      return;
-    }
-    const text = await file.text();
-    // Tách câu hỏi đơn giản: mỗi thẻ <p> là câu
-    const temp = document.createElement("div");
-    temp.innerHTML = text;
-    const ps = Array.from(temp.querySelectorAll("p"));
-    let count=0, errors=0;
-    for (let p of ps) {
-      const q = p.textContent.trim();
-      if (!q) continue;
-      try {
-        await addDoc(collection(db, "cau_hoi"), { mon_hoc: subj, question: q, created_at: new Date().toISOString() });
-        count++;
-      } catch (e) {
-        errors++;
-      }
-    }
-    fb.textContent = `✅ Lưu ${count} câu, lỗi ${errors}`;
-    fb.className = "feedback text-success";
-  });
-
-  // Manual thêm câu hỏi
-  document.getElementById("formManual").addEventListener("submit", async e => {
-    e.preventDefault();
-    const subj = elManual.value;
-    const qtext = document.getElementById("manualQuestionText").value.trim();
-    const fb = document.getElementById("feedbackManual");
-    fb.textContent = "";
-    if (!subj || !qtext) {
-      fb.textContent = "❗ Chọn môn và nhập câu hỏi.";
-      fb.className = "feedback text-danger";
-      return;
-    }
-    try {
-      await addDoc(collection(db, "cau_hoi"), { mon_hoc: subj, question: qtext, created_at: new Date().toISOString() });
-      fb.textContent = "✅ Thêm câu hỏi thành công!";
-      fb.className = "feedback text-success";
-    } catch (e) {
-      fb.textContent = "❌ Lỗi thêm câu hỏi.";
-      fb.className = "feedback text-danger";
-    }
-  });
-
-</script>
 </body>
 </html>
