@@ -530,8 +530,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!importedQuestions.length) { alert("Chưa có dữ liệu để lưu!"); return; }
     saveImportBtn.disabled = true;
     let success = 0, fail = 0, skip = 0;
+    // Lấy lại danh sách câu hỏi hiện tại cho kiểm tra trùng lặp mới nhất
+    const existSet = await loadQuestionsForSubject(mon_hoc_id);
     for (let q of importedQuestions) {
-      if(q.duplicate) { skip++; continue; }
+      if(q.duplicate || isDuplicateInSet({noi_dung: q.questionText, dap_an_dung: q.correctKey, lua_chon: q.lua_chon}, existSet)) {
+        skip++;
+        continue;
+      }
       await addDoc(collection(db, "cau_hoi"), {
         mon_hoc_id,
         noi_dung: q.questionText,
@@ -541,7 +546,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }).then(()=>success++).catch(()=>fail++);
     }
     alert(`Đã lưu ${success} câu hỏi${skip>0?`, bỏ qua ${skip} câu trùng`:''}${fail>0?`, lỗi ${fail} câu`:''}.`);
-    saveImportBtn.disabled = false;
+    // Reload lại trang sau khi lưu
+    window.location.reload();
   };
 
   // ==== Thêm thủ công ====
@@ -579,16 +585,9 @@ document.addEventListener("DOMContentLoaded", () => {
       lua_chon,
       dap_an_dung: correct
     });
-    manualQuestionForm.reset();
-    [manualQuestionImgPreview, manualRemoveQuestionImgBtn,
-      manualAnswerAImgPreview, manualRemoveAImgBtn,
-      manualAnswerBImgPreview, manualRemoveBImgBtn,
-      manualAnswerCImgPreview, manualRemoveCImgBtn,
-      manualAnswerDImgPreview, manualRemoveDImgBtn
-    ].forEach(el => { el.style.display = "none"; });
-    manualQImgFile = null; manualAImgFiles = [null,null,null,null];
-    manualQImgUrl = ""; manualAImgUrls = ["","","",""];
     alert("Đã thêm câu hỏi!");
+    // Reload lại trang sau khi lưu
+    window.location.reload();
   });
 
   // ==== Upload Đề cương ====
@@ -607,12 +606,13 @@ document.addEventListener("DOMContentLoaded", () => {
         file_url: fileUrl,
         uploaded_at: (new Date()).toISOString()
       });
-      syllabusForm.reset();
       alert("Đã lưu đề cương!");
+      // Reload lại trang sau khi lưu
+      window.location.reload();
     } catch (e) {
       alert("Lưu thất bại: " + e);
+      syllabusSubmitBtn.disabled = false;
     }
-    syllabusSubmitBtn.disabled = false;
   });
 });
 </script>
