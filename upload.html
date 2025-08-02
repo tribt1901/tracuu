@@ -29,7 +29,7 @@
     }
     .import-question-title {
       font-weight: 500;
-      color: #0d6efd; /* Changed color for better visibility */
+      color: #0d6efd;
     }
     .import-answer-correct {
       color: #198754;
@@ -69,7 +69,6 @@
     <option value="question">Upload Câu hỏi</option>
     <option value="syllabus">Upload Đề cương</option>
   </select>
-
   <div class="mode-section" id="uploadQuestionSection">
     <div id="questionUploadChoice" style="max-width:360px;">
       <button class="btn btn-primary me-2" id="questionImportHtmlBtn">Nhập từ file HTML Moodle</button>
@@ -287,32 +286,33 @@ document.addEventListener("DOMContentLoaded", () => {
   let importedQuestions = [];
   let allQuestionsForSubject = [];
 
-  // Chuẩn hóa để so sánh nội dung và đáp án
+  // Chuẩn hóa so sánh
   function normalizeCompareString(str) {
     return (str || "")
-      .replace(/\\\([^\)]*\\\)/g, '') // bỏ latex nếu cần
-      .replace(/[\s\r\n]+/g, ' ')     // bỏ xuống dòng, nhiều space -> 1 space
-      .replace(/[ ]/g, ' ')           // space unicode
+      .replace(/\\\([^\)]*\\\)/g, '') // bỏ latex
+      .replace(/[\s\r\n]+/g, ' ')
+      .replace(/[ ]/g, ' ')
       .trim()
       .toLowerCase();
   }
-  // So sánh 2 câu hỏi (1 câu hỏi mới, 1 câu trong DB)
-  function isQuestionDuplicate(q1, q2) {
+
+  // Hàm kiểm tra trùng: tất cả đáp án và nội dung giống thì chỉ trùng nếu đáp án đúng giống (so sánh nội dung)
+  function isQuestionTrulyDuplicate(q1, q2) {
+    // Nội dung câu hỏi phải giống
     if (normalizeCompareString(q1.noi_dung) !== normalizeCompareString(q2.noi_dung)) return false;
-    if ((q1.dap_an_dung || '').trim() !== (q2.dap_an_dung || '').trim()) return false;
+    // Tất cả đáp án phải giống
     const keys = ['a', 'b', 'c', 'd'];
     for (const k of keys) {
-      const ans1 = normalizeCompareString(q1.lua_chon?.[k]);
-      const ans2 = normalizeCompareString(q2.lua_chon?.[k]);
-      if (ans1 !== ans2) return false;
+      if (normalizeCompareString(q1.lua_chon?.[k]) !== normalizeCompareString(q2.lua_chon?.[k])) return false;
     }
-    return true;
+    // Đáp án đúng: so sánh nội dung đáp án đúng
+    const ans1 = normalizeCompareString(q1.lua_chon?.[q1.dap_an_dung]);
+    const ans2 = normalizeCompareString(q2.lua_chon?.[q2.dap_an_dung]);
+    return ans1 === ans2;
   }
-  // Kiểm tra trong 1 tập câu hỏi
   function isDuplicateInSet(question, existSet) {
-    return existSet.some(q => isQuestionDuplicate(question, q));
+    return existSet.some(q => isQuestionTrulyDuplicate(question, q));
   }
-  // Lấy đủ đáp án từ Firestore
   async function loadQuestionsForSubject(mon_hoc_id) {
     const qs = [];
     if(!mon_hoc_id) return [];
@@ -624,7 +624,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (manualAImgFiles[3]) dImg = await uploadToDrive(manualAImgFiles[3]);
     const existSet = await loadQuestionsForSubject(subjectId);
     const lua_chon = {a, aImg: aImg || "", b, bImg: bImg || "", c, cImg: cImg || "", d, dImg: dImg || ""};
-    // So sánh trùng với 4 đáp án
     if (isDuplicateInSet({noi_dung: qText, dap_an_dung: correct, lua_chon}, existSet)) {
       alert("Câu hỏi này đã tồn tại trong môn học với đáp án đúng giống nhau!");
       manualSubmitQuestionBtn.disabled = false;
