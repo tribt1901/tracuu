@@ -286,7 +286,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let importedQuestions = [];
   let allQuestionsForSubject = [];
 
-  // Chuẩn hóa so sánh chuỗi
   function normalizeCompareString(str) {
     return (str || "")
       .replace(/\\\([^\)]*\\\)/g, '') // bỏ latex
@@ -295,37 +294,34 @@ document.addEventListener("DOMContentLoaded", () => {
       .trim()
       .toLowerCase();
   }
-
-  // Nếu nội dung và đáp án giống, kiểm tra tiếp nội dung đáp án đúng!
+  function getNormalizedAnswers(lua_chon) {
+    // Trả về mảng nội dung đáp án đã chuẩn hóa, không quan trọng key
+    return ['a','b','c','d']
+      .map(k => normalizeCompareString(lua_chon?.[k]))
+      .filter(x => x);
+  }
   function isDuplicateInSet(question, existSet) {
-    // Chuẩn hóa nội dung câu hỏi và đáp án của câu hỏi cần lưu
+    // Chuẩn hóa nội dung câu hỏi và các đáp án
     const content = normalizeCompareString(question.noi_dung);
-    const a = normalizeCompareString(question.lua_chon?.a);
-    const b = normalizeCompareString(question.lua_chon?.b);
-    const c = normalizeCompareString(question.lua_chon?.c);
-    const d = normalizeCompareString(question.lua_chon?.d);
+    const answers = getNormalizedAnswers(question.lua_chon).sort();
     const correctContent = normalizeCompareString(question.lua_chon?.[question.dap_an_dung]);
-    // Lọc ra các câu trong db có nội dung và đáp án giống hệt
-    const sameContentOptions = existSet.filter(q =>
-      normalizeCompareString(q.noi_dung) === content &&
-      normalizeCompareString(q.lua_chon?.a) === a &&
-      normalizeCompareString(q.lua_chon?.b) === b &&
-      normalizeCompareString(q.lua_chon?.c) === c &&
-      normalizeCompareString(q.lua_chon?.d) === d
-    );
-    // Nếu có ít nhất 1 câu giống y chang về nội dung và đáp án, kiểm tra tiếp nội dung đáp án đúng
-    if (sameContentOptions.length) {
-      for (const q of sameContentOptions) {
-        // Lấy nội dung đáp án đúng của câu đã lưu trong db (theo key dap_an_dung của nó)
-        const dbCorrectContent = normalizeCompareString(q.lua_chon?.[q.dap_an_dung]);
-        if (dbCorrectContent === correctContent) {
-          // Đáp án đúng đã có, không lưu nữa
-          return true;
+    for (const q of existSet) {
+      const qContent = normalizeCompareString(q.noi_dung);
+      const qAnswers = getNormalizedAnswers(q.lua_chon).sort();
+      const qCorrectContent = normalizeCompareString(q.lua_chon?.[q.dap_an_dung]);
+      if (content !== qContent) continue;
+      if (answers.length !== qAnswers.length) continue;
+      let allAnswersMatch = true;
+      for (let i = 0; i < answers.length; ++i) {
+        if (answers[i] !== qAnswers[i]) {
+          allAnswersMatch = false;
+          break;
         }
       }
+      if (!allAnswersMatch) continue;
+      if (correctContent === qCorrectContent) return true; // Trùng
     }
-    // Không trùng (hoặc nội dung/đáp án khác; hoặc đáp án đúng khác)
-    return false;
+    return false; // Không trùng
   }
   async function loadQuestionsForSubject(mon_hoc_id) {
     const qs = [];
