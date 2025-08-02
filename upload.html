@@ -286,6 +286,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let importedQuestions = [];
   let allQuestionsForSubject = [];
+
+  // Chuẩn hóa để so sánh nội dung và đáp án
+  function normalizeCompareString(str) {
+    return (str || "")
+      .replace(/\\\([^\)]*\\\)/g, '') // bỏ latex nếu cần
+      .replace(/[\s\r\n]+/g, ' ')     // bỏ xuống dòng, nhiều space -> 1 space
+      .replace(/[ ]/g, ' ')           // space unicode
+      .trim()
+      .toLowerCase();
+  }
+  // So sánh 2 câu hỏi (1 câu hỏi mới, 1 câu trong DB)
+  function isQuestionDuplicate(q1, q2) {
+    if (normalizeCompareString(q1.noi_dung) !== normalizeCompareString(q2.noi_dung)) return false;
+    if ((q1.dap_an_dung || '').trim() !== (q2.dap_an_dung || '').trim()) return false;
+    const keys = ['a', 'b', 'c', 'd'];
+    for (const k of keys) {
+      const ans1 = normalizeCompareString(q1.lua_chon?.[k]);
+      const ans2 = normalizeCompareString(q2.lua_chon?.[k]);
+      if (ans1 !== ans2) return false;
+    }
+    return true;
+  }
+  // Kiểm tra trong 1 tập câu hỏi
+  function isDuplicateInSet(question, existSet) {
+    return existSet.some(q => isQuestionDuplicate(question, q));
+  }
+  // Lấy đủ đáp án từ Firestore
   async function loadQuestionsForSubject(mon_hoc_id) {
     const qs = [];
     if(!mon_hoc_id) return [];
@@ -293,20 +320,17 @@ document.addEventListener("DOMContentLoaded", () => {
     snapshot.forEach(docSnap => {
       const data = docSnap.data();
       qs.push({
-        noi_dung: (data.noi_dung || '').trim(),
-        dap_an_dung: data.dap_an_dung,
-        dap_an: (data.lua_chon && data.lua_chon[data.dap_an_dung]) ? data.lua_chon[data.dap_an_dung] : ''
+        noi_dung: data.noi_dung || '',
+        dap_an_dung: data.dap_an_dung || '',
+        lua_chon: {
+          a: data.lua_chon?.a || '',
+          b: data.lua_chon?.b || '',
+          c: data.lua_chon?.c || '',
+          d: data.lua_chon?.d || '',
+        }
       });
     });
     return qs;
-  }
-  function isDuplicateInSet(question, existSet) {
-    return existSet.some(
-      x =>
-        x.noi_dung === question.noi_dung.trim() &&
-        x.dap_an_dung === question.dap_an_dung &&
-        x.dap_an === question.lua_chon[question.dap_an_dung]
-    );
   }
 
   document.getElementById("questionImportHtmlBtn").onclick = () => {
@@ -460,32 +484,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const docx = parser.parseFromString(html, "text/html");
       importedQuestions = [];
       let rawQuestions = [];
-      
-      // =================================================================
-      // FIXED HERE: Changed '.que' to '.queform' to match the new Moodle HTML structure
-      // =================================================================
-      docx.querySelectorAll('.queform, .que').forEach(q => { // Added .queform for compatibility
-        // Câu hỏi
+
+      docx.querySelectorAll('.queform, .que').forEach(q => {
         let qtextNode = q.querySelector('.qtext');
         let questionText = extractTextAndLaTeX(qtextNode);
 
-        // Đáp án
         const answerNodes = q.querySelectorAll('.answer > div');
         const answers = [];
         answerNodes.forEach((ans, idx) => {
-          let ansNode = ans.querySelector('.flex-fill, div.ml-1, .specificfeedback'); // Added .specificfeedback for another possible structure
-          // If the primary selector fails, fall back to the answer div itself
-          if (!ansNode) ansNode = ans; 
+          let ansNode = ans.querySelector('.flex-fill, div.ml-1, .specificfeedback');
+          if (!ansNode) ansNode = ans;
           answers.push(extractTextAndLaTeX(ansNode));
         });
 
-        // Đáp án đúng
         let correct = '';
         let correctIdx = -1;
         let correctKey = '';
         let rightAnswerText = q.querySelector('.rightanswer')?.innerText || '';
         let match = rightAnswerText.match(/(?:The correct answer is:|Câu trả lời đúng là:)\s(.+)$/);
-        
+
         if (match) {
           let correctValue = match[1].trim();
           correctIdx = answers.findIndex(a =>
@@ -504,7 +521,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           });
         }
-        
+
         if (questionText && answers.length >= 2 && correctKey) {
             rawQuestions.push({
               questionText, answers,
@@ -550,7 +567,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const mon_hoc_id = subjectDropdownImport.value;
     if (!mon_hoc_id) { alert("Vui lòng chọn môn học để lưu!"); return; }
     if (!importedQuestions.length) { alert("Chưa có dữ liệu để lưu!"); return; }
-    
+
     const questionsToSave = importedQuestions.filter(q => !q.duplicate);
     if(questionsToSave.length === 0) {
         alert("Không có câu hỏi mới nào để lưu (tất cả đều bị trùng).");
@@ -561,8 +578,8 @@ document.addEventListener("DOMContentLoaded", () => {
     saveImportBtn.textContent = "Đang lưu...";
 
     let success = 0, fail = 0, skip = importedQuestions.length - questionsToSave.length;
-    const existSet = await loadQuestionsForSubject(mon_hoc_id); // Re-fetch to be safe
-    
+    const existSet = await loadQuestionsForSubject(mon_hoc_id);
+
     for (let q of questionsToSave) {
       if(isDuplicateInSet({noi_dung: q.questionText, dap_an_dung: q.correctKey, lua_chon: q.lua_chon}, existSet)) {
         skip++;
@@ -607,6 +624,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (manualAImgFiles[3]) dImg = await uploadToDrive(manualAImgFiles[3]);
     const existSet = await loadQuestionsForSubject(subjectId);
     const lua_chon = {a, aImg: aImg || "", b, bImg: bImg || "", c, cImg: cImg || "", d, dImg: dImg || ""};
+    // So sánh trùng với 4 đáp án
     if (isDuplicateInSet({noi_dung: qText, dap_an_dung: correct, lua_chon}, existSet)) {
       alert("Câu hỏi này đã tồn tại trong môn học với đáp án đúng giống nhau!");
       manualSubmitQuestionBtn.disabled = false;
