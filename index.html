@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <title>Tra cứu câu hỏi</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="icon" href="/favicon.ico">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     body {
@@ -22,185 +22,193 @@
       margin: 6px 0 6px 16px;
       display: block;
     }
+    .online-counter-box {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      border-left: 5px solid #4caf50;
+      padding: 10px 16px;
+      margin: 20px auto 10px;
+      border-radius: 6px;
+      max-width: 600px;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body class="bg-light">
-  <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color:#4caf50">
-    <div class="container-fluid">
-      <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
-          <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
-          <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
-          <li class="nav-item"><a class="nav-link text-white" href="/outline">Đề cương Đóng góp</a></li>
-        </ul>
-      </div>
-    </div>
-  </nav>
-<div id="resultSection">
-      <h6 class="mb-3 text-danger fw-bold">
-        🟢 Hiện có <span id="online-counter">0</span> người đang truy cập hệ thống.
-      </h6>
-      <div id="resultList"></div>
-  <div class="container py-4">
-    <div class="card shadow-sm mb-4">
-      <div class="card-body">
-        <h5 class="card-title">🔍 Tra cứu câu hỏi</h5>
-        <form id="searchForm">
-          <div class="mb-3">
-            <label class="form-label">Chọn môn học</label>
-            <select id="subjectSelect" class="form-select"></select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Từ khóa</label>
-            <input id="keywordInput" class="form-control" placeholder="Nhập từ khóa...">
-          </div>
-          <button type="submit" class="btn btn-success w-100">🔎 Tìm kiếm</button>
-        </form>
-      </div>
-    </div>
 
-    <div id="resultSection">
-    //  <h6 class="mb-3 text-danger fw-bold">
-      //  🟢 Hiện có <span id="online-counter">0</span> người đang truy cập hệ thống.
-     // </h6>
-      <h6 class="mb-3">📋 Kết quả tìm thấy: <span id="resultCount">0</span></h6>
-      <div id="resultList"></div>
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color:#4caf50">
+  <div class="container-fluid">
+    <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/outline">Đề cương Đóng góp</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ✅ Hộp hiển thị số người online -->
+<div class="online-counter-box text-center">
+  🟢 Hiện có <span id="online-counter">0</span> người đang truy cập hệ thống.
+</div>
+
+<div class="container py-4">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title">🔍 Tra cứu câu hỏi</h5>
+      <form id="searchForm">
+        <div class="mb-3">
+          <label class="form-label">Chọn môn học</label>
+          <select id="subjectSelect" class="form-select"></select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Từ khóa</label>
+          <input id="keywordInput" class="form-control" placeholder="Nhập từ khóa...">
+        </div>
+        <button type="submit" class="btn btn-success w-100">🔎 Tìm kiếm</button>
+      </form>
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { getDatabase, ref, onValue, onDisconnect, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  <div id="resultSection">
+    <h6 class="mb-3">📋 Kết quả tìm thấy: <span id="resultCount">0</span></h6>
+    <div id="resultList"></div>
+  </div>
+</div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
-      authDomain: "tracuu-d3ee9.firebaseapp.com",
-      projectId: "tracuu-d3ee9",
-      storageBucket: "tracuu-d3ee9.appspot.com",
-      messagingSenderId: "593568604435",
-      appId: "1:593568604435:web:9a5145457a8ee734143ae6",
-      measurementId: "G-R0M6Y502NP"
-    };
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getDatabase, ref, onValue, onDisconnect, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const rtdb = getDatabase(app, "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app");
+  const firebaseConfig = {
+    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
+    authDomain: "tracuu-d3ee9.firebaseapp.com",
+    projectId: "tracuu-d3ee9",
+    storageBucket: "tracuu-d3ee9.appspot.com",
+    messagingSenderId: "593568604435",
+    appId: "1:593568604435:web:9a5145457a8ee734143ae6",
+    measurementId: "G-R0M6Y502NP"
+  };
 
-    const onlineCounterEl = document.getElementById('online-counter');
-    const connectionsRef = ref(rtdb, 'connections');
-    const myConnectionRef = push(connectionsRef);
-    onDisconnect(myConnectionRef).remove();
-    set(myConnectionRef, true);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const rtdb = getDatabase(app, "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app");
 
-    // Fix lỗi snapshot.numChildren is not a function
-    onValue(connectionsRef, (snapshot) => {
-      let count = 0;
-      if (snapshot.exists() && typeof snapshot.val() === 'object') {
-        count = Object.keys(snapshot.val()).length;
+  const onlineCounterEl = document.getElementById('online-counter');
+  const connectionsRef = ref(rtdb, 'connections');
+  const myConnectionRef = push(connectionsRef);
+  onDisconnect(myConnectionRef).remove();
+  set(myConnectionRef, true);
+
+  onValue(connectionsRef, (snapshot) => {
+    let count = 0;
+    if (snapshot.exists() && typeof snapshot.val() === 'object') {
+      count = Object.keys(snapshot.val()).length;
+    }
+    onlineCounterEl.textContent = count;
+  });
+
+  const subjectSelect = document.getElementById("subjectSelect");
+  const searchForm = document.getElementById("searchForm");
+  const keywordInput = document.getElementById("keywordInput");
+  const resultList = document.getElementById("resultList");
+  const resultCount = document.getElementById("resultCount");
+
+  async function loadSubjects() {
+    subjectSelect.innerHTML = "";
+    const snapshot = await getDocs(collection(db, "mon_hoc"));
+    snapshot.forEach(doc => {
+      const option = document.createElement("option");
+      option.value = doc.id;
+      option.textContent = doc.data().ten_mon;
+      subjectSelect.appendChild(option);
+    });
+  }
+
+  function convertToThumbnail(url) {
+    return url;
+  }
+
+  function renderQuestion(data) {
+    const card = document.createElement("div");
+    card.className = "card mb-3 shadow-sm";
+    const cardBody = document.createElement("div");
+    cardBody.className = "card-body";
+
+    const questionP = document.createElement("p");
+    questionP.className = "mb-2 fw-semibold";
+    questionP.innerHTML = "📌 " + data.noi_dung;
+    cardBody.appendChild(questionP);
+
+    if (data.noi_dung_img) {
+      const img = document.createElement("img");
+      img.src = convertToThumbnail(data.noi_dung_img);
+      img.className = "question-img";
+      img.alt = "Ảnh câu hỏi";
+      cardBody.appendChild(img);
+    }
+
+    const list = document.createElement("ul");
+    list.className = "list-group list-group-flush";
+    const choices = data.lua_chon || {};
+
+    for (const key of ["a", "b", "c", "d"]) {
+      if (choices[key]) {
+        const item = document.createElement("li");
+        item.className = "list-group-item";
+        let content = `${key}. ${choices[key]}`;
+        if (choices[key + "Img"]) {
+          content += `<br><img src="${convertToThumbnail(choices[key + "Img"])}" class="answer-img" alt="Ảnh đáp án ${key}">`;
+        }
+        if (key === data.dap_an_dung) {
+          item.classList.add("answer-correct");
+          content = `✅ ${content}`;
+        }
+        item.innerHTML = content;
+        list.appendChild(item);
       }
-      onlineCounterEl.textContent = count;
+    }
+
+    cardBody.appendChild(list);
+    card.appendChild(cardBody);
+    return card;
+  }
+
+  searchForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    resultList.innerHTML = "";
+    const subjectId = subjectSelect.value;
+    const keyword = keywordInput.value.trim().toLowerCase();
+    let count = 0;
+
+    const snapshot = await getDocs(collection(db, "cau_hoi"));
+    snapshot.forEach(doc => {
+      const q = doc.data();
+      const matchKeyword =
+        !keyword ||
+        (q.noi_dung && q.noi_dung.toLowerCase().includes(keyword)) ||
+        (q.lua_chon && Object.values(q.lua_chon).some(val => typeof val === 'string' && val.toLowerCase().includes(keyword)));
+
+      if (q.mon_hoc_id === subjectId && matchKeyword) {
+        resultList.appendChild(renderQuestion(q));
+        count++;
+      }
     });
 
-    const subjectSelect = document.getElementById("subjectSelect");
-    const searchForm = document.getElementById("searchForm");
-    const keywordInput = document.getElementById("keywordInput");
-    const resultList = document.getElementById("resultList");
-    const resultCount = document.getElementById("resultCount");
+    resultCount.textContent = count;
+    if (window.MathJax && MathJax.typeset) MathJax.typeset();
+  });
 
-    async function loadSubjects() {
-      subjectSelect.innerHTML = "";
-      const snapshot = await getDocs(collection(db, "mon_hoc"));
-      snapshot.forEach(doc => {
-        const option = document.createElement("option");
-        option.value = doc.id;
-        option.textContent = doc.data().ten_mon;
-        subjectSelect.appendChild(option);
-      });
-    }
+  loadSubjects();
+</script>
 
-    function convertToThumbnail(url) {
-      return url;
-    }
-
-    function renderQuestion(data) {
-      const card = document.createElement("div");
-      card.className = "card mb-3 shadow-sm";
-      const cardBody = document.createElement("div");
-      cardBody.className = "card-body";
-
-      const questionP = document.createElement("p");
-      questionP.className = "mb-2 fw-semibold";
-      questionP.innerHTML = "📌 " + data.noi_dung;
-      cardBody.appendChild(questionP);
-
-      if (data.noi_dung_img) {
-        const img = document.createElement("img");
-        img.src = convertToThumbnail(data.noi_dung_img);
-        img.className = "question-img";
-        img.alt = "Ảnh câu hỏi";
-        cardBody.appendChild(img);
-      }
-
-      const list = document.createElement("ul");
-      list.className = "list-group list-group-flush";
-      const choices = data.lua_chon || {};
-
-      for (const key of ["a", "b", "c", "d"]) {
-        if (choices[key]) {
-          const item = document.createElement("li");
-          item.className = "list-group-item";
-          let content = `${key}. ${choices[key]}`;
-          if (choices[key + "Img"]) {
-            content += `<br><img src="${convertToThumbnail(choices[key + "Img"])}" class="answer-img" alt="Ảnh đáp án ${key}">`;
-          }
-          if (key === data.dap_an_dung) {
-            item.classList.add("answer-correct");
-            content = `✅ ${content}`;
-          }
-          item.innerHTML = content;
-          list.appendChild(item);
-        }
-      }
-
-      cardBody.appendChild(list);
-      card.appendChild(cardBody);
-      return card;
-    }
-
-    searchForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      resultList.innerHTML = "";
-      const subjectId = subjectSelect.value;
-      const keyword = keywordInput.value.trim().toLowerCase();
-      let count = 0;
-
-      const snapshot = await getDocs(collection(db, "cau_hoi"));
-      snapshot.forEach(doc => {
-        const q = doc.data();
-        const matchKeyword =
-          !keyword ||
-          (q.noi_dung && q.noi_dung.toLowerCase().includes(keyword)) ||
-          (q.lua_chon && Object.values(q.lua_chon).some(val => typeof val === 'string' && val.toLowerCase().includes(keyword)));
-
-        if (q.mon_hoc_id === subjectId && matchKeyword) {
-          resultList.appendChild(renderQuestion(q));
-          count++;
-        }
-      });
-
-      resultCount.textContent = count;
-      if (window.MathJax && MathJax.typeset) MathJax.typeset();
-    });
-
-    loadSubjects();
-  </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
