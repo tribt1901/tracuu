@@ -12,21 +12,9 @@
     .subject-btns .btn { margin-right: 6px; }
     .nav-link, .navbar-brand { font-family: Roboto, Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
-    #pdf-content { display: none; }
-    #pdf-content .pdf-title {
-      text-align: center; font-size: 22px; font-weight: 700;
-      margin-bottom: 12px; margin-top: 10px; font-family: Roboto, Arial, sans-serif;
-    }
-    #pdf-content .pdf-table-wrap {
-      width: 100%; max-width: 100%; box-sizing: border-box; display: flex; justify-content: center;
-    }
-    /* AutoTable styles are set in script */
     .loading-math { color: #4caf50; font-weight: 700; margin: 8px 0; text-align: center; }
-    @media print {
-      #pdf-content, .pdf-table-wrap, body, html {
-        width: 100% !important; max-width: 100% !important; margin: 0; padding: 0; box-sizing: border-box;
-      }
-    }
+    /* Hide PDF content div since jsPDF handles export */
+    #pdf-content { display: none; }
   </style>
 </head>
 <body class="bg-light">
@@ -62,9 +50,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- jsPDF and AutoTable -->
+<!-- jsPDF and jsPDF-AutoTable -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<!-- Nhúng file font Roboto đã convert (phải để cùng thư mục với file html!) -->
+<script src="Roboto-Regular-normal.js"></script>
 <script type="module">
 // ==== FIREBASE CONFIG ====
 const firebaseConfig = {
@@ -151,26 +141,12 @@ async function exportTXT(subjectId, subjectName) {
   saveAs(s, `DeCuong_${subjectName.replace(/\s+/g, "_")}.txt`);
 }
 
-// ==== KaTeX RENDER ====
-function renderKatexForElement(el) {
-  if (el && window.renderMathInElement) {
-    window.renderMathInElement(el, {
-      delimiters: [
-        { left: "\\[", right: "\\]", display: true },
-        { left: "\\(", right: "\\)", display: false }
-      ],
-      throwOnError: false
-    });
-  }
-}
-
-// ==== EXPORT PDF with jsPDF-AutoTable ====
+// ==== EXPORT PDF with jsPDF-AutoTable và font Roboto Unicode ====
+// Bạn cần đặt file Roboto-Regular-normal.js cùng thư mục với file này!
 async function exportPDF(subjectId, subjectName) {
   const e = await getQuestionsBySubject(subjectId);
   if (!e || !e.length) return void alert("Không có dữ liệu câu hỏi cho môn này.");
   document.getElementById("loading-mathjax").style.display = "block";
-
-  // Chuẩn bị dữ liệu
   const a = e.map(q => [
     getFirstWord(q.noi_dung),
     stripHTML(q.noi_dung),
@@ -178,28 +154,29 @@ async function exportPDF(subjectId, subjectName) {
   ]);
   a.sort((x, y) => x[0].localeCompare(y[0], "vi"));
 
-  // Nếu có công thức toán học, render KaTeX ra html tạm để xuất ảnh kèm
-  // (AutoTable không hỗ trợ math trực tiếp, nếu dùng nhiều công thức thì cần convert sang ảnh hoặc text trước)
-
-  // Tạo PDF
+  // jsPDF với font Roboto Unicode đã nhúng
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-  doc.setFont("helvetica", "normal");
+  // Thêm font Roboto Unicode từ file convert js đã nhúng
+  doc.addFileToVFS("Roboto-Regular.ttf", RobotoRegular);
+  doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+  doc.setFont("Roboto", "normal");
   doc.setFontSize(12);
+
   doc.text(`Đề cương môn: ${subjectName}`, 105, 15, { align: "center" });
 
-  // Định nghĩa bảng
   doc.autoTable({
     startY: 22,
     head: [["KEY", "Câu hỏi", "Đáp án đúng"]],
     body: a,
     styles: {
-      cellPadding: 2.5,
-      font: "helvetica",
+      font: "Roboto",
+      fontStyle: "normal",
+      fontSize: 11,
+      cellPadding: 2,
       overflow: "linebreak",
       halign: "left",
       valign: "middle",
-      fontSize: 11,
       minCellHeight: 8
     },
     headStyles: {
@@ -212,9 +189,6 @@ async function exportPDF(subjectId, subjectName) {
       0: { cellWidth: 25, halign: "center" },
       1: { cellWidth: 100 },
       2: { cellWidth: 60 }
-    },
-    didDrawPage: function (data) {
-      // Custom header/footer nếu cần
     }
   });
 
