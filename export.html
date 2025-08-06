@@ -20,49 +20,12 @@
     #pdf-content .pdf-table-wrap {
       width: 100%; max-width: 100%; box-sizing: border-box; display: flex; justify-content: center;
     }
-    #pdf-content table {
-      border: 2px solid #222; border-collapse: collapse; margin: 0 auto;
-      width: 100%; max-width: 690px; min-width: 300px;
-      table-layout: fixed; background: #fff; font-size: 15px; box-sizing: border-box;
-      word-break: break-word; overflow-wrap: break-word;
-      page-break-inside: auto;
-    }
-    #pdf-content td, #pdf-content th {
-      border: 1.5px solid #222 !important;
-      padding: 6px 8px;
-      word-break: break-word !important;
-      overflow-wrap: break-word !important;
-      white-space: pre-line !important;
-      vertical-align: middle;
-      background: #fff;
-      box-sizing: border-box !important;
-      max-width: 360px;
-      overflow: hidden;
-      page-break-inside: avoid !important;
-      page-break-after: auto !important;
-    }
-    #pdf-content th {
-      background: #fff; font-weight: 700; text-align: center;
-    }
-    #pdf-content td.stt, #pdf-content th.stt {
-      width: 10%; min-width: 38px; max-width: 60px; text-align: center; font-size: 13px;
-    }
-    #pdf-content td.question, #pdf-content th.question {
-      width: 49%; min-width: 110px; max-width: 380px; word-break: break-word; overflow-wrap: break-word;
-    }
-    #pdf-content td.answer, #pdf-content th.answer {
-      width: 41%; min-width: 100px; max-width: 250px; word-break: break-word; overflow-wrap: break-word;
-    }
-    #pdf-content tr { height: 1px; page-break-inside: avoid !important;}
-    #pdf-content table, #pdf-content td, #pdf-content th, #pdf-content tr {
-      page-break-inside: avoid !important; break-inside: avoid !important;
-    }
+    /* AutoTable styles are set in script */
     .loading-math { color: #4caf50; font-weight: 700; margin: 8px 0; text-align: center; }
     @media print {
-      #pdf-content, .pdf-table-wrap, body, html, table {
+      #pdf-content, .pdf-table-wrap, body, html {
         width: 100% !important; max-width: 100% !important; margin: 0; padding: 0; box-sizing: border-box;
       }
-      #pdf-content table { max-width: 690px !important; }
     }
   </style>
 </head>
@@ -95,11 +58,13 @@
 <div id="loading-mathjax" class="loading-math" style="display:none">Đang render công thức toán học, vui lòng chờ...</div>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- jsPDF and AutoTable -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script type="module">
 // ==== FIREBASE CONFIG ====
 const firebaseConfig = {
@@ -199,69 +164,62 @@ function renderKatexForElement(el) {
   }
 }
 
-// ==== EXPORT PDF ====
+// ==== EXPORT PDF with jsPDF-AutoTable ====
 async function exportPDF(subjectId, subjectName) {
   const e = await getQuestionsBySubject(subjectId);
   if (!e || !e.length) return void alert("Không có dữ liệu câu hỏi cho môn này.");
   document.getElementById("loading-mathjax").style.display = "block";
-  // Prepare data
-  const a = e.map(q => ({
-    stt: getFirstWord(q.noi_dung),
-    question: q.noi_dung ? String(q.noi_dung) : "",
-    answer: getAnswer(q) ? String(getAnswer(q)) : ""
-  }));
-  a.sort((x, y) => x.stt.localeCompare(y.stt, "vi"));
-  // HTML table duy nhất, không chia nhỏ!
-  let rows = '';
-  a.forEach(t => {
-    rows += `<tr>
-      <td class="stt">${t.stt}</td>
-      <td class="question">${t.question}</td>
-      <td class="answer"><div>${t.answer}</div></td>
-    </tr>`;
+
+  // Chuẩn bị dữ liệu
+  const a = e.map(q => [
+    getFirstWord(q.noi_dung),
+    stripHTML(q.noi_dung),
+    getAnswer(q)
+  ]);
+  a.sort((x, y) => x[0].localeCompare(y[0], "vi"));
+
+  // Nếu có công thức toán học, render KaTeX ra html tạm để xuất ảnh kèm
+  // (AutoTable không hỗ trợ math trực tiếp, nếu dùng nhiều công thức thì cần convert sang ảnh hoặc text trước)
+
+  // Tạo PDF
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.text(`Đề cương môn: ${subjectName}`, 105, 15, { align: "center" });
+
+  // Định nghĩa bảng
+  doc.autoTable({
+    startY: 22,
+    head: [["KEY", "Câu hỏi", "Đáp án đúng"]],
+    body: a,
+    styles: {
+      cellPadding: 2.5,
+      font: "helvetica",
+      overflow: "linebreak",
+      halign: "left",
+      valign: "middle",
+      fontSize: 11,
+      minCellHeight: 8
+    },
+    headStyles: {
+      fillColor: [76, 175, 80],
+      textColor: 255,
+      fontStyle: "bold",
+      halign: "center"
+    },
+    columnStyles: {
+      0: { cellWidth: 25, halign: "center" },
+      1: { cellWidth: 100 },
+      2: { cellWidth: 60 }
+    },
+    didDrawPage: function (data) {
+      // Custom header/footer nếu cần
+    }
   });
-  const s = document.getElementById("pdf-content");
-  s.innerHTML = `<div class="pdf-title">Đề cương môn: ${subjectName}</div>
-    <div class="pdf-table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th class="stt">KEY</th>
-          <th class="question">Câu hỏi</th>
-          <th class="answer">Đáp án đúng</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>
-    </div>`;
-  s.style.display = "block";
-  // Đảm bảo render xong math
-  renderKatexForElement(s);
-  // Đợi một lúc cho chắc chắn
-  setTimeout(async () => {
-    const opt = {
-      margin: [10, 10, 10, 10],
-      filename: `DeCuong_${subjectName.replace(/\s+/g, "_")}.pdf`,
-      html2canvas: {
-        scale: 3,
-        useCORS: true,
-        dpi: 192,
-        logging: false,
-        scrollY: 0
-      },
-      jsPDF: {
-        unit: "mm",
-        format: "a4",
-        orientation: "portrait"
-      },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-    await html2pdf().set(opt).from(s).save();
-    s.style.display = "none";
-    document.getElementById("loading-mathjax").style.display = "none";
-  }, 700);
+
+  doc.save(`DeCuong_${subjectName.replace(/\s+/g, "_")}.pdf`);
+  document.getElementById("loading-mathjax").style.display = "none";
 }
 
 // ==== INIT ====
