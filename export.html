@@ -13,7 +13,6 @@
     .nav-link, .navbar-brand { font-family: Roboto, Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
     .loading-math { color: #4caf50; font-weight: 700; margin: 8px 0; text-align: center; }
-    /* Hide PDF content div since jsPDF handles export */
     #pdf-content { display: none; }
   </style>
 </head>
@@ -53,7 +52,7 @@
 <!-- jsPDF and jsPDF-AutoTable -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<!-- Nhúng file font Roboto đã convert (phải để cùng thư mục với file html!) -->
+<!-- Nhúng file font Roboto đã convert (bắt buộc phải có trong repo) -->
 <script src="Roboto-Regular-normal.js"></script>
 <script type="module">
 // ==== FIREBASE CONFIG ====
@@ -142,7 +141,6 @@ async function exportTXT(subjectId, subjectName) {
 }
 
 // ==== EXPORT PDF with jsPDF-AutoTable và font Roboto Unicode ====
-// Bạn cần đặt file Roboto-Regular-normal.js cùng thư mục với file này!
 async function exportPDF(subjectId, subjectName) {
   const e = await getQuestionsBySubject(subjectId);
   if (!e || !e.length) return void alert("Không có dữ liệu câu hỏi cho môn này.");
