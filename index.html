@@ -21,10 +21,6 @@
         margin: 6px 0 6px 16px;
         display: block;
     }
-    /* Thêm style để mục online không bị click */
-    .online-indicator {
-        pointer-events: none;
-    }
 </style>
 </head>
 <body class="bg-light">
@@ -36,11 +32,6 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link text-white online-indicator" href="#">
-                        🟢 Đang online: <span id="online-counter">0</span>
-                    </a>
-                </li>
                 <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
                 <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
                 <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
@@ -67,6 +58,10 @@
         </div>
     </div>
     <div id="resultSection">
+        <h6 class="mb-3 text-danger fw-bold">
+            🟢 Hiện có <span id="online-counter">0</span> người đang truy cập hệ thống.
+        </h6>
+        
         <h6 class="mb-3">📋 Kết quả tìm thấy: <span id="resultCount">0</span></h6>
         <div id="resultList"></div>
     </div>
@@ -75,7 +70,6 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    // *** 1. IMPORT CÁC HÀM CỦA REALTIME DATABASE ***
     import { getDatabase, ref, onValue, onDisconnect, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -88,42 +82,25 @@
         measurementId: "G-R0M6Y502NP"
     };
 
-    function convertToThumbnail(e) {
-        if (!e) return "";
-        const t = e.match(/uc\?id=([a-zA-Z0-9_-]{20,})/);
-        if (t) return `https://drive.google.com/thumbnail?id=${t[1]}`;
-        const n = e.match(/id=([a-zA-Z0-9_-]{20,})/);
-        return n ? `https://drive.google.com/thumbnail?id=${n[1]}` : e
-    }
-
     const app = initializeApp(firebaseConfig);
-    // Firestore (cơ sở dữ liệu cũ của bạn)
     const db = getFirestore(app);
     
-    // *** 2. KHỞI TẠO REALTIME DATABASE VÀ CÁC BIẾN CẦN THIẾT ***
+    // --- PHẦN LOGIC ĐẾM NGƯỜI DÙNG ONLINE ---
     const rtdb = getDatabase(app, "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app");
     const onlineCounterEl = document.getElementById('online-counter');
 
-    // Tham chiếu đến một "thư mục" trong Realtime DB để lưu trạng thái online
-    const presenceRef = ref(rtdb, 'presence');
+    // **SỬA LỖI**: Thay đổi đường dẫn từ 'presence' thành 'connections' để khớp với Rules
+    const connectionsRef = ref(rtdb, 'connections');
     
-    // Lắng nghe sự thay đổi trong 'presence' và cập nhật số đếm
-    onValue(presenceRef, (snapshot) => {
+    onValue(connectionsRef, (snapshot) => {
         const count = snapshot.exists() ? snapshot.numChildren() : 0;
         onlineCounterEl.textContent = count;
     });
     
-    // Tạo một key duy nhất cho kết nối của người dùng hiện tại
-    const myConnectionRef = push(presenceRef);
-    
-    // Thiết lập hành động TỰ ĐỘNG XÓA key này khi người dùng ngắt kết nối
-    // Đây là lệnh được gửi tới server Firebase, nên nó sẽ chạy kể cả khi trình duyệt bị crash
+    const myConnectionRef = push(connectionsRef);
     onDisconnect(myConnectionRef).remove();
-    
-    // Đánh dấu người dùng hiện tại là đang online
     set(myConnectionRef, true);
     
-
     // --- PHẦN CODE CŨ CỦA BẠN GIỮ NGUYÊN ---
     const subjectSelect = document.getElementById("subjectSelect");
     const searchForm = document.getElementById("searchForm");
