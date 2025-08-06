@@ -25,6 +25,7 @@
       width: 100%; max-width: 690px; min-width: 300px;
       table-layout: fixed; background: #fff; font-size: 15px; box-sizing: border-box;
       word-break: break-word; overflow-wrap: break-word;
+      page-break-inside: auto;
     }
     #pdf-content td, #pdf-content th {
       border: 1.5px solid #222 !important;
@@ -37,6 +38,8 @@
       box-sizing: border-box !important;
       max-width: 360px;
       overflow: hidden;
+      page-break-inside: avoid !important;
+      page-break-after: auto !important;
     }
     #pdf-content th {
       background: #fff; font-weight: 700; text-align: center;
@@ -50,7 +53,7 @@
     #pdf-content td.answer, #pdf-content th.answer {
       width: 41%; min-width: 100px; max-width: 250px; word-break: break-word; overflow-wrap: break-word;
     }
-    #pdf-content tr { height: 1px; }
+    #pdf-content tr { height: 1px; page-break-inside: avoid !important;}
     #pdf-content table, #pdf-content td, #pdf-content th, #pdf-content tr {
       page-break-inside: avoid !important; break-inside: avoid !important;
     }
@@ -208,34 +211,31 @@ async function exportPDF(subjectId, subjectName) {
     answer: getAnswer(q) ? String(getAnswer(q)) : ""
   }));
   a.sort((x, y) => x.stt.localeCompare(y.stt, "vi"));
-  // CHIA BẢNG thành nhiều bảng nhỏ nếu > 20 dòng (fix lỗi tràn trang)
-  const chunkSize = 20;
-  let htmlTables = '';
-  for (let i = 0; i < a.length; i += chunkSize) {
-    let rows = '';
-    a.slice(i, i + chunkSize).forEach(t => {
-      rows += `<tr>
-        <td class="stt">${t.stt}</td>
-        <td class="question">${t.question}</td>
-        <td class="answer"><div>${t.answer}</div></td>
-      </tr>`;
-    });
-    htmlTables += `
-      <div class="pdf-table-wrap"><table>
-        <thead>
-          <tr>
-            <th class="stt">KEY</th>
-            <th class="question">Câu hỏi</th>
-            <th class="answer">Đáp án đúng</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table></div><br style="page-break-after:always;" />`;
-  }
+  // HTML table duy nhất, không chia nhỏ!
+  let rows = '';
+  a.forEach(t => {
+    rows += `<tr>
+      <td class="stt">${t.stt}</td>
+      <td class="question">${t.question}</td>
+      <td class="answer"><div>${t.answer}</div></td>
+    </tr>`;
+  });
   const s = document.getElementById("pdf-content");
-  s.innerHTML = `<div class="pdf-title">Đề cương môn: ${subjectName}</div>` + htmlTables;
+  s.innerHTML = `<div class="pdf-title">Đề cương môn: ${subjectName}</div>
+    <div class="pdf-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="stt">KEY</th>
+          <th class="question">Câu hỏi</th>
+          <th class="answer">Đáp án đúng</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+    </div>`;
   s.style.display = "block";
   // Đảm bảo render xong math
   renderKatexForElement(s);
