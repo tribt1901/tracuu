@@ -63,6 +63,10 @@
     </div>
   </div>
 </nav>
+  <!-- ✅ Hộp hiển thị số người online -->
+<div class="online-counter-box text-center" style="background-color: #e8f5e9; color: #2e7d32; border-left: 5px solid #4caf50; padding: 10px 16px; margin: 20px auto 10px; border-radius: 6px; max-width: 600px; font-weight: 500;">
+  🟢 Hiện có <span id="online-counter">0</span> người đang truy cập hệ thống.
+</div>
 <div class="container py-4">
   <h3 class="mb-4">Chọn loại upload:</h3>
   <select class="form-select mb-4 subject-scroll-select" id="uploadTypeSelect" style="max-width:360px;">
@@ -158,6 +162,7 @@
   </div>
 </div>
 <script type="module">
+import { getDatabase, ref, onValue, onDisconnect, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 document.addEventListener("DOMContentLoaded", () => {
@@ -172,6 +177,23 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const rtdb = getDatabase(app, "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app");
+
+const onlineCounterEl = document.getElementById('online-counter');
+const connectionsRef = ref(rtdb, 'connections');
+const myConnectionRef = push(connectionsRef);
+
+onDisconnect(myConnectionRef).remove(); // Xóa khi người dùng rời trang
+set(myConnectionRef, true); // Thêm kết nối
+
+onValue(connectionsRef, (snapshot) => {
+  let count = 0;
+  if (snapshot.exists() && typeof snapshot.val() === 'object') {
+    count = Object.keys(snapshot.val()).length;
+  }
+  onlineCounterEl.textContent = count;
+});
+
 
   const manualQuestionImgPreview = document.getElementById("manualQuestionImgPreview");
   const manualRemoveQuestionImgBtn = document.getElementById("manualRemoveQuestionImgBtn");
