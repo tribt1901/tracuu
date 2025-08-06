@@ -12,8 +12,58 @@
     .subject-btns .btn { margin-right: 6px; }
     .nav-link, .navbar-brand { font-family: Roboto, Arial, sans-serif; }
     .subject-title-icon { font-size: 1.15em; margin-right: 6px; }
-    .loading-math { color: #4caf50; font-weight: 700; margin: 8px 0; text-align: center; }
     #pdf-content { display: none; }
+    #pdf-content .pdf-title {
+      text-align: center; font-size: 22px; font-weight: 700;
+      margin-bottom: 12px; margin-top: 10px; font-family: Roboto, Arial, sans-serif;
+    }
+    #pdf-content .pdf-table-wrap {
+      width: 100%; max-width: 100%; box-sizing: border-box; display: flex; justify-content: center;
+    }
+    #pdf-content table {
+      border: 2px solid #222; border-collapse: collapse; margin: 0 auto;
+      width: 100%; max-width: 690px; min-width: 300px;
+      table-layout: fixed; background: #fff; font-size: 15px; box-sizing: border-box;
+      word-break: break-word; overflow-wrap: break-word;
+      page-break-inside: auto;
+    }
+    #pdf-content td, #pdf-content th {
+      border: 1.5px solid #222 !important;
+      padding: 6px 8px;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+      white-space: pre-line !important;
+      vertical-align: middle;
+      background: #fff;
+      box-sizing: border-box !important;
+      max-width: 360px;
+      overflow: hidden;
+      page-break-inside: avoid !important;
+      page-break-after: auto !important;
+    }
+    #pdf-content th {
+      background: #fff; font-weight: 700; text-align: center;
+    }
+    #pdf-content td.stt, #pdf-content th.stt {
+      width: 10%; min-width: 38px; max-width: 60px; text-align: center; font-size: 13px;
+    }
+    #pdf-content td.question, #pdf-content th.question {
+      width: 49%; min-width: 110px; max-width: 380px; word-break: break-word; overflow-wrap: break-word;
+    }
+    #pdf-content td.answer, #pdf-content th.answer {
+      width: 41%; min-width: 100px; max-width: 250px; word-break: break-word; overflow-wrap: break-word;
+    }
+    #pdf-content tr { height: 1px; page-break-inside: avoid !important;}
+    #pdf-content table, #pdf-content td, #pdf-content th, #pdf-content tr {
+      page-break-inside: avoid !important; break-inside: avoid !important;
+    }
+    .loading-math { color: #4caf50; font-weight: 700; margin: 8px 0; text-align: center; }
+    @media print {
+      #pdf-content, .pdf-table-wrap, body, html, table {
+        width: 100% !important; max-width: 100% !important; margin: 0; padding: 0; box-sizing: border-box;
+      }
+      #pdf-content table { max-width: 690px !important; }
+    }
   </style>
 </head>
 <body class="bg-light">
@@ -28,7 +78,7 @@
         <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
         <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
         <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/outline">Hủ Đề cương</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/outline">Đề cương Đóng góp</a></li>
       </ul>
     </div>
   </div>
@@ -45,14 +95,11 @@
 <div id="loading-mathjax" class="loading-math" style="display:none">Đang render công thức toán học, vui lòng chờ...</div>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<!-- CHÚ Ý: Đường dẫn này phải đúng với nơi bạn lưu file font, và file phải có trong repo/public -->
-<script src="font/Roboto-Regular-normal.js"></script>
 <script type="module">
 // ==== FIREBASE CONFIG ====
 const firebaseConfig = {
@@ -139,64 +186,82 @@ async function exportTXT(subjectId, subjectName) {
   saveAs(s, `DeCuong_${subjectName.replace(/\s+/g, "_")}.txt`);
 }
 
-// ==== EXPORT PDF with jsPDF-AutoTable và font Roboto Unicode ====
+// ==== KaTeX RENDER ====
+function renderKatexForElement(el) {
+  if (el && window.renderMathInElement) {
+    window.renderMathInElement(el, {
+      delimiters: [
+        { left: "\\[", right: "\\]", display: true },
+        { left: "\\(", right: "\\)", display: false }
+      ],
+      throwOnError: false
+    });
+  }
+}
+
+// ==== EXPORT PDF ====
 async function exportPDF(subjectId, subjectName) {
   const e = await getQuestionsBySubject(subjectId);
   if (!e || !e.length) return void alert("Không có dữ liệu câu hỏi cho môn này.");
   document.getElementById("loading-mathjax").style.display = "block";
-  const a = e.map(q => [
-    getFirstWord(q.noi_dung),
-    stripHTML(q.noi_dung),
-    getAnswer(q)
-  ]);
-  a.sort((x, y) => x[0].localeCompare(y[0], "vi"));
-
-  // jsPDF với font Roboto Unicode đã nhúng
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-  // Thêm font Roboto Unicode từ file convert js đã nhúng
-  if (typeof RobotoRegular !== "undefined") {
-    doc.addFileToVFS("Roboto-Regular.ttf", RobotoRegular);
-    doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
-    doc.setFont("Roboto", "normal");
-  } else {
-    alert("Không tìm thấy file font Roboto-Regular-normal.js! Vui lòng chắc chắn file này đã được upload vào thư mục Font.");
-    document.getElementById("loading-mathjax").style.display = "none";
-    return;
-  }
-  doc.setFontSize(12);
-
-  doc.text(`Đề cương môn: ${subjectName}`, 105, 15, { align: "center" });
-
-  doc.autoTable({
-    startY: 22,
-    head: [["KEY", "Câu hỏi", "Đáp án đúng"]],
-    body: a,
-    styles: {
-      font: "Roboto",
-      fontStyle: "normal",
-      fontSize: 11,
-      cellPadding: 2,
-      overflow: "linebreak",
-      halign: "left",
-      valign: "middle",
-      minCellHeight: 8
-    },
-    headStyles: {
-      fillColor: [76, 175, 80],
-      textColor: 255,
-      fontStyle: "bold",
-      halign: "center"
-    },
-    columnStyles: {
-      0: { cellWidth: 25, halign: "center" },
-      1: { cellWidth: 100 },
-      2: { cellWidth: 60 }
-    }
+  // Prepare data
+  const a = e.map(q => ({
+    stt: getFirstWord(q.noi_dung),
+    question: q.noi_dung ? String(q.noi_dung) : "",
+    answer: getAnswer(q) ? String(getAnswer(q)) : ""
+  }));
+  a.sort((x, y) => x.stt.localeCompare(y.stt, "vi"));
+  // HTML table duy nhất, không chia nhỏ!
+  let rows = '';
+  a.forEach(t => {
+    rows += `<tr>
+      <td class="stt">${t.stt}</td>
+      <td class="question">${t.question}</td>
+      <td class="answer"><div>${t.answer}</div></td>
+    </tr>`;
   });
-
-  doc.save(`DeCuong_${subjectName.replace(/\s+/g, "_")}.pdf`);
-  document.getElementById("loading-mathjax").style.display = "none";
+  const s = document.getElementById("pdf-content");
+  s.innerHTML = `<div class="pdf-title">Đề cương môn: ${subjectName}</div>
+    <div class="pdf-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="stt">KEY</th>
+          <th class="question">Câu hỏi</th>
+          <th class="answer">Đáp án đúng</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+    </div>`;
+  s.style.display = "block";
+  // Đảm bảo render xong math
+  renderKatexForElement(s);
+  // Đợi một lúc cho chắc chắn
+  setTimeout(async () => {
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: `DeCuong_${subjectName.replace(/\s+/g, "_")}.pdf`,
+      html2canvas: {
+        scale: 3,
+        useCORS: true,
+        dpi: 192,
+        logging: false,
+        scrollY: 0
+      },
+      jsPDF: {
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait"
+      },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+    await html2pdf().set(opt).from(s).save();
+    s.style.display = "none";
+    document.getElementById("loading-mathjax").style.display = "none";
+  }, 700);
 }
 
 // ==== INIT ====
