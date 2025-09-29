@@ -42,37 +42,8 @@
       color: #c00;
       font-style: italic;
     }
-    /* CSS cho MathJax */
-    .MathJax {
-      font-size: 1em !important;
-    }
   </style>
   <link rel="icon" href="data:,">
-  
-  <!-- ✅ Cấu hình MathJax tốt hơn -->
-  <script>
-    window.MathJax = {
-      tex: {
-        inlineMath: [['$', '$'], ['\\(', '\\)']],
-        displayMath: [['$$', '$$'], ['\\[', '\\]']],
-        processEscapes: true,
-        processEnvironments: true,
-        macros: {
-          // Thêm các macro phổ biến nếu cần
-        }
-      },
-      options: {
-        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-        ignoreHtmlClass: 'no-mathjax'
-      },
-      startup: {
-        ready: function () {
-          MathJax.startup.defaultReady();
-          console.log('MathJax is ready for upload page!');
-        }
-      }
-    };
-  </script>
   <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
@@ -196,7 +167,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 document.addEventListener("DOMContentLoaded", () => {
   const firebaseConfig = {
-    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
+    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
     authDomain: "tracuu-d3ee9.firebaseapp.com",
     projectId: "tracuu-d3ee9",
     storageBucket: "tracuu-d3ee9.appspot.com",
@@ -341,7 +312,7 @@ onValue(connectionsRef, (snapshot) => {
     return (str || "")
       .replace(/\\\([^\)]*\\\)/g, '') // bỏ latex
       .replace(/[\s\r\n]+/g, ' ')
-      .replace(/[ ]/g, ' ')
+      .replace(/[ ]/g, ' ')
       .trim()
       .toLowerCase();
   }
@@ -506,28 +477,17 @@ onValue(connectionsRef, (snapshot) => {
     }
   });
 
-  // ✅ Hàm extract đã cải thiện để xử lý MathJax tốt hơn
+  // ====== Extract đáp án và câu hỏi: GHÉP ĐÚNG TEXT + LATEX, NHẬN DIỆN ĐÁP ÁN ======
   function extractTextAndLaTeX(node) {
     let result = "";
-    if (!node) return result;
-    
-    node.childNodes.forEach(child => {
+    node && node.childNodes.forEach(child => {
       if (child.nodeType === Node.ELEMENT_NODE) {
         if ((child.tagName === "SPAN" && child.classList.contains("math-tex")) ||
-            (child.tagName === "SCRIPT" && child.type && child.type.startsWith("math/tex"))) {
-          // Xử lý LaTeX từ MathJax
-          let latex = child.textContent.trim();
-          if (latex) {
-            result += `\\(${latex}\\)`;
-          }
-        } else if (child.tagName === "IMG" && child.alt) {
-          // Xử lý LaTeX từ alt text của image
-          result += `\\(${child.alt.trim()}\\)`;
-        } else if (child.tagName === "MATH") {
-          // Xử lý MathML
+            (child.tagName === "SCRIPT" && child.type.startsWith("math/tex"))) {
           result += `\\(${child.textContent.trim()}\\)`;
+        } else if (child.tagName === "IMG" && child.alt) {
+          result += `\\(${child.alt.trim()}\\)`;
         } else {
-          // Đệ quy xử lý các element con
           result += extractTextAndLaTeX(child);
         }
       } else if (child.nodeType === Node.TEXT_NODE) {
@@ -536,45 +496,8 @@ onValue(connectionsRef, (snapshot) => {
     });
     return result.trim();
   }
-  
   function normalize(str) {
     return str.replace(/[\s\\\(\)\{\}\[\]\^]/g, '').toLowerCase();
-  }
-
-  // ✅ Hàm render toán học được cải thiện
-  async function renderMathInContainer(containerId) {
-    return new Promise((resolve) => {
-      const container = document.getElementById(containerId);
-      if (!container) {
-        resolve();
-        return;
-      }
-
-      if (window.MathJax && window.MathJax.typesetPromise) {
-        window.MathJax.typesetPromise([container])
-          .then(() => {
-            console.log('MathJax rendering completed for', containerId);
-            resolve();
-          })
-          .catch((error) => {
-            console.error('MathJax rendering error:', error);
-            resolve();
-          });
-      } else {
-        // Fallback nếu MathJax chưa sẵn sàng
-        setTimeout(() => {
-          if (window.MathJax && window.MathJax.typeset) {
-            try {
-              window.MathJax.typeset([container]);
-              console.log('MathJax typeset completed for', containerId);
-            } catch (error) {
-              console.error('MathJax typeset error:', error);
-            }
-          }
-          resolve();
-        }, 100);
-      }
-    });
   }
 
   importHtmlInput.addEventListener("change", async function(e) {
@@ -665,10 +588,7 @@ onValue(connectionsRef, (snapshot) => {
         htmlResult += `</div>`;
       });
       importHtmlResult.innerHTML = htmlResult;
-      
-      // ✅ Render MathJax sau khi hiển thị kết quả
-      await renderMathInContainer('importHtmlResult');
-      
+      if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
       saveImportBtn.style.display = importedQuestions.length>0 ? "inline-block" : "none";
     }
     reader.readAsText(file);
@@ -777,7 +697,5 @@ onValue(connectionsRef, (snapshot) => {
   });
 });
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"ef8cb5a74af4438ea27ca9a2ea2c1ca3","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
