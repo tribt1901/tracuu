@@ -13,24 +13,44 @@
       background: white; border: 2px solid #202060; margin: 20px auto; padding: 20px;
       display: flex; align-items: center; justify-content: space-around; position: relative;
     }
-    .poster { width: 900px; height: 400px; flex-direction: row; }
-    .poster-vertical { width: 450px; height: 650px; flex-direction: column; justify-content: flex-start; }
-    .logo img { max-height: 140px; max-width: 320px; object-fit: contain; display: block; margin: 0 auto; }
-    .wifi-custom { max-height: 100px; display:block; margin:10px auto; }
+    /* Khung ngang: width nhỏ lại, padding đều, cân đối */
+    .poster { width: 640px; height: 320px; flex-direction: row; }
+    /* Khung dọc: sửa lại lỗi căn giữa, padding, khối info-box nhỏ gọn, không bị tràn */
+    .poster-vertical { 
+      width: 340px; height: 500px; 
+      flex-direction: column; 
+      justify-content: flex-start; 
+      align-items: center; 
+      padding: 20px 12px;
+    }
+    .logo img { max-height: 80px; max-width: 180px; object-fit: contain; display: block; margin: 0 auto 4px auto; }
+    .wifi-custom { max-height: 60px; display:block; margin:10px auto; }
     .title { 
-      color: #202060; font-weight: bold; margin-top: 15px; 
-      font-size: 24px; text-align:center; 
+      color: #202060; font-weight: bold; margin: 12px 0 8px 0;
+      font-size: 20px; text-align:center; letter-spacing: 2px;
     }
     .info-box, .info-box-vertical {
-      border: 2px solid #202060; padding: 15px; margin-top: 15px;
+      border: 2px solid #202060; padding: 12px; margin-top: 10px;
       display: flex; align-items: center; justify-content: center;
       background: #fdfdfd;
     }
-    .info-box-vertical { flex-direction: column; }
-    .wifi-info { font-size: 20px; color: #202060; margin-bottom: 10px; }
-    .qr { width: 160px; height: 160px; }
-    .hand { font-size: 40px; margin-top: 10px; color: #202060; text-align:center; }
+    .info-box { min-width: 220px; max-width: 270px; }
+    .info-box-vertical { 
+      flex-direction: column; 
+      width: 100%; 
+      min-height: 180px; max-width: 95%; box-sizing: border-box; 
+      margin-top: 8px; 
+    }
+    .wifi-info { font-size: 16px; color: #202060; margin-bottom: 6px; word-break: break-all;}
+    .wifi-label { font-weight: normal; color: #202060; }
+    .wifi-value { font-weight: bold; color: #202060; }
+    .qr { width: 120px; height: 120px; }
+    .hand { font-size: 30px; margin-top: 6px; color: #202060; text-align:center; }
     .btn-download { margin: 10px; }
+    @media (max-width: 700px) {
+      .poster { width: 98vw; height: auto; flex-direction: column; }
+      .poster-vertical { width: 96vw; min-width: 170px; }
+    }
   </style>
 </head>
 <body>
@@ -124,7 +144,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
 
   // tạo QRCode bằng thư viện -> để chắc chắn khi download có QR
   const qrDiv = document.createElement("div");
-  new QRCode(qrDiv, { text: wifiString, width: 160, height: 160 });
+  new QRCode(qrDiv, { text: wifiString, width: 120, height: 120 });
   setTimeout(()=>{
     const qrCanvas = qrDiv.querySelector("canvas");
     const qrImg = qrCanvas.toDataURL("image/png");
@@ -133,39 +153,41 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
     const logoHtml = uploadedLogo ? `<div class="logo"><img src="${uploadedLogo}" alt="Logo"></div>` : "";
     const wifiIconHtml = `<img src="${wifiIconUrl}" class="wifi-custom" alt="WiFi Icon">`;
 
+    // Phần khung ngang
     let poster = "";
     if (type === "horizontal") {
       poster = `
       <div id="poster" class="poster">
-        <div class="left text-center">
+        <div class="left text-center" style="flex:1; min-width:120px;">
           ${logoHtml}
           ${wifiIconHtml}
           <div class="title">WI-FI AVAILABLE HERE</div>
         </div>
         <div class="info-box">
-          <div>
-            <div class="wifi-info">Network Name: <b>${ssid}</b></div>
-            <div class="wifi-info">Password: <b>${password || "(No Password)"}</b></div>
-            <div style="text-align:center; margin-top:10px;">
-              <span style="font-size:18px; color:#202060;">Scan Me!</span><br>
-              <div class="hand"> 👇</div>
+          <div style="width:100%;">
+            <div class="wifi-info"><span class="wifi-label">Network Name:</span> <span class="wifi-value">${ssid}</span></div>
+            <div class="wifi-info"><span class="wifi-label">Password:</span> <span class="wifi-value">${password || "(No Password)"}</span></div>
+            <div style="text-align:center; margin-top:8px;">
+              <span style="font-size:15px; color:#202060;">Scan Me!</span><br>
+              <div class="hand">👇</div>
               <img class="qr" src="${qrImg}" alt="QR Code">
             </div>
           </div>
         </div>
       </div>`;
     } else {
+      // Khung dọc, fix lỗi tràn và bố cục
       poster = `
       <div id="poster" class="poster-vertical text-center">
         ${logoHtml}
         ${wifiIconHtml}
         <div class="title">WI-FI AVAILABLE HERE</div>
         <div class="info-box-vertical">
-          <div class="wifi-info">Network Name: <b>${ssid}</b></div>
-          <div class="wifi-info">Password: <b>${password || "(No Password)"}</b></div>
-          <div style="text-align:center; margin-top:10px;">
-            <span style="font-size:18px; color:#202060;">Scan Me!</span><br>
-            <div class="hand"> 👇</div>
+          <div class="wifi-info"><span class="wifi-label">Network Name:</span> <span class="wifi-value">${ssid}</span></div>
+          <div class="wifi-info"><span class="wifi-label">Password:</span> <span class="wifi-value">${password || "(No Password)"}</span></div>
+          <div style="text-align:center; margin-top:6px;">
+            <span style="font-size:15px; color:#202060;">Scan Me!</span><br>
+            <div class="hand">👇</div>
             <img class="qr" src="${qrImg}" alt="QR Code">
           </div>
         </div>
@@ -175,7 +197,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
     document.getElementById("result").innerHTML = poster + `
       <button class="btn btn-primary btn-download" onclick="downloadPoster()">📥 Tải Poster</button>
     `;
-  },500);
+  },350);
 });
 
 // Tải poster thành ảnh
