@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>VNVC WiFi Poster</title>
+  <title>Wi-Fi QR Code Generator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f8f8f8;
-      margin: 20px;
+      padding-top: 80px;
+      background: #f8f9fa;
     }
     .poster {
       width: 900px;
@@ -36,24 +36,10 @@
       justify-content: flex-start;
       position: relative;
     }
-    .logo {
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    .logo img {
-      height: 60px;
-    }
-    .wifi-icon {
-      font-size: 120px;
-      color: #f4b400; /* vàng */
-    }
-    .text {
-      color: #202060;
-      font-weight: bold;
-      margin: 10px 0;
-      font-size: 22px;
-    }
-    .info-box {
+    .logo img { height: 60px; }
+    .wifi-icon { font-size: 120px; color: #f4b400; }
+    .text { color: #202060; font-weight: bold; margin: 10px 0; font-size: 22px; }
+    .info-box, .info-box-vertical {
       border: 2px solid #202060;
       padding: 15px;
       margin-top: 15px;
@@ -61,100 +47,126 @@
       align-items: center;
       justify-content: center;
     }
-    .info-box-vertical {
-      border: 2px solid #202060;
-      padding: 15px;
-      margin-top: 15px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .wifi-info {
-      font-size: 20px;
-      color: #202060;
-      margin-bottom: 10px;
-    }
-    .qr {
-      width: 150px;
-      height: 150px;
-    }
-    .hand {
-      font-size: 50px;
-      margin-left: 15px;
-      color: #202060;
-    }
-    .btn {
-      margin: 15px;
-      padding: 10px 20px;
-      border: none;
-      background: #202060;
-      color: white;
-      cursor: pointer;
-      font-size: 16px;
-      border-radius: 6px;
-    }
-    .btn:hover {
-      background: #404080;
-    }
+    .info-box-vertical { flex-direction: column; }
+    .wifi-info { font-size: 20px; color: #202060; margin-bottom: 10px; }
+    .qr { width: 150px; height: 150px; }
+    .hand { font-size: 50px; margin-left: 15px; color: #202060; }
+    .btn-download { margin: 10px; }
   </style>
 </head>
 <body>
-  <h1>VNVC WiFi Poster Generator</h1>
 
-  <!-- Poster ngang -->
-  <div id="poster-horizontal" class="poster">
-    <div class="left">
-      <div class="logo">
-        <img src="https://i.imgur.com/lFS3npg.png" alt="VNVC Logo">
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #3B5C94;">
+  <div class="container-fluid">
+    <a class="navbar-brand text-white" href="/">📥 Upload Dữ Liệu</a>
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarNav" type="button">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/export">Tài liệu học ở đây nè!!!</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/outline">Đề cương Đóng góp</a></li>
+        <li class="nav-item"><a class="nav-link active bg-primary rounded px-2" href="#wifi">Wi-Fi QR Generator</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Form nhập WiFi -->
+<div class="container" id="wifi">
+  <div class="card shadow-sm p-4">
+    <h3 class="text-center mb-4">📶 Tạo Poster QR Wi-Fi</h3>
+    <form id="wifiForm" class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Tên Wi-Fi (SSID):</label>
+        <input type="text" id="ssid" class="form-control" value="VNVC Guest" required>
       </div>
+      <div class="col-md-6">
+        <label class="form-label">Mật khẩu:</label>
+        <input type="text" id="password" class="form-control" value="Vnvc@MFG" required>
+      </div>
+      <div class="col-md-12">
+        <label class="form-label">Loại Poster:</label>
+        <select id="orientation" class="form-select">
+          <option value="horizontal">Ngang</option>
+          <option value="vertical">Dọc</option>
+        </select>
+      </div>
+      <div class="col-md-12 text-center">
+        <button type="submit" class="btn btn-success">Tạo Poster</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Kết quả Poster -->
+<div id="result" class="text-center"></div>
+
+<script>
+document.getElementById("wifiForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const ssid = document.getElementById("ssid").value;
+  const password = document.getElementById("password").value;
+  const type = document.getElementById("orientation").value;
+
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=WIFI:T:WPA;S:${encodeURIComponent(ssid)};P:${encodeURIComponent(password)};;&size=200x200`;
+
+  let poster = "";
+  if (type === "horizontal") {
+    poster = `
+    <div id="poster" class="poster">
+      <div class="left">
+        <div class="logo"><img src="https://i.imgur.com/lFS3npg.png"></div>
+        <div class="wifi-icon">📶</div>
+        <div class="text">WI-FI AVAILABLE HERE</div>
+      </div>
+      <div class="info-box">
+        <div>
+          <div class="wifi-info">Network Name: <b>${ssid}</b></div>
+          <div class="wifi-info">Password: <b>${password}</b></div>
+          <div style="display:flex; align-items:center; margin-top:10px;">
+            <span style="font-size:18px; color:#202060; margin-right:10px;">Scan Me!</span>
+            <img class="qr" src="${qrUrl}">
+            <div class="hand">👉</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    poster = `
+    <div id="poster" class="poster-vertical">
+      <div class="logo"><img src="https://i.imgur.com/lFS3npg.png"></div>
       <div class="wifi-icon">📶</div>
       <div class="text">WI-FI AVAILABLE HERE</div>
-    </div>
-    <div class="info-box">
-      <div>
-        <div class="wifi-info">Network Name: <b>VNVC Guest</b></div>
-        <div class="wifi-info">Password: <b>Vnvc@MFG</b></div>
-        <div style="display: flex; align-items: center; margin-top: 10px;">
+      <div class="info-box-vertical">
+        <div class="wifi-info">Network Name: <b>${ssid}</b></div>
+        <div class="wifi-info">Password: <b>${password}</b></div>
+        <div style="display:flex; align-items:center; margin-top:10px;">
           <span style="font-size:18px; color:#202060; margin-right:10px;">Scan Me!</span>
-          <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?data=WIFI:T:WPA;S:VNVC%20Guest;P:Vnvc@MFG;;" alt="QR Code">
+          <img class="qr" src="${qrUrl}">
           <div class="hand">👉</div>
         </div>
       </div>
-    </div>
-  </div>
+    </div>`;
+  }
 
-  <!-- Poster dọc -->
-  <div id="poster-vertical" class="poster-vertical">
-    <div class="logo">
-      <img src="https://i.imgur.com/lFS3npg.png" alt="VNVC Logo">
-    </div>
-    <div class="wifi-icon">📶</div>
-    <div class="text">WI-FI AVAILABLE HERE</div>
-    <div class="info-box-vertical">
-      <div class="wifi-info">Network Name: <b>VNVC Guest</b></div>
-      <div class="wifi-info">Password: <b>Vnvc@MFG</b></div>
-      <div style="display: flex; align-items: center; margin-top: 10px;">
-        <span style="font-size:18px; color:#202060; margin-right:10px;">Scan Me!</span>
-        <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?data=WIFI:T:WPA;S:VNVC%20Guest;P:Vnvc@MFG;;" alt="QR Code">
-        <div class="hand">👉</div>
-      </div>
-    </div>
-  </div>
+  document.getElementById("result").innerHTML = poster + `
+    <button class="btn btn-primary btn-download" onclick="downloadPoster()">📥 Tải Poster</button>
+  `;
+});
 
-  <!-- Nút tải -->
-  <button class="btn" onclick="downloadPoster('poster-horizontal', 'poster-horizontal.png')">Tải Poster Ngang</button>
-  <button class="btn" onclick="downloadPoster('poster-vertical', 'poster-vertical.png')">Tải Poster Dọc</button>
-
-  <script>
-    function downloadPoster(id, filename) {
-      const element = document.getElementById(id);
-      html2canvas(element).then(canvas => {
-        const link = document.createElement("a");
-        link.download = filename;
-        link.href = canvas.toDataURL();
-        link.click();
-      });
-    }
-  </script>
+function downloadPoster() {
+  const element = document.getElementById("poster");
+  html2canvas(element).then(canvas => {
+    const link = document.createElement("a");
+    link.download = "wifi-poster.png";
+    link.href = canvas.toDataURL();
+    link.click();
+  });
+}
+</script>
 </body>
 </html>
