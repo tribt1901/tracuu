@@ -1,265 +1,134 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tạo mã QR Wi-Fi</title>
-
-  <!-- Favicon ẩn lỗi 404 -->
-  <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAGAAAAAAAAAMAAAAAAAAAAAAAAAEAAAAAAAAAAAAAkZGRAP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" />
-
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- QRCode Library -->
+  <meta charset="UTF-8">
+  <title>Poster Wi-Fi Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- QRCode + html2canvas -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     body {
-      background-color: #0f172a;
-      color: #e2e8f0;
-      padding-top: 80px;
-      font-family: system-ui, sans-serif;
+      background: #f9f9f9;
+      color: #333;
     }
-    .form-control, .form-select {
-      background-color: #334155;
-      color: #e2e8f0;
-      border: 1px solid #475569;
-    }
-    .form-control:focus, .form-select:focus {
-      background-color: #334155;
-      color: #fff;
-      border-color: #60a5fa;
-      box-shadow: none;
-    }
-    .card {
-      background: #1e293b;
-      border: none;
-      border-radius: 12px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-    }
-    .qr-image {
+    .poster-box {
       background: #fff;
-      padding: 10px;
+      border: 1px solid #ddd;
       border-radius: 12px;
-      max-width: 100%;
-      height: auto;
+      padding: 20px;
+      margin-top: 20px;
+      display: inline-block;
     }
-    .online-counter-box {
-      font-size: 14px;
-      background-color: rgba(255,255,255,0.06);
-      padding: 8px 12px;
-      border-radius: 8px;
-      color: #cbd5e1;
+    .poster-box h4 {
+      margin-top: 10px;
+      font-weight: bold;
     }
   </style>
 </head>
+<body class="container py-4">
 
-<body>
+  <h2 class="mb-4">📶 Tạo Poster Wi-Fi</h2>
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm" style="background-color:#3B5C94">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">📘 Hệ thống tra cứu</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" href="/upload">Upload</a></li>
-        <li class="nav-item"><a class="nav-link" href="/subjects">Môn học</a></li>
-        <li class="nav-item"><a class="nav-link" href="/export">Tài liệu học</a></li>
-        <li class="nav-item"><a class="nav-link" href="/outline">Đề cương</a></li>
-      </ul>
+  <!-- Form -->
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Tên Wi-Fi (SSID)</label>
+      <input type="text" class="form-control" id="ssid" placeholder="Nhập tên Wi-Fi">
     </div>
-  </div>
-</nav>
-
-<!-- Online Counter -->
-<div class="container mt-2">
-  <div class="online-counter-box text-center mb-3">
-    🟢 Hiện có <span id="online-counter">0</span> người đang truy cập hệ thống.
-  </div>
-</div>
-
-<!-- QR Code Generator -->
-<div class="container">
-  <div class="card p-4 mb-4">
-    <h3 class="mb-3 text-info">📶 Tạo mã QR để kết nối Wi‑Fi</h3>
-
-    <div class="mb-3">
-      <label class="form-label">🔹 Tên mạng (SSID)</label>
-      <input type="text" class="form-control" id="ssid" placeholder="Nhập SSID (ví dụ: MyWiFi)" />
+    <div class="col-md-6">
+      <label class="form-label">Mật khẩu</label>
+      <input type="text" class="form-control" id="password" placeholder="Nhập mật khẩu">
     </div>
-
-    <div class="mb-3">
-      <label class="form-label">🔐 Mật khẩu</label>
-      <input type="password" class="form-control" id="password" placeholder="Nhập mật khẩu (nếu có)" />
+    <div class="col-md-6">
+      <label class="form-label">Upload Logo</label>
+      <input type="file" class="form-control" id="logoInput" accept="image/*">
     </div>
-
-    <div class="mb-3">
-      <label class="form-label">🔒 Kiểu bảo mật</label>
-      <select class="form-select" id="auth">
-        <option value="WPA">WPA/WPA2</option>
-        <option value="WEP">WEP</option>
-        <option value="nopass">Không mật khẩu</option>
+    <div class="col-md-6">
+      <label class="form-label">Bố cục Poster</label>
+      <select class="form-select" id="layout">
+        <option value="landscape">Hình ngang</option>
+        <option value="portrait">Hình dọc</option>
       </select>
     </div>
-
-    <div class="form-check mb-3">
-      <input type="checkbox" class="form-check-input" id="hidden">
-      <label class="form-check-label" for="hidden">🔒 Mạng ẩn (Hidden)</label>
-    </div>
-
-    <div class="d-flex gap-2 flex-wrap">
-      <button class="btn btn-primary" onclick="generateQRCode()">Tạo QR</button>
-      <button class="btn btn-secondary" onclick="copyText()">📋 Sao chép chuỗi Wi‑Fi</button>
-      <button class="btn btn-danger" onclick="resetForm()">🧹 Xóa</button>
-    </div>
   </div>
 
-  <div class="card p-4 text-center">
-    <h5 class="text-success mb-3">🔍 Kết quả QR:</h5>
-    <img id="qrImage" class="qr-image" src="" alt="QR Code" style="display:none" />
-    <p id="emptyText" class="text-muted">Nhập thông tin và nhấn "Tạo QR" để bắt đầu.</p>
-
-    <div class="mt-3">
-      <a id="downloadBtn" class="btn btn-outline-light me-2" download="wifi-qr.png" style="display:none">⬇️ Tải ảnh PNG</a>
-      <button id="copyImgBtn" class="btn btn-outline-light" style="display:none" onclick="copyImage()">📸 Sao chép ảnh</button>
-    </div>
+  <!-- Nút render -->
+  <div class="mt-3">
+    <button class="btn btn-primary" onclick="renderPoster()">🔄 Tạo Poster</button>
+    <button class="btn btn-success" onclick="downloadPoster()">⬇️ Tải Poster PNG</button>
   </div>
-</div>
 
-<!-- Firebase SDK + Online Counter -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, onValue, onDisconnect, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  <!-- Preview -->
+  <div id="posterPreview" class="poster-box mt-4 text-center">
+    <p><i>Poster Wi-Fi sẽ hiển thị ở đây...</i></p>
+  </div>
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
-    authDomain: "tracuu-d3ee9.firebaseapp.com",
-    projectId: "tracuu-d3ee9",
-    storageBucket: "tracuu-d3ee9.appspot.com",
-    messagingSenderId: "593568604435",
-    appId: "1:593568604435:web:9a5145457a8ee734143ae6",
-    measurementId: "G-R0M6Y502NP"
-  };
+  <script>
+    let logoUrl = "";
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app, "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app");
-
-  const onlineCounterEl = document.getElementById('online-counter');
-  const connectionsRef = ref(db, 'connections');
-  const myConnectionRef = push(connectionsRef);
-  onDisconnect(myConnectionRef).remove();
-  set(myConnectionRef, true);
-
-  onValue(connectionsRef, (snapshot) => {
-    let count = 0;
-    if (snapshot.exists() && typeof snapshot.val() === 'object') {
-      count = Object.keys(snapshot.val()).length;
-    }
-    if (onlineCounterEl) onlineCounterEl.textContent = count;
-  });
-</script>
-
-<!-- QR Code Logic -->
-<script>
-  function escapeValue(str) {
-    return String(str || '').replace(/([\\;,":])/g, '\\$1');
-  }
-
-  function buildWifiString(ssid, password, auth, hidden) {
-    let result = `WIFI:T:${auth};S:${escapeValue(ssid)};`;
-    if (auth !== 'nopass') result += `P:${escapeValue(password)};`;
-    if (hidden) result += 'H:true;';
-    result += ';';
-    return result;
-  }
-
-  function generateQRCode() {
-    const ssid = document.getElementById('ssid').value.trim();
-    const password = document.getElementById('password').value;
-    const auth = document.getElementById('auth').value;
-    const hidden = document.getElementById('hidden').checked;
-
-    if (!ssid) {
-      alert('Vui lòng nhập tên mạng (SSID)');
-      return;
-    }
-
-    const wifiString = buildWifiString(ssid, password, auth, hidden);
-
-    QRCode.toDataURL(wifiString, {
-      errorCorrectionLevel: 'H',
-      type: 'image/png',
-      margin: 2,
-      width: 300,
-      color: {
-        dark: '#000000',
-        light: '#ffffff'
+    // Upload logo
+    document.getElementById("logoInput").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          logoUrl = ev.target.result;
+        };
+        reader.readAsDataURL(file);
       }
-    }, function (err, url) {
-      if (err) {
-        console.error(err);
-        alert('Lỗi tạo mã QR');
-        return;
-      }
-
-      const qrImage = document.getElementById('qrImage');
-      qrImage.src = url;
-      qrImage.style.display = 'block';
-      document.getElementById('emptyText').style.display = 'none';
-
-      const downloadBtn = document.getElementById('downloadBtn');
-      const copyImgBtn = document.getElementById('copyImgBtn');
-      downloadBtn.href = url;
-      downloadBtn.style.display = 'inline-block';
-      copyImgBtn.style.display = 'inline-block';
     });
-  }
 
-  function resetForm() {
-    document.getElementById('ssid').value = '';
-    document.getElementById('password').value = '';
-    document.getElementById('auth').value = 'WPA';
-    document.getElementById('hidden').checked = false;
-    document.getElementById('qrImage').style.display = 'none';
-    document.getElementById('emptyText').style.display = 'block';
-    document.getElementById('downloadBtn').style.display = 'none';
-    document.getElementById('copyImgBtn').style.display = 'none';
-  }
+    // Render poster
+    function renderPoster() {
+      const ssid = document.getElementById('ssid').value || "MyWiFi";
+      const pass = document.getElementById('password').value || "12345678";
+      const layout = document.getElementById("layout").value;
+      const wifiString = `WIFI:T:WPA;S:${ssid};P:${pass};;`;
 
-  function copyText() {
-    const ssid = document.getElementById('ssid').value.trim();
-    const password = document.getElementById('password').value;
-    const auth = document.getElementById('auth').value;
-    const hidden = document.getElementById('hidden').checked;
+      QRCode.toDataURL(wifiString, { width: 200 }, function(err, qrUrl) {
+        if (err) return;
 
-    const wifiString = buildWifiString(ssid, password, auth, hidden);
-    navigator.clipboard.writeText(wifiString).then(() => {
-      alert('✅ Đã sao chép chuỗi Wi‑Fi:\n' + wifiString);
-    }).catch(() => {
-      prompt('Sao chép thủ công:', wifiString);
-    });
-  }
+        let html = "";
+        if (layout === "landscape") {
+          html = `
+            <div style="display:flex;align-items:center;justify-content:space-around;width:600px;height:300px;">
+              <div style="text-align:center;">
+                ${logoUrl ? `<img src="${logoUrl}" style="height:60px;margin-bottom:10px;"><br>` : ""}
+                <h4>${ssid}</h4>
+                <p><b>Password:</b> ${pass}</p>
+              </div>
+              <div>
+                <img src="${qrUrl}" style="width:180px;height:180px;">
+              </div>
+            </div>`;
+        } else {
+          html = `
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:400px;height:600px;">
+              ${logoUrl ? `<img src="${logoUrl}" style="height:80px;margin-bottom:10px;">` : ""}
+              <h4>${ssid}</h4>
+              <p><b>Password:</b> ${pass}</p>
+              <img src="${qrUrl}" style="width:220px;height:220px;margin-top:10px;">
+            </div>`;
+        }
 
-  async function copyImage() {
-    const img = document.getElementById('qrImage');
-    const dataUrl = img.src;
-    try {
-      const blob = await (await fetch(dataUrl)).blob();
-      const item = new ClipboardItem({ [blob.type]: blob });
-      await navigator.clipboard.write([item]);
-      alert("✅ Đã sao chép ảnh QR vào clipboard.");
-    } catch (e) {
-      alert("⚠️ Trình duyệt không hỗ trợ sao chép ảnh. Hãy tải ảnh hoặc mở ảnh trong tab mới.");
-      window.open(dataUrl, '_blank');
+        document.getElementById("posterPreview").innerHTML = html;
+      });
     }
-  }
-</script>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    // Download poster
+    function downloadPoster() {
+      const poster = document.getElementById("posterPreview");
+      html2canvas(poster).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "wifi-poster.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
+    }
+  </script>
 
 </body>
 </html>
