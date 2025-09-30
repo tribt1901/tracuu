@@ -9,12 +9,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body { padding-top: 80px; background: #f8f9fa; }
-    /* POSTER CHUNG */
     .poster, .poster-vertical {
       background: white; border: 2px solid #202060; margin: 20px auto; padding: 0;
       display: flex; position: relative; box-sizing: border-box;
     }
-    /* Poster ngang cân đối */
     .poster { 
       width: 900px; height: 420px;
       flex-direction: row; 
@@ -28,9 +26,25 @@
       padding: 38px 0 24px 0;
       border: none;
     }
-    /* TĂNG LOGO và ICON LỚN HƠN */
-    .poster .logo img { max-height: 120px; max-width: 280px; object-fit: contain; margin-bottom: 6px;}
-    .poster .wifi-custom { max-height: 80px; margin: 12px auto 0 auto; }
+    /* LOGO auto scale, giữ tỉ lệ đẹp */
+    .poster .logo {
+      width: 85%; max-width: 320px; max-height: 160px; 
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 8px;
+    }
+    .poster .logo img { 
+      max-width: 100%; max-height: 100%; 
+      object-fit: contain;
+      width: auto; height: auto; 
+      display: block;
+      margin: 0 auto;
+      aspect-ratio: 3/2;
+    }
+    .poster .wifi-custom { 
+      max-height: 80px; width: auto; 
+      display: block; margin: 12px auto 0 auto; 
+      object-fit: contain;
+    }
     .poster .title {
       color: #202060; font-weight: bold;
       font-size: 32px; text-align:center; letter-spacing: 2px; margin-top: 28px;
@@ -58,7 +72,7 @@
     .poster .scan-block { display: flex; flex-direction: column; align-items: center; margin-top: 6px; }
     .poster .hand { font-size: 26px; margin: 0; color: #202060; }
     .poster .qr { width: 140px; height: 140px; margin-top: 2px;}
-    /* POSTER DỌC cân đối */
+    /* POSTER DỌC auto scale logo */
     .poster-vertical { 
       width: 340px; height: 540px; 
       flex-direction: column;
@@ -73,9 +87,22 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
+      width: 100%;
     }
-    .poster-vertical .logo img { max-height: 70px; max-width: 150px; object-fit: contain; margin-bottom: 0; }
-    .poster-vertical .wifi-custom { max-height: 44px; margin: 8px auto 0 auto; }
+    .poster-vertical .logo {
+      width: 78%; max-width: 200px; max-height: 95px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 3px auto;
+    }
+    .poster-vertical .logo img {
+      max-width: 100%; max-height: 100%;
+      object-fit: contain;
+      width: auto; height: auto;
+      display: block;
+      margin: 0 auto;
+      aspect-ratio: 3/2;
+    }
+    .poster-vertical .wifi-custom { max-height: 44px; margin: 8px auto 0 auto; object-fit: contain;}
     .poster-vertical .title { color: #202060; font-weight: bold; margin: 10px 0 5px 0; font-size: 22px; text-align:center; letter-spacing: 2px; }
     .poster-vertical .info-box-vertical { 
       border: 2px solid #202060; 
@@ -196,13 +223,12 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
     const qrCanvas = qrDiv.querySelector("canvas");
     const qrImg = qrCanvas.toDataURL("image/png");
 
-    // logo upload auto scale
+    // logo upload auto scale, luôn bọc trong .logo class
     const logoHtml = uploadedLogo ? `<div class="logo"><img src="${uploadedLogo}" alt="Logo"></div>` : "";
     const wifiIconHtml = `<img src="${wifiIconUrl}" class="wifi-custom" alt="WiFi Icon">`;
 
     let poster = "";
     if (type === "horizontal") {
-      // POSTER NGANG: logo và icon lớn hơn, căn giữa block, info-box phải luôn cân đối
       poster = `
       <div id="poster" class="poster">
         <div class="left-area">
@@ -223,7 +249,6 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
         </div>
       </div>`;
     } else {
-      // POSTER DỌC CÂN ĐỐI
       poster = `
       <div id="poster" class="poster-vertical">
         <div class="pv-header">
