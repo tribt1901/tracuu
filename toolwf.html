@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Wi‑Fi QR Code — Tạo QR để scan kết nối Wi‑Fi</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --accent:#06b6d4; --muted:#94a3b8; --text:#e6eef6;
+    }
+    body{
+      font-family: Inter, system-ui, Arial, sans-serif;
+      margin:0; padding:32px; background:linear-gradient(180deg,#071029 0%, #071229 100%);
+      color:var(--text); display:flex; align-items:flex-start; justify-content:center;
+    }
+    .wrap{
+      max-width:920px; width:100%; display:grid; grid-template-columns:1fr 360px; gap:20px;
+    }
+    .card{
+      background:rgba(255,255,255,0.03); border-radius:12px; padding:18px; box-shadow:0 6px 20px rgba(2,6,23,0.6);
+    }
+    h1{ margin:0 0 12px; font-size:20px; color:var(--accent); }
+    label{ display:block; margin-top:10px; color:var(--muted); font-size:13px; }
+    input[type=text], input[type=password], select {
+      width:100%; padding:10px 12px; margin-top:6px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);
+      background:rgba(255,255,255,0.02); color:var(--text); box-sizing:border-box;
+    }
+    .row{ display:flex; gap:10px; margin-top:10px; }
+    .small{ flex:1; }
+    button {
+      margin-top:14px; padding:10px 14px; border-radius:9px; border:none; cursor:pointer;
+      background:linear-gradient(90deg,var(--accent),#7c3aed); color:#041022; font-weight:600;
+    }
+    .actions{ display:flex; gap:8px; margin-top:12px; }
+    .preview{
+      text-align:center; padding:18px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:12px;
+    }
+    img.qr { width:220px; height:220px; background:white; padding:8px; border-radius:12px; }
+    .meta{ color:var(--muted); font-size:13px; }
+    .footer { margin-top:12px; color:var(--muted); font-size:12px; }
+    .muted-btn {
+      background:transparent; color:var(--text); border:1px solid rgba(255,255,255,0.06);
+      padding:10px 12px; border-radius:8px; cursor:pointer;
+    }
+    @media (max-width:900px){
+      .wrap{ grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Tạo QR code Wi‑Fi</h1>
+      <div>
+        <label>SSID (tên mạng)</label>
+        <input id="ssid" type="text" placeholder="Ví dụ: MyHomeNetwork" value="" />
+
+        <label>Mật khẩu</label>
+        <input id="password" type="password" placeholder="Nhập mật khẩu (nếu có)" />
+
+        <label>Kiểu bảo mật</label>
+        <select id="auth">
+          <option value="WPA">WPA/WPA2</option>
+          <option value="WEP">WEP</option>
+          <option value="nopass">Không có mật khẩu (Open)</option>
+        </select>
+
+        <div class="row">
+          <label style="flex:1;">
+            <input id="hidden" type="checkbox" /> Mạng ẩn (Hidden SSID)
+          </label>
+          <div style="flex:1; text-align:right;">
+            <label class="meta">Chuẩn Wi‑Fi QR: <code>WIFI:T:...;S:...;P:...;H:...;;</code></label>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="generate">Tạo QR</button>
+          <button id="copyText" class="muted-btn">Sao chép chuỗi Wi‑Fi</button>
+          <button id="clear" class="muted-btn">Xóa</button>
+        </div>
+
+        <div class="footer">
+          <div style="margin-top:10px">Mẹo: để mạng mở (không mật khẩu) chọn "Không có mật khẩu". Nếu SSID có ký tự đặc biệt như `;` `,` `:` hoặc `\` — chúng sẽ được escape tự động.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card preview" aria-live="polite">
+      <div id="qrContainer" style="min-height:280px; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+        <img id="qrImage" class="qr" alt="QR code Wi‑Fi" src="" style="display:none" />
+        <div id="emptyText" class="meta">Chưa có QR. Nhập thông tin rồi bấm "Tạo QR".</div>
+      </div>
+
+      <div style="width:100%; display:flex; gap:8px; justify-content:center; margin-top:6px;">
+        <a id="downloadBtn" download="wifi-qr.png" class="muted-btn" style="display:none">Tải PNG</a>
+        <button id="copyImgBtn" class="muted-btn" style="display:none">Sao chép ảnh</button>
+      </div>
+
+      <div style="margin-top:8px; font-size:13px; color:var(--muted); text-align:center;">
+        Quét bằng camera điện thoại (iOS/Android) hoặc app đọc QR để kết nối.
+      </div>
+    </div>
+  </div>
+
+  <!-- thư viện QR code (sử dụng CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+  <script>
+    // Helpers: escape theo chuẩn (backslash escapes for ; , : \ " ' ? @)
+    function escapeWifiValue(s) {
+      if (s == null) return '';
+      return String(s).replace(/([\\;:,"])/g, '\\$1');
+    }
+
+    const ssidEl = document.getElementById('ssid');
+    const passEl = document.getElementById('password');
+    const authEl = document.getElementById('auth');
+    const hiddenEl = document.getElementById('hidden');
+
+    const generateBtn = document.getElementById('generate');
+    const clearBtn = document.getElementById('clear');
+    const copyTextBtn = document.getElementById('copyText');
+
+    const qrImage = document.getElementById('qrImage');
+    const qrContainer = document.getElementById('qrContainer');
+    const emptyText = document.getElementById('emptyText');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const copyImgBtn = document.getElementById('copyImgBtn');
+
+    function buildWifiString({ ssid, password, auth, hidden }) {
+      // Format: WIFI:T:<auth>;S:<ssid>;P:<password>;H:<true|false>;;
+      // For open networks, use T:nopass and omit P (or empty)
+      const escSSID = escapeWifiValue(ssid || '');
+      const escPwd = escapeWifiValue(password || '');
+      const typ = (auth === 'nopass') ? 'nopass' : (auth || 'WPA');
+      let s = `WIFI:T:${typ};S:${escSSID};`;
+      if (typ !== 'nopass') {
+        s += `P:${escPwd};`;
+      }
+      if (hidden) s += `H:true;`;
+      s += ';';
+      return s;
+    }
+
+    async function generate() {
+      const ssid = ssidEl.value.trim();
+      const password = passEl.value;
+      const auth = authEl.value;
+      const hidden = hiddenEl.checked;
+
+      if (!ssid) {
+        alert('Vui lòng nhập SSID (tên mạng).');
+        return;
+      }
+      if (auth !== 'nopass' && !password) {
+        if (!confirm('Bạn chưa nhập mật khẩu cho mạng bảo mật. Tiếp tục tạo QR trống mật khẩu?')) {
+          return;
+        }
+      }
+
+      const wifiString = buildWifiString({ ssid, password, auth, hidden });
+
+      // tạo DataURL PNG kích thước 420x420
+      try {
+        const dataUrl = await QRCode.toDataURL(wifiString, {
+          errorCorrectionLevel: 'H',
+          type: 'image/png',
+          width: 420,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#ffffff'
+          }
+        });
+
+        qrImage.src = dataUrl;
+        qrImage.style.display = 'block';
+        emptyText.style.display = 'none';
+        downloadBtn.href = dataUrl;
+        downloadBtn.style.display = 'inline-block';
+        copyImgBtn.style.display = 'inline-block';
+
+        // set download filename with SSID
+        const safeName = ssid.replace(/[^a-z0-9_\-]/ig, '_') || 'wifi-qr';
+        downloadBtn.download = `${safeName}-wifi-qr.png`;
+      } catch (err) {
+        console.error(err);
+        alert('Lỗi khi tạo QR: ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    generateBtn.addEventListener('click', generate);
+    clearBtn.addEventListener('click', () => {
+      ssidEl.value = '';
+      passEl.value = '';
+      authEl.value = 'WPA';
+      hiddenEl.checked = false;
+      qrImage.style.display = 'none';
+      emptyText.style.display = 'block';
+      downloadBtn.style.display = 'none';
+      copyImgBtn.style.display = 'none';
+    });
+
+    copyTextBtn.addEventListener('click', () => {
+      const wifiString = buildWifiString({
+        ssid: ssidEl.value.trim(),
+        password: passEl.value,
+        auth: authEl.value,
+        hidden: hiddenEl.checked
+      });
+      navigator.clipboard?.writeText(wifiString).then(() => {
+        alert('Chuỗi Wi‑Fi đã được sao chép vào clipboard:\n' + wifiString);
+      }).catch(() => {
+        prompt('Sao chép thủ công (Ctrl+C):', wifiString);
+      });
+    });
+
+    copyImgBtn.addEventListener('click', async () => {
+      // try to copy image to clipboard (may require secure context and permissions)
+      try {
+        const dataUrl = qrImage.src;
+        const blob = await (await fetch(dataUrl)).blob();
+        // use ClipboardItem if supported
+        if (navigator.clipboard && window.ClipboardItem) {
+          await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+          alert('Ảnh QR đã được sao chép vào clipboard. (Nếu trình duyệt hỗ trợ)');
+        } else {
+          // fallback: open in new tab for user to save
+          const w = window.open(dataUrl, '_blank');
+          if (!w) alert('Không thể mở tab — chặn popup?');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Không thể sao chép ảnh — trình duyệt có thể không hỗ trợ. Ảnh sẽ được mở trong tab mới.');
+        window.open(qrImage.src, '_blank');
+      }
+    });
+
+    // support pressing Enter on password or ssid to generate
+    [ssidEl, passEl].forEach(el => {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') generate();
+      });
+    });
+  </script>
+</body>
+</html>
