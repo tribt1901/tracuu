@@ -15,8 +15,11 @@
     .poster { width: 900px; height: 400px; flex-direction: row; }
     .poster-vertical { width: 450px; height: 650px; flex-direction: column; justify-content: flex-start; }
     .logo img { height: 60px; max-width: 200px; object-fit: contain; }
-    .wifi-custom { height: 100px; margin: 10px 0; }
-    .text { color: #202060; font-weight: bold; margin: 10px 0; font-size: 22px; display:flex; align-items:center; gap:10px; }
+    .wifi-custom { max-height: 100px; display:block; margin:0 auto; }
+    .title { 
+      color: #202060; font-weight: bold; margin-top: 15px; 
+      font-size: 22px; text-align:center; 
+    }
     .info-box, .info-box-vertical {
       border: 2px solid #202060; padding: 15px; margin-top: 15px;
       display: flex; align-items: center; justify-content: center;
@@ -71,7 +74,7 @@
         </select>
       </div>
       <div class="col-md-6">
-        <label class="form-label">Logo (tuỳ chọn):</label>
+        <label class="form-label">Logo:</label>
         <input type="file" id="logoUpload" class="form-control" accept="image/*">
       </div>
       <div class="col-md-12">
@@ -93,7 +96,7 @@
 
 <script>
 let uploadedLogo = "";
-const wifiIconUrl = "upload/logo.png";
+const wifiIconUrl = "upload/logo.png"; // icon WiFi mặc định trong repo
 
 document.getElementById("logoUpload").addEventListener("change", function(event){
   const file = event.target.files[0];
@@ -117,19 +120,17 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
 
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(wifiString)}&size=200x200`;
 
-  // logo tuỳ chọn nếu có upload
   const logoHtml = uploadedLogo ? `<div class="logo"><img src="${uploadedLogo}"></div>` : "";
-
-  // icon wifi mặc định
-  const wifiIconHtml = `<img src="${wifiIconUrl}" class="wifi-custom" alt="Wi-Fi Icon">`;
+  const wifiIconHtml = `<img src="${wifiIconUrl}" class="wifi-custom" alt="WiFi Icon">`;
 
   let poster = "";
   if (type === "horizontal") {
     poster = `
     <div id="poster" class="poster">
-      <div class="left">
+      <div class="left text-center">
         ${logoHtml}
-        <div class="text">${wifiIconHtml}<br> WI-FI AVAILABLE HERE</div>
+        ${wifiIconHtml}
+        <div class="title">WI-FI AVAILABLE HERE</div>
       </div>
       <div class="info-box">
         <div>
@@ -137,7 +138,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
           <div class="wifi-info">Password: <b>${password || "(No Password)"}</b></div>
           <div style="text-align:center; margin-top:10px;">
             <span style="font-size:18px; color:#202060;">Scan Me!</span><br>
-            <div class="hand">👇</div>
+            <div class="hand">👉</div>
             <img class="qr" src="${qrUrl}" alt="QR Code">
           </div>
         </div>
@@ -145,15 +146,16 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
     </div>`;
   } else {
     poster = `
-    <div id="poster" class="poster-vertical">
+    <div id="poster" class="poster-vertical text-center">
       ${logoHtml}
-      <div class="text">${wifiIconHtml}<br> WI-FI AVAILABLE HERE</div>
+      ${wifiIconHtml}
+      <div class="title">WI-FI AVAILABLE HERE</div>
       <div class="info-box-vertical">
         <div class="wifi-info">Network Name: <b>${ssid}</b></div>
         <div class="wifi-info">Password: <b>${password || "(No Password)"}</b></div>
         <div style="text-align:center; margin-top:10px;">
           <span style="font-size:18px; color:#202060;">Scan Me!</span><br>
-          <div class="hand"> 👇</div>
+          <div class="hand">👉</div>
           <img class="qr" src="${qrUrl}" alt="QR Code">
         </div>
       </div>
