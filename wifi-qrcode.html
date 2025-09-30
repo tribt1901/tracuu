@@ -10,135 +10,93 @@
   <style>
     body { padding-top: 80px; background: #f8f9fa; }
 
-    /* ========== POSTER NGANG ========== */
-    .poster, .poster-vertical {
+    /* ========== POSTER NGANG ĐẸP, CÂN ĐỐI ========== */
+    .poster {
+      width: 950px; height: 420px;
       background: white; border: 2px solid #202060; margin: 20px auto; padding: 0;
-      display: flex; position: relative; box-sizing: border-box;
-    }
-    .poster { 
-      width: 1000px; height: 520px;
-      flex-direction: row; 
-      justify-content: space-between;
-      align-items: stretch;
+      display: flex; flex-direction: row; box-sizing: border-box;
+      align-items: stretch; justify-content: space-between;
     }
     .poster .left-area {
-      flex: 1 1 0; 
-      display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
-      min-width: 0; min-height: 0;
-      padding: 0 0 36px 0;
-      border: none;
-      position: relative;
-      height: 100%;
+      flex: 1.1 1 0;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      min-width: 0; min-height: 0; border: none; height: 100%;
+      padding: 0; margin: 0;
     }
     .poster .logo-wifi-group {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      gap: 18px;
-      margin-bottom: 0;
-      margin-top: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; width: 100%; margin: 0; padding: 0;
     }
     .poster .logo {
-      width: 95%; max-width: 440px; max-height: 120px; min-height: 64px;
-      display: flex; align-items: flex-start; justify-content: center;
-      margin-top: 32px;
-      margin-bottom: 10px;
+      width: 76%; max-width: 350px; min-width: 180px; max-height: 90px; min-height: 50px;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto;
     }
-    .poster .logo img { 
-      max-width: 100%; max-height: 120px;
-      object-fit: contain;
-      display: block;
-      margin: 0 auto;
-      width: 100%;
-      height: auto;
+    .poster .logo img {
+      max-width: 100%; max-height: 100%; object-fit: contain; display: block; width: auto; height: auto; margin: 0 auto;
     }
-    .poster .wifi-custom { 
-      max-width: 120px; max-height: 68px; width: auto; height: auto;
-      display: block; object-fit: contain; margin: 0 auto 0 auto;
+    .poster .wifi-custom {
+      max-width: 70px; max-height: 44px; width: auto; height: auto; display: block; object-fit: contain; margin: 0 auto;
     }
     .poster .title {
-      color: #202060; font-weight: bold;
-      font-size: 46px; text-align:center; letter-spacing: 3px; margin-top: 38px;
-      margin-bottom: 0;
-      width: 100%;
-      line-height: 1.1;
+      color: #202060; font-weight: bold; font-size: 34px; text-align:center; letter-spacing: 2px;
+      margin: 30px 0 0 0; width: 100%; line-height: 1.12;
     }
 
     .poster .info-box {
-      flex: 0 0 380px;
+      flex: 0 0 325px;
       display: flex; flex-direction: column; justify-content: center; align-items: center;
       border: 2px solid #202060; background: #fdfdfd;
-      margin: 32px 34px 32px 0;
-      align-self: center;
-      box-sizing: border-box;
-      height: 92%;
-      min-height: 265px;
-      max-height: 444px;
-      padding: 0 18px;
+      margin: 25px 30px 25px 0; align-self: center; box-sizing: border-box;
+      min-height: 250px; max-height: 355px; height: 90%; padding: 0 16px;
     }
     .poster .info-content {
       width: 100%; text-align: center;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 13px;
+      gap: 12px;
     }
-    .poster .wifi-info { font-size: 28px; color: #202060; margin-bottom: 0; word-break: break-all; font-weight: bold;}
+    .poster .wifi-info { font-size: 21px; color: #202060; margin-bottom: 0; word-break: break-all; font-weight: bold;}
     .poster .wifi-label { font-weight: normal; color: #202060; }
     .poster .wifi-value { font-weight: bold; color: #202060; }
-    .poster .scan-block { display: flex; flex-direction: column; align-items: center; margin-top: 12px; }
-    .poster .hand { font-size: 32px; margin: 0; color: #202060; }
-    .poster .qr { width: 170px; height: 170px; margin-top: 2px;}
+    .poster .scan-block { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
+    .poster .hand { font-size: 28px; margin: 0; color: #202060; }
+    .poster .qr { width: 130px; height: 130px; margin-top: 3px;}
 
     /* ========== POSTER DỌC ĐẸP ========== */
-    .poster-vertical { 
-      width: 370px; height: 590px; 
-      flex-direction: column;
+    .poster-vertical {
+      width: 350px; height: 540px; background: white;
+      border: 2px solid #202060; margin: 20px auto; padding: 0;
+      display: flex; flex-direction: column; align-items: center; box-sizing: border-box;
       justify-content: flex-start;
-      align-items: center; 
-      padding: 28px 12px 18px 12px;
-      border: 2px solid #202060;
-      background: #fff;
     }
     .pv-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      gap: 10px;
-      margin-bottom: 8px;
+      display: flex; flex-direction: column; align-items: center; width: 100%;
+      gap: 9px; margin-bottom: 10px; margin-top: 18px;
     }
     .poster-vertical .logo {
-      width: 92%; max-width: 210px; max-height: 105px; min-height: 48px;
-      display: flex; align-items: flex-start; justify-content: center;
-      margin: 0 auto 5px auto;
+      width: 86%; max-width: 170px; min-width: 110px; max-height: 72px; min-height: 36px;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 3px auto;
     }
     .poster-vertical .logo img {
-      max-width: 100%; max-height: 105px;
-      object-fit: contain;
-      width: 100%; height: auto;
-      display: block;
-      margin: 0 auto;
+      max-width: 100%; max-height: 100%; object-fit: contain; width: auto; height: auto; display: block; margin: 0 auto;
     }
-    .poster-vertical .wifi-custom { max-width: 56px; max-height: 44px; margin: 0 auto 0 auto; object-fit: contain;}
-    .poster-vertical .title { color: #202060; font-weight: bold; margin: 14px 0 12px 0; font-size: 26px; text-align:center; letter-spacing: 2px; }
-    .poster-vertical .info-box-vertical { 
-      border: 2px solid #202060; 
-      background: #fdfdfd;
-      width: 100%; max-width: 99%; min-height: 198px; max-height: 310px;
+    .poster-vertical .wifi-custom { max-width: 44px; max-height: 32px; margin: 2px auto 0 auto; object-fit: contain;}
+    .poster-vertical .title { color: #202060; font-weight: bold; margin: 12px 0 12px 0; font-size: 22px; text-align:center; letter-spacing: 2px; }
+    .poster-vertical .info-box-vertical {
+      border: 2px solid #202060; background: #fdfdfd;
+      width: 100%; max-width: 98%; min-height: 180px; max-height: 295px;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 16px 6px;
-      box-sizing: border-box;
+      padding: 14px 4px; box-sizing: border-box; margin-top: 2px;
     }
-    .poster-vertical .wifi-info { font-size: 19px; color: #202060; margin-bottom: 2px; word-break: break-all; font-weight: bold;}
+    .poster-vertical .wifi-info { font-size: 16px; color: #202060; margin-bottom: 2px; word-break: break-all; font-weight: bold;}
     .poster-vertical .wifi-label { font-weight: normal; color: #202060; }
     .poster-vertical .wifi-value { font-weight: bold; color: #202060; }
-    .poster-vertical .scan-block { display: flex; flex-direction: column; align-items: center; margin-top: 12px; }
-    .poster-vertical .hand { font-size: 28px; margin: 1px 0 2px 0; color: #202060; }
-    .poster-vertical .qr { width: 130px; height: 130px; }
+    .poster-vertical .scan-block { display: flex; flex-direction: column; align-items: center; margin-top: 8px; }
+    .poster-vertical .hand { font-size: 22px; margin: 1px 0 2px 0; color: #202060; }
+    .poster-vertical .qr { width: 110px; height: 110px; }
     /* Responsive */
-    @media (max-width: 1150px) {
-      .poster { width: 98vw; height: auto; flex-direction: column; }
-      .poster-vertical { width: 96vw; min-width: 170px; }
+    @media (max-width: 1100px) {
+      .poster { width: 99vw; height: auto; flex-direction: column; }
+      .poster-vertical { width: 97vw; min-width: 150px; }
       .poster .logo-wifi-group {max-height: none;}
     }
     .btn-download { margin: 10px; }
@@ -232,7 +190,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
   wifiString += ";";
 
   const qrDiv = document.createElement("div");
-  new QRCode(qrDiv, { text: wifiString, width: type === "horizontal" ? 170 : 130, height: type === "horizontal" ? 170 : 130 });
+  new QRCode(qrDiv, { text: wifiString, width: type === "horizontal" ? 130 : 110, height: type === "horizontal" ? 130 : 110 });
   setTimeout(()=>{
     const qrCanvas = qrDiv.querySelector("canvas");
     const qrImg = qrCanvas.toDataURL("image/png");
@@ -242,7 +200,6 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
 
     let poster = "";
     if (type === "horizontal") {
-      // Logo lên trên, icon wifi sát dưới, chữ sát cuối khối trái
       poster = `
       <div id="poster" class="poster">
         <div class="left-area">
@@ -257,7 +214,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
             <div class="wifi-info"><span class="wifi-label">Network Name:</span> <span class="wifi-value">${ssid}</span></div>
             <div class="wifi-info"><span class="wifi-label">Password:</span> <span class="wifi-value">${password || "(No Password)"}</span></div>
             <div class="scan-block">
-              <span style="font-size:22px; color:#202060;">Scan Me!</span>
+              <span style="font-size:18px; color:#202060;">Scan Me!</span>
               <div class="hand">👇</div>
               <img class="qr" src="${qrImg}" alt="QR Code">
             </div>
@@ -265,7 +222,6 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
         </div>
       </div>`;
     } else {
-      // Poster dọc đẹp, logo to, icon wifi sát, bố cục đều
       poster = `
       <div id="poster" class="poster-vertical">
         <div class="pv-header">
@@ -277,7 +233,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
           <div class="wifi-info"><span class="wifi-label">Network Name:</span> <span class="wifi-value">${ssid}</span></div>
           <div class="wifi-info"><span class="wifi-label">Password:</span> <span class="wifi-value">${password || "(No Password)"}</span></div>
           <div class="scan-block">
-            <span style="font-size:17px; color:#202060;">Scan Me!</span>
+            <span style="font-size:15px; color:#202060;">Scan Me!</span>
             <div class="hand">👇</div>
             <img class="qr" src="${qrImg}" alt="QR Code">
           </div>
