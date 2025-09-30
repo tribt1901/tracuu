@@ -93,7 +93,6 @@
 
 <script>
 let uploadedLogo = "";
-// icon wifi mặc định từ repo
 const wifiIconUrl = "upload/logo.png";
 
 document.getElementById("logoUpload").addEventListener("change", function(event){
@@ -130,7 +129,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
     <div id="poster" class="poster">
       <div class="left">
         ${logoHtml}
-        <div class="text">${wifiIconHtml} WI-FI AVAILABLE HERE</div>
+        <div class="text">${wifiIconHtml}<br> WI-FI AVAILABLE HERE</div>
       </div>
       <div class="info-box">
         <div>
@@ -138,7 +137,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
           <div class="wifi-info">Password: <b>${password || "(No Password)"}</b></div>
           <div style="text-align:center; margin-top:10px;">
             <span style="font-size:18px; color:#202060;">Scan Me!</span><br>
-            <div class="hand">👉</div>
+            <div class="hand">👇</div>
             <img class="qr" src="${qrUrl}" alt="QR Code">
           </div>
         </div>
@@ -148,7 +147,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
     poster = `
     <div id="poster" class="poster-vertical">
       ${logoHtml}
-      <div class="text">${wifiIconHtml} WI-FI AVAILABLE HERE</div>
+      <div class="text">${wifiIconHtml}<br> WI-FI AVAILABLE HERE</div>
       <div class="info-box-vertical">
         <div class="wifi-info">Network Name: <b>${ssid}</b></div>
         <div class="wifi-info">Password: <b>${password || "(No Password)"}</b></div>
