@@ -1,30 +1,24 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Tạo mã QR Wi‑Fi</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tạo mã QR Wi-Fi</title>
 
-  <!-- Bootstrap 5 CSS -->
+  <!-- Favicon ẩn lỗi 404 -->
+  <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAGAAAAAAAAAMAAAAAAAAAAAAAAAEAAAAAAAAAAAAAkZGRAP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" />
+
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-
-  <!-- QRCode JS -->
+  <!-- QRCode Library -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 
   <style>
     body {
-      font-family: system-ui, sans-serif;
-      margin: 0;
-      padding-top: 80px;
-      background: #0f172a;
+      background-color: #0f172a;
       color: #e2e8f0;
-    }
-    .container { max-width: 960px; }
-    .card {
-      background: #1e293b;
-      border: none;
-      border-radius: 10px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      padding-top: 80px;
+      font-family: system-ui, sans-serif;
     }
     .form-control, .form-select {
       background-color: #334155;
@@ -36,6 +30,12 @@
       color: #fff;
       border-color: #60a5fa;
       box-shadow: none;
+    }
+    .card {
+      background: #1e293b;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
     }
     .qr-image {
       background: #fff;
@@ -56,7 +56,7 @@
 
 <body>
 
-<!-- 🔵 Navbar -->
+<!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm" style="background-color:#3B5C94">
   <div class="container-fluid">
     <a class="navbar-brand" href="#">📘 Hệ thống tra cứu</a>
@@ -74,14 +74,14 @@
   </div>
 </nav>
 
-<!-- 🔢 Số người online -->
+<!-- Online Counter -->
 <div class="container mt-2">
   <div class="online-counter-box text-center mb-3">
     🟢 Hiện có <span id="online-counter">0</span> người đang truy cập hệ thống.
   </div>
 </div>
 
-<!-- 📦 Form tạo mã QR -->
+<!-- QR Code Generator -->
 <div class="container">
   <div class="card p-4 mb-4">
     <h3 class="mb-3 text-info">📶 Tạo mã QR để kết nối Wi‑Fi</h3>
@@ -112,12 +112,11 @@
 
     <div class="d-flex gap-2 flex-wrap">
       <button class="btn btn-primary" onclick="generateQRCode()">Tạo QR</button>
-      <button class="btn btn-secondary" onclick="copyText()">📋 Sao chép chuỗi Wi-Fi</button>
+      <button class="btn btn-secondary" onclick="copyText()">📋 Sao chép chuỗi Wi‑Fi</button>
       <button class="btn btn-danger" onclick="resetForm()">🧹 Xóa</button>
     </div>
   </div>
 
-  <!-- 🖼️ Kết quả -->
   <div class="card p-4 text-center">
     <h5 class="text-success mb-3">🔍 Kết quả QR:</h5>
     <img id="qrImage" class="qr-image" src="" alt="QR Code" style="display:none" />
@@ -130,7 +129,40 @@
   </div>
 </div>
 
-<!-- 🧠 Script tạo QR -->
+<!-- Firebase SDK + Online Counter -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, onDisconnect, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
+    authDomain: "tracuu-d3ee9.firebaseapp.com",
+    projectId: "tracuu-d3ee9",
+    storageBucket: "tracuu-d3ee9.appspot.com",
+    messagingSenderId: "593568604435",
+    appId: "1:593568604435:web:9a5145457a8ee734143ae6",
+    measurementId: "G-R0M6Y502NP"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app, "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app");
+
+  const onlineCounterEl = document.getElementById('online-counter');
+  const connectionsRef = ref(db, 'connections');
+  const myConnectionRef = push(connectionsRef);
+  onDisconnect(myConnectionRef).remove();
+  set(myConnectionRef, true);
+
+  onValue(connectionsRef, (snapshot) => {
+    let count = 0;
+    if (snapshot.exists() && typeof snapshot.val() === 'object') {
+      count = Object.keys(snapshot.val()).length;
+    }
+    if (onlineCounterEl) onlineCounterEl.textContent = count;
+  });
+</script>
+
+<!-- QR Code Logic -->
 <script>
   function escapeValue(str) {
     return String(str || '').replace(/([\\;,":])/g, '\\$1');
@@ -198,4 +230,36 @@
   }
 
   function copyText() {
-    const ssid
+    const ssid = document.getElementById('ssid').value.trim();
+    const password = document.getElementById('password').value;
+    const auth = document.getElementById('auth').value;
+    const hidden = document.getElementById('hidden').checked;
+
+    const wifiString = buildWifiString(ssid, password, auth, hidden);
+    navigator.clipboard.writeText(wifiString).then(() => {
+      alert('✅ Đã sao chép chuỗi Wi‑Fi:\n' + wifiString);
+    }).catch(() => {
+      prompt('Sao chép thủ công:', wifiString);
+    });
+  }
+
+  async function copyImage() {
+    const img = document.getElementById('qrImage');
+    const dataUrl = img.src;
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const item = new ClipboardItem({ [blob.type]: blob });
+      await navigator.clipboard.write([item]);
+      alert("✅ Đã sao chép ảnh QR vào clipboard.");
+    } catch (e) {
+      alert("⚠️ Trình duyệt không hỗ trợ sao chép ảnh. Hãy tải ảnh hoặc mở ảnh trong tab mới.");
+      window.open(dataUrl, '_blank');
+    }
+  }
+</script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
