@@ -16,7 +16,7 @@
     }
     /* Poster ngang cân đối */
     .poster { 
-      width: 820px; height: 370px;
+      width: 900px; height: 420px;
       flex-direction: row; 
       justify-content: space-between;
       align-items: stretch;
@@ -25,38 +25,39 @@
       flex: 1 1 0; 
       display: flex; flex-direction: column; justify-content: center; align-items: center;
       min-width: 0; min-height: 0;
-      padding: 28px 0 28px 0;
+      padding: 38px 0 24px 0;
       border: none;
     }
-    .poster .logo img { max-height: 70px; max-width: 160px; object-fit: contain; margin-bottom: 4px;}
-    .poster .wifi-custom { max-height: 50px; margin: 10px auto 0 auto; }
+    /* TĂNG LOGO và ICON LỚN HƠN */
+    .poster .logo img { max-height: 120px; max-width: 280px; object-fit: contain; margin-bottom: 6px;}
+    .poster .wifi-custom { max-height: 80px; margin: 12px auto 0 auto; }
     .poster .title {
       color: #202060; font-weight: bold;
-      font-size: 27px; text-align:center; letter-spacing: 2px; margin-top: 22px;
+      font-size: 32px; text-align:center; letter-spacing: 2px; margin-top: 28px;
       margin-bottom: 0;
     }
     .poster .info-box {
-      flex: 0 0 305px;
+      flex: 0 0 325px;
       display: flex; flex-direction: column; justify-content: center; align-items: center;
       border: 2px solid #202060; background: #fdfdfd;
-      margin: 18px 22px 18px 0;
+      margin: 28px 28px 28px 0;
       align-self: center;
       box-sizing: border-box;
-      height: 88%;
-      min-height: 220px;
-      max-height: 310px;
+      height: 90%;
+      min-height: 250px;
+      max-height: 340px;
     }
     .poster .info-content {
       width: 100%; text-align: center;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 5px;
+      gap: 7px;
     }
-    .poster .wifi-info { font-size: 18px; color: #202060; margin-bottom: 1px; word-break: break-all;}
+    .poster .wifi-info { font-size: 20px; color: #202060; margin-bottom: 2px; word-break: break-all;}
     .poster .wifi-label { font-weight: normal; color: #202060; }
     .poster .wifi-value { font-weight: bold; color: #202060; }
-    .poster .scan-block { display: flex; flex-direction: column; align-items: center; margin-top: 5px; }
-    .poster .hand { font-size: 22px; margin: 0; color: #202060; }
-    .poster .qr { width: 120px; height: 120px; margin-top: 2px;}
+    .poster .scan-block { display: flex; flex-direction: column; align-items: center; margin-top: 6px; }
+    .poster .hand { font-size: 26px; margin: 0; color: #202060; }
+    .poster .qr { width: 140px; height: 140px; margin-top: 2px;}
     /* POSTER DỌC cân đối */
     .poster-vertical { 
       width: 340px; height: 540px; 
@@ -190,7 +191,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
 
   // tạo QRCode bằng thư viện -> để chắc chắn khi download có QR
   const qrDiv = document.createElement("div");
-  new QRCode(qrDiv, { text: wifiString, width: 120, height: 120 });
+  new QRCode(qrDiv, { text: wifiString, width: type === "horizontal" ? 140 : 120, height: type === "horizontal" ? 140 : 120 });
   setTimeout(()=>{
     const qrCanvas = qrDiv.querySelector("canvas");
     const qrImg = qrCanvas.toDataURL("image/png");
@@ -201,7 +202,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
 
     let poster = "";
     if (type === "horizontal") {
-      // POSTER NGANG CÂN ĐỐI
+      // POSTER NGANG: logo và icon lớn hơn, căn giữa block, info-box phải luôn cân đối
       poster = `
       <div id="poster" class="poster">
         <div class="left-area">
