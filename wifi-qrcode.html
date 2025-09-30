@@ -36,7 +36,7 @@
       justify-content: flex-start;
       position: relative;
     }
-    .logo img { height: 60px; }
+    .logo img { height: 60px; max-width: 200px; object-fit: contain; }
     .wifi-icon { font-size: 120px; color: #f4b400; }
     .text { color: #202060; font-weight: bold; margin: 10px 0; font-size: 22px; }
     .info-box, .info-box-vertical {
@@ -82,11 +82,23 @@
     <form id="wifiForm" class="row g-3">
       <div class="col-md-6">
         <label class="form-label">Tên Wi-Fi (SSID):</label>
-        <input type="text" id="ssid" class="form-control" value="VNVC Guest" required>
+        <input type="text" id="ssid" class="form-control" required>
       </div>
       <div class="col-md-6">
         <label class="form-label">Mật khẩu:</label>
-        <input type="text" id="password" class="form-control" value="Vnvc@MFG" required>
+        <input type="text" id="password" class="form-control">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Bảo mật Wi-Fi:</label>
+        <select id="encryption" class="form-select">
+          <option value="WPA">WPA/WPA2</option>
+          <option value="WEP">WEP</option>
+          <option value="nopass">None</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Logo:</label>
+        <input type="file" id="logoUpload" class="form-control" accept="image/*">
       </div>
       <div class="col-md-12">
         <label class="form-label">Loại Poster:</label>
@@ -106,27 +118,47 @@
 <div id="result" class="text-center"></div>
 
 <script>
+let uploadedLogo = "";
+
+document.getElementById("logoUpload").addEventListener("change", function(event){
+  const file = event.target.files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      uploadedLogo = e.target.result;
+    }
+    reader.readAsDataURL(file);
+  }
+});
+
 document.getElementById("wifiForm").addEventListener("submit", function(e){
   e.preventDefault();
   const ssid = document.getElementById("ssid").value;
   const password = document.getElementById("password").value;
+  const encryption = document.getElementById("encryption").value;
   const type = document.getElementById("orientation").value;
 
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=WIFI:T:WPA;S:${encodeURIComponent(ssid)};P:${encodeURIComponent(password)};;&size=200x200`;
+  let wifiString = `WIFI:T:${encryption};S:${ssid};`;
+  if(encryption !== "nopass") wifiString += `P:${password};`;
+  wifiString += ";";
+
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(wifiString)}&size=200x200`;
+
+  const logoHtml = uploadedLogo ? `<div class="logo"><img src="${uploadedLogo}"></div>` : "";
 
   let poster = "";
   if (type === "horizontal") {
     poster = `
     <div id="poster" class="poster">
       <div class="left">
-        <div class="logo"><img src="https://i.imgur.com/lFS3npg.png"></div>
+        ${logoHtml}
         <div class="wifi-icon">📶</div>
         <div class="text">WI-FI AVAILABLE HERE</div>
       </div>
       <div class="info-box">
         <div>
           <div class="wifi-info">Network Name: <b>${ssid}</b></div>
-          <div class="wifi-info">Password: <b>${password}</b></div>
+          <div class="wifi-info">Password: <b>${password || "(No Password)"}</b></div>
           <div style="display:flex; align-items:center; margin-top:10px;">
             <span style="font-size:18px; color:#202060; margin-right:10px;">Scan Me!</span>
             <img class="qr" src="${qrUrl}">
@@ -138,12 +170,12 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
   } else {
     poster = `
     <div id="poster" class="poster-vertical">
-      <div class="logo"><img src="https://i.imgur.com/lFS3npg.png"></div>
+      ${logoHtml}
       <div class="wifi-icon">📶</div>
       <div class="text">WI-FI AVAILABLE HERE</div>
       <div class="info-box-vertical">
         <div class="wifi-info">Network Name: <b>${ssid}</b></div>
-        <div class="wifi-info">Password: <b>${password}</b></div>
+        <div class="wifi-info">Password: <b>${password || "(No Password)"}</b></div>
         <div style="display:flex; align-items:center; margin-top:10px;">
           <span style="font-size:18px; color:#202060; margin-right:10px;">Scan Me!</span>
           <img class="qr" src="${qrUrl}">
