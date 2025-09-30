@@ -10,12 +10,14 @@
   <style>
     body { padding-top: 80px; background: #f8f9fa; }
 
-    /* ========== POSTER NGANG ĐẸP, CÂN ĐỐI ========== */
+    /* ========== POSTER NGANG ĐẸP, KHÔNG KHUNG VIỀN NGOÀI ========== */
     .poster {
       width: 950px; height: 420px;
-      background: white; border: 2px solid #202060; margin: 20px auto; padding: 0;
+      background: white; margin: 20px auto; padding: 0;
       display: flex; flex-direction: row; box-sizing: border-box;
       align-items: stretch; justify-content: space-between;
+      /* border: none; */
+      /* box-shadow: 0 2px 10px #eee; */
     }
     .poster .left-area {
       flex: 1.1 1 0;
@@ -61,12 +63,13 @@
     .poster .hand { font-size: 28px; margin: 0; color: #202060; }
     .poster .qr { width: 130px; height: 130px; margin-top: 3px;}
 
-    /* ========== POSTER DỌC ĐẸP ========== */
+    /* ========== POSTER DỌC KHÔNG KHUNG VIỀN NGOÀI ========== */
     .poster-vertical {
       width: 350px; height: 540px; background: white;
-      border: 2px solid #202060; margin: 20px auto; padding: 0;
+      margin: 20px auto; padding: 0;
       display: flex; flex-direction: column; align-items: center; box-sizing: border-box;
       justify-content: flex-start;
+      /* border: none; */
     }
     .pv-header {
       display: flex; flex-direction: column; align-items: center; width: 100%;
