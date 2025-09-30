@@ -15,7 +15,7 @@
     .poster { width: 900px; height: 400px; flex-direction: row; }
     .poster-vertical { width: 450px; height: 650px; flex-direction: column; justify-content: flex-start; }
     .logo img { height: 60px; max-width: 200px; object-fit: contain; }
-    .wifi-custom { height: 120px; margin: 10px 0; }
+    .wifi-custom { height: 100px; margin: 10px 0; }
     .text { color: #202060; font-weight: bold; margin: 10px 0; font-size: 22px; display:flex; align-items:center; gap:10px; }
     .info-box, .info-box-vertical {
       border: 2px solid #202060; padding: 15px; margin-top: 15px;
@@ -71,7 +71,7 @@
         </select>
       </div>
       <div class="col-md-6">
-        <label class="form-label">Logo:</label>
+        <label class="form-label">Logo (tuỳ chọn):</label>
         <input type="file" id="logoUpload" class="form-control" accept="image/*">
       </div>
       <div class="col-md-12">
@@ -93,7 +93,8 @@
 
 <script>
 let uploadedLogo = "";
-const wifiIconUrl = "ae573f8e-9c40-4a1e-aaee-f59698ed83d9.png"; // hình bạn upload
+// icon wifi mặc định từ repo
+const wifiIconUrl = "upload/logo.png";
 
 document.getElementById("logoUpload").addEventListener("change", function(event){
   const file = event.target.files[0];
@@ -117,8 +118,11 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
 
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(wifiString)}&size=200x200`;
 
+  // logo tuỳ chọn nếu có upload
   const logoHtml = uploadedLogo ? `<div class="logo"><img src="${uploadedLogo}"></div>` : "";
-  const wifiIconHtml = `<img src="${wifiIconUrl}" class="wifi-custom">`;
+
+  // icon wifi mặc định
+  const wifiIconHtml = `<img src="${wifiIconUrl}" class="wifi-custom" alt="Wi-Fi Icon">`;
 
   let poster = "";
   if (type === "horizontal") {
@@ -135,7 +139,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
           <div style="text-align:center; margin-top:10px;">
             <span style="font-size:18px; color:#202060;">Scan Me!</span><br>
             <div class="hand">👉</div>
-            <img class="qr" src="${qrUrl}">
+            <img class="qr" src="${qrUrl}" alt="QR Code">
           </div>
         </div>
       </div>
@@ -150,8 +154,8 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
         <div class="wifi-info">Password: <b>${password || "(No Password)"}</b></div>
         <div style="text-align:center; margin-top:10px;">
           <span style="font-size:18px; color:#202060;">Scan Me!</span><br>
-          <div class="hand">👉</div>
-          <img class="qr" src="${qrUrl}">
+          <div class="hand"> 👇</div>
+          <img class="qr" src="${qrUrl}" alt="QR Code">
         </div>
       </div>
     </div>`;
