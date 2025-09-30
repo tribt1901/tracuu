@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="UTF-8">
   <title>Wi-Fi QR Code Generator</title>
@@ -152,7 +152,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
     <div id="poster" class="poster">
       <div class="left">
         ${logoHtml}
-        <div class="wifi-icon">📶</div>
+        <div class="wifi-icon"></div>
         <div class="text">WI-FI AVAILABLE HERE</div>
       </div>
       <div class="info-box">
@@ -161,8 +161,8 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
           <div class="wifi-info">Password: <b>${password || "(No Password)"}</b></div>
           <div style="display:flex; align-items:center; margin-top:10px;">
             <span style="font-size:18px; color:#202060; margin-right:10px;">Scan Me!</span>
-            <img class="qr" src="${qrUrl}">
             <div class="hand">👉</div>
+            <img class="qr" src="${qrUrl}">
           </div>
         </div>
       </div>
@@ -171,7 +171,7 @@ document.getElementById("wifiForm").addEventListener("submit", function(e){
     poster = `
     <div id="poster" class="poster-vertical">
       ${logoHtml}
-      <div class="wifi-icon">📶</div>
+      <div class="wifi-icon"></div>
       <div class="text">WI-FI AVAILABLE HERE</div>
       <div class="info-box-vertical">
         <div class="wifi-info">Network Name: <b>${ssid}</b></div>
