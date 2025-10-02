@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tra Cứu Phạt Nguội - CSGT</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        h2 {
+            color: #bd0d0d;
+            text-align: center;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+
+        .captcha-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .captcha-display {
+            background-color: #eee;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #6a6a6a;
+            user-select: none; /* Ngăn chặn bôi đen */
+            min-width: 80px;
+            text-align: center;
+        }
+
+        button {
+            background-color: #bd0d0d;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #a00c0c;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ffcc00;
+            background-color: #fffacd;
+            color: #333;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        #disclaimer {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+            padding: 10px;
+            border-top: 1px solid #ccc;
+            text-align: justify;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Tra Cứu Phương Tiện Vi Phạm Giao Thông</h2>
+        
+        <div class="form-group">
+            <label for="bienSo">Biển kiểm soát:</label>
+            <input type="text" id="bienSo" placeholder="VD: 30A12345" required>
+        </div>
+
+        <div class="form-group">
+            <label for="loaiXe">Loại phương tiện:</label>
+            <select id="loaiXe">
+                <option value="1">Ô tô</option>
+                <option value="2" selected>Xe máy</option>
+                <option value="3">Xe đạp điện</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="captcha">Mã bảo mật:</label>
+            <div class="captcha-area">
+                <div id="captchaDisplay" class="captcha-display">1234</div> 
+                <input type="text" id="captchaInput" placeholder="Nhập mã bảo mật" required style="flex-grow: 1;">
+            </div>
+        </div>
+
+        <button onclick="traCuu()">Tra cứu</button>
+
+        <div id="result" style="display:none;"></div>
+        
+        <div id="disclaimer">
+            * **LƯU Ý:** Do vấn đề bảo mật của các cơ quan nhà nước, chức năng tra cứu này **không thể tự động truy cập** vào trang CSGT. Vui lòng truy cập trang chính thức của **Cục CSGT** hoặc **Cục Đăng kiểm** để tra cứu kết quả chính xác nhất.
+        </div>
+    </div>
+
+    <script>
+        // Hàm này chỉ mô phỏng hành động tra cứu
+        function traCuu() {
+            const bienSo = document.getElementById('bienSo').value.trim();
+            const captchaInput = document.getElementById('captchaInput').value.trim();
+            const captchaDisplay = document.getElementById('captchaDisplay').textContent;
+            const resultDiv = document.getElementById('result');
+
+            if (bienSo === "" || captchaInput === "") {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = "Vui lòng nhập đầy đủ Biển kiểm soát và Mã bảo mật.";
+                resultDiv.style.backgroundColor = '#f8d7da'; // Màu đỏ nhạt cho lỗi
+                resultDiv.style.borderColor = '#f5c6cb';
+                return;
+            }
+
+            if (captchaInput !== captchaDisplay) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = "Mã bảo mật không đúng. Vui lòng thử lại.";
+                resultDiv.style.backgroundColor = '#f8d7da'; 
+                resultDiv.style.borderColor = '#f5c6cb';
+                return;
+            }
+
+            // --- Phần mô phỏng kết quả ---
+            resultDiv.style.display = 'block';
+            resultDiv.style.backgroundColor = '#d4edda'; // Màu xanh nhạt
+            resultDiv.style.borderColor = '#c3e6cb';
+
+            // Đây là thông báo CẢNH BÁO cho người dùng
+            resultDiv.innerHTML = `
+                **Đã nhận yêu cầu tra cứu cho xe ${bienSo}.**
+                <br>
+                Vì lý do kỹ thuật và bảo mật, trang này không thể kết nối và lấy dữ liệu trực tiếp từ Cổng CSGT.
+                <br>
+                **HƯỚNG DẪN THỰC HIỆN:**
+                <br>
+                1. Truy cập trực tiếp vào Cổng thông tin Cục CSGT: [https://www.csgt.vn/](https://www.csgt.vn/)
+                <br>
+                2. Tìm mục "Tra cứu phương tiện vi phạm giao thông qua hình ảnh" (góc phải).
+                <br>
+                3. Nhập thông tin và Mã bảo mật TRÊN TRANG CHÍNH THỨC.
+            `;
+            // Tự động xóa input captcha sau khi tra cứu
+            document.getElementById('captchaInput').value = '';
+        }
+
+        // Tạo mã captcha ngẫu nhiên khi tải trang (giả lập)
+        window.onload = function() {
+            function generateCaptcha() {
+                const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                let result = '';
+                for (let i = 0; i < 4; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return result;
+            }
+            document.getElementById('captchaDisplay').textContent = generateCaptcha();
+        };
+
+    </script>
+</body>
+</html>
