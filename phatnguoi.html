@@ -1,81 +1,228 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Tra cứu phạt nguội - Demo</title>
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#f4f4f4;padding:40px}
-    .card{max-width:520px;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
-    h1{color:#bd0d0d;font-size:20px;text-align:center}
-    label{display:block;margin:12px 0 6px;font-weight:600}
-    input,select,button{width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box}
-    button{background:#bd0d0d;color:#fff;border:none;cursor:pointer;margin-top:14px}
-    #result{margin-top:14px;padding:12px;border-radius:6px;background:#fff;min-height:40px;border:1px solid #eee;white-space:pre-wrap}
-    .small{font-size:13px;color:#666;margin-top:10px}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tra cứu phạt nguội — Demo</title>
+<meta name="description" content="Tra cứu phạt nguội ô tô, xe máy toàn quốc - Demo" />
+<style>
+  :root{--accent:#E10054;--bg:#f5f7fb;--card:#fff;--muted:#6b7280}
+  body{font-family:Inter, Arial, Helvetica, sans-serif;background:var(--bg);margin:0;padding:28px;display:flex;align-items:flex-start;min-height:100vh;justify-content:center}
+  .wrap{width:100%;max-width:820px}
+  .card{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 8px 30px rgba(16,24,40,0.06)}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+  .logo{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;font-weight:700}
+  h1{font-size:18px;margin:0}
+  form{display:grid;grid-template-columns:1fr 220px;gap:12px;margin-top:14px;align-items:end}
+  .controls{grid-column:1/ -1;display:flex;gap:12px;flex-wrap:wrap}
+  label{display:block;font-weight:600;margin-bottom:6px}
+  input[type=text], select{width:100%;padding:12px;border:1px solid #e6e9ee;border-radius:8px;font-size:15px;box-sizing:border-box}
+  .btn{background:var(--accent);color:#fff;padding:12px 16px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .note{font-size:13px;color:var(--muted);margin-top:10px}
+  #resultBox{margin-top:18px;border-radius:10px;padding:16px;background:#ffffff;border:1px solid #eef2f7;min-height:86px}
+  .row{display:flex;gap:12px;align-items:center}
+  .muted{color:var(--muted)}
+  .list{margin:8px 0;padding:0;list-style:none}
+  .list li{padding:8px;border-radius:8px;background:#fbfbfd;margin-bottom:8px;border:1px solid #f0f3f8}
+  .small{font-size:13px;color:#374151}
+  .links{display:flex;gap:8px;flex-wrap:wrap}
+  .linkbtn{background:#fff;border:1px solid #e6e9ee;padding:8px 10px;border-radius:8px;text-decoration:none;color:#111;font-size:14px}
+  @media(max-width:720px){ form{grid-template-columns:1fr; } .card{padding:16px} }
+</style>
 </head>
 <body>
-  <div class="card">
-    <h1>Tra cứu phạt nguội — Demo</h1>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <div class="logo">PN</div>
+        <div>
+          <h1>Tra cứu phạt nguội — Demo</h1>
+          <div class="muted small">Nhập biển số, chọn loại xe, bấm "Tra cứu". (Dùng proxy để gọi API thực)</div>
+        </div>
+      </header>
 
-    <label for="bsx">Biển số (ví dụ: 30A12345)</label>
-    <input id="bsx" type="text" oninput="this.value = this.value.toUpperCase()" placeholder="Nhập biển số">
+      <form id="searchForm" onsubmit="return false;">
+        <div>
+          <label for="bsx">Biển kiểm soát</label>
+          <input id="bsx" type="text" placeholder="Ví dụ: 30A12345 hoặc 51F-777.77" oninput="this.value=this.value.toUpperCase()">
+        </div>
 
-    <label for="type">Loại</label>
-    <select id="type">
-      <option value="1">Ô tô</option>
-      <option value="2">Xe máy</option>
-      <option value="3">Xe máy điện</option>
-    </select>
+        <div>
+          <label for="loaixe">Loại phương tiện</label>
+          <select id="loaixe">
+            <option value="1">Ô tô</option>
+            <option value="2">Xe máy</option>
+            <option value="3">Xe máy điện</option>
+          </select>
+        </div>
 
-    <button id="btn">Tra cứu</button>
+        <div class="controls" style="grid-column:1/-1">
+          <button id="btnSearch" class="btn" type="button">Tra cứu</button>
+          <button id="btnOpenOfficial" class="linkbtn" type="button">Mở trang Cục CSGT</button>
+          <a class="linkbtn" href="https://phatnguoixe.com" target="_blank">Mẫu: phatnguoixe.com</a>
+          <div style="flex:1"></div>
+        </div>
+      </form>
 
-    <div id="result" role="status" aria-live="polite"></div>
+      <div id="resultBox" role="status" aria-live="polite">
+        <div id="resultIntro" class="small muted">Kết quả sẽ hiển thị ở đây.</div>
+      </div>
 
-    <div class="small">
-      Lưu ý: trang này gọi một **proxy** để bảo vệ API key và xử lý CORS. Bạn cần deploy proxy (hướng dẫn kèm theo).
+      <div class="note">
+        <strong>Ghi chú:</strong> file này là **frontend tĩnh**. Để tra cứu thực sự, bạn cần deploy 1 proxy server (Vercel/Netlify/VPS) và set biến <code>BASE_PROXY</code> trong script dưới thành domain proxy.
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="card" aria-hidden="false" style="margin-top:12px">
+      <h2 style="margin:0 0 8px 0">Thông tin kỹ thuật (ngắn)</h2>
+      <ul class="list small">
+        <li><strong>DEFAULT:</strong> nếu không cấu hình proxy, trang sẽ hiển thị <em>kết quả mẫu</em>.</li>
+        <li><strong>Để kết nối API thật:</strong> deploy serverless proxy và trả JSON theo dạng mẫu (xem phía dưới).</li>
+        <li><strong>Trường JSON mẫu từ proxy (ví dụ):</strong>
+          <pre style="background:#f6f8fb;padding:8px;border-radius:6px">{
+  "status":"ok",
+  "vehicle":"30A12345",
+  "type":"Ô tô",
+  "violations":[
+    {"time":"2025-09-01 07:42","place":"Hà Nội - Nguyễn Trãi","code":"VĐ01","fine":"1.200.000","image_url": "..."},
+    {"time":"2025-08-11 16:20","place":"HCM - Lê Duẩn","code":"VĐ02","fine":"800.000"}
+  ]
+}</pre>
+        </li>
+      </ul>
     </div>
   </div>
 
-  <script>
-    const btn = document.getElementById('btn');
-    const result = document.getElementById('result');
+<script>
+/*
+  Cách sử dụng:
+  - Nếu bạn có proxy (ví dụ deploy Vercel): đặt BASE_PROXY = 'https://my-proxy.vercel.app'
+  - Proxy endpoint kỳ vọng: POST { bsx, type } -> trả JSON (ví dụ mẫu ở trên).
+  - Nếu không có proxy, trang sẽ hiển thị "kết quả mẫu" để demo.
+*/
+const BASE_PROXY = ''; // <-- Nếu bạn deploy proxy, gán domain ở đây (không có trailing /). Ex: 'https://my-proxy.vercel.app'
+const ENDPOINT = '/api/search'; // endpoint trên proxy (ví dụ: https://my-proxy.vercel.app/api/search)
+const btn = document.getElementById('btnSearch');
+const openOfficial = document.getElementById('btnOpenOfficial');
+const bsxInput = document.getElementById('bsx');
+const typeInput = document.getElementById('loaixe');
+const resultBox = document.getElementById('resultBox');
+const resultIntro = document.getElementById('resultIntro');
 
-    async function search() {
-      const bsx = document.getElementById('bsx').value.trim();
-      const type = document.getElementById('type').value;
-      if (!bsx) {
-        result.textContent = 'Vui lòng nhập biển số.';
-        return;
-      }
-      result.textContent = 'Đang tra cứu…';
-      try {
-        // Thay đổi BASE_PROXY khi deploy proxy ở host khác (Vercel/Netlify/YourDomain)
-        const BASE_PROXY = ''; // empty => same origin. Nếu bạn host proxy trên vercel, ví dụ: 'https://your-proxy.vercel.app'
-        const res = await fetch(BASE_PROXY + '/api/search', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({bsx, type})
-        });
-        if (!res.ok) {
-          const text = await res.text();
-          result.textContent = `Lỗi server: ${res.status} ${res.statusText}\n${text}`;
-          return;
-        }
-        const json = await res.json();
-        // Hiển thị dữ liệu thô để debug. Bạn có thể trình bày đẹp hơn
-        result.textContent = JSON.stringify(json, null, 2);
-      } catch (err) {
-        result.textContent = 'Lỗi: ' + err.message;
-      }
-    }
+function formatCurrency(x) {
+  try { return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + ' ₫'; } catch(e){return x}
+}
 
-    btn.addEventListener('click', search);
-    // Enter to submit
-    document.getElementById('bsx').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') search();
+function renderResult(json) {
+  // Normalize a few possible shapes
+  if (!json) {
+    resultBox.innerHTML = '<div class="small muted">Không có dữ liệu.</div>';
+    return;
+  }
+  if (json.status && json.status !== 'ok') {
+    resultBox.innerHTML = `<div class="small muted">Server trả: ${JSON.stringify(json)}</div>`;
+    return;
+  }
+
+  const vehicle = json.vehicle || (json.bsx || '');
+  const type = json.type || (json.vehicle_type || (typeInput.options[typeInput.selectedIndex].text));
+  const violations = json.violations || json.data || [];
+
+  if (!violations || violations.length === 0) {
+    resultBox.innerHTML = `<div><strong>${vehicle}</strong> — <span class="muted small">${type}</span>
+      <div style="margin-top:8px;color:#059669;font-weight:700">Không tìm thấy lỗi phạt nguội</div>
+      <div class="small muted" style="margin-top:8px">Lưu ý: kết quả chính thức từ Cục CSGT.</div>
+    </div>`;
+    return;
+  }
+
+  // Build html
+  let html = `<div><strong>${vehicle}</strong> — <span class="muted small">${type}</span></div>`;
+  html += `<div style="margin-top:10px"><strong style="color:#b91c1c">${violations.length}</strong> lỗi được tìm thấy:</div>`;
+  html += '<ul style="list-style:none;padding:0;margin-top:8px">';
+  for (const v of violations) {
+    html += `<li style="margin-bottom:10px;padding:10px;border-radius:8px;background:#fff;border:1px solid #f1f5f9">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-weight:700">${v.code || v.violation_code || 'LỖI'}</div>
+             <div class="small muted">${v.place || v.location || 'Địa điểm không rõ'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:700">${v.fine ? formatCurrency(v.fine) : (v.fee || '')}</div>
+          <div class="small muted">${v.time || v.detected_at || ''}</div>
+        </div>
+      </div>
+      ${v.image_url ? `<div style="margin-top:8px"><a href="${v.image_url}" target="_blank" class="linkbtn">Xem ảnh</a></div>` : ''}
+    </li>`;
+  }
+  html += '</ul>';
+  resultBox.innerHTML = html;
+}
+
+function renderSample(bsx) {
+  // Mẫu dữ liệu demo
+  const demo = {
+    status: 'ok',
+    vehicle: bsx || '30A12345',
+    type: typeInput.options[typeInput.selectedIndex].text,
+    violations: [
+      { time: '2025-09-01 07:42', place: 'Hà Nội - Nguyễn Trãi', code: 'VĐ01', fine: 1200000, image_url: '' },
+      { time: '2025-08-11 16:20', place: 'TP.HCM - Lê Duẩn', code: 'VĐ02', fine: 800000, image_url: '' }
+    ]
+  };
+  renderResult(demo);
+}
+
+async function callProxy(bsx, type) {
+  const url = (BASE_PROXY || '') + ENDPOINT;
+  // If BASE_PROXY empty -> simulate
+  if (!BASE_PROXY) {
+    // show sample result after short delay
+    resultBox.innerHTML = '<div class="small muted">Không tìm thấy proxy. Hiển thị kết quả mẫu (demo).</div>';
+    setTimeout(() => renderSample(bsx), 600);
+    return;
+  }
+
+  // Call the proxy (expect POST JSON)
+  try {
+    btn.disabled = true;
+    resultBox.innerHTML = '<div class="small muted">Đang truy vấn hệ thống, xin chờ...</div>';
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ bsx, type })
     });
-  </script>
+    if (!res.ok) {
+      const txt = await res.text();
+      resultBox.innerHTML = `<div class="small muted">Lỗi từ proxy: ${res.status} ${res.statusText}<pre style="white-space:pre-wrap">${txt}</pre></div>`;
+      return;
+    }
+    const json = await res.json();
+    renderResult(json);
+  } catch (err) {
+    resultBox.innerHTML = `<div class="small muted">Lỗi khi gọi proxy: ${err.message}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+btn.addEventListener('click', () => {
+  const bsx = bsxInput.value.trim().toUpperCase();
+  const type = typeInput.value;
+  if (!bsx) {
+    resultBox.innerHTML = '<div class="small" style="color:#b91c1c">Vui lòng nhập biển số.</div>';
+    bsxInput.focus();
+    return;
+  }
+  callProxy(bsx, type);
+});
+
+openOfficial.addEventListener('click', () => {
+  // Mở trang Cục CSGT hoặc trang mẫu
+  window.open('https://www.csgt.vn/', '_blank');
+});
+</script>
 </body>
 </html>
