@@ -1,228 +1,358 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Tra cứu phạt nguội — Demo</title>
-<meta name="description" content="Tra cứu phạt nguội ô tô, xe máy toàn quốc - Demo" />
-<style>
-  :root{--accent:#E10054;--bg:#f5f7fb;--card:#fff;--muted:#6b7280}
-  body{font-family:Inter, Arial, Helvetica, sans-serif;background:var(--bg);margin:0;padding:28px;display:flex;align-items:flex-start;min-height:100vh;justify-content:center}
-  .wrap{width:100%;max-width:820px}
-  .card{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 8px 30px rgba(16,24,40,0.06)}
-  header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
-  .logo{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;font-weight:700}
-  h1{font-size:18px;margin:0}
-  form{display:grid;grid-template-columns:1fr 220px;gap:12px;margin-top:14px;align-items:end}
-  .controls{grid-column:1/ -1;display:flex;gap:12px;flex-wrap:wrap}
-  label{display:block;font-weight:600;margin-bottom:6px}
-  input[type=text], select{width:100%;padding:12px;border:1px solid #e6e9ee;border-radius:8px;font-size:15px;box-sizing:border-box}
-  .btn{background:var(--accent);color:#fff;padding:12px 16px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
-  .btn:disabled{opacity:.6;cursor:not-allowed}
-  .note{font-size:13px;color:var(--muted);margin-top:10px}
-  #resultBox{margin-top:18px;border-radius:10px;padding:16px;background:#ffffff;border:1px solid #eef2f7;min-height:86px}
-  .row{display:flex;gap:12px;align-items:center}
-  .muted{color:var(--muted)}
-  .list{margin:8px 0;padding:0;list-style:none}
-  .list li{padding:8px;border-radius:8px;background:#fbfbfd;margin-bottom:8px;border:1px solid #f0f3f8}
-  .small{font-size:13px;color:#374151}
-  .links{display:flex;gap:8px;flex-wrap:wrap}
-  .linkbtn{background:#fff;border:1px solid #e6e9ee;padding:8px 10px;border-radius:8px;text-decoration:none;color:#111;font-size:14px}
-  @media(max-width:720px){ form{grid-template-columns:1fr; } .card{padding:16px} }
-</style>
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2797994937748633" crossorigin="anonymous"></script>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <base href="https://phatnguoixe.com/" />
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta content="https://phatnguoixe.com/media/kiem-tra-phat-nguoi-oto.jpg" itemprop="image">
+  <title>Tra cứu phạt nguội toàn quốc 2025</title>
+  <meta name="keywords" content="tra cứu phạt nguội,tra cứu phạt nguội toàn quốc,tra phạt nguội,kiểm tra phạt nguội,tra phạt nguội ô tô, tra phạt nguội 2025,check phạt nguội ô tô,phạt nguội ô tô" />
+  <meta name="description" content="Phần mềm tra cứu phạt nguội ô tô, xe máy trên toàn quốc. Cập nhật thông tin mới nhất phạt nguội xe từ cục CSGT" />
+  <meta name="revisit-after" content="1 days" />
+  <meta name="Generator" content="phatnguoixe.com- Copyright 2025 All rights reserved." />
+  <meta name="author" content="Tra Cứu Phạt Nguội Ô Tô" />
+  <meta name="robots" content="index,follow" />
+
+  <!-- META FOR FACEBOOK -->
+  <meta property="fb:app_id" content="313860792132813" />
+  <meta content="Tra Cứu Phạt Nguội" property="og:site_name"/>
+  <meta property="og:type" content="website" />
+  <meta property="og:url" itemprop="url" content="https://phatnguoixe.com/"/>
+  <meta property="og:image" itemprop="thumbnailUrl" content="https://phatnguoixe.com/media/kiem-tra-phat-nguoi-oto.jpg"/>
+  <meta content="Tra cứu phạt nguội toàn quốc 2025" itemprop="headline" property="og:title"/>
+  <meta content="Phần mềm tra cứu phạt nguội ô tô, xe máy trên toàn quốc. Cập nhật thông tin mới nhất phạt nguội xe từ cục CSGT" itemprop="description" property="og:description"/>
+  <!-- END META FOR FACEBOOK -->
+
+  <link href="template/Default/css/bootstrap.min.css" rel="stylesheet">
+  <link href="template/Default/css/main.css" rel="stylesheet">
+  <link href="template/Default/css/form-check.css" rel="stylesheet">
+  <link href="template/Default/css/offcanvas.css" rel="stylesheet">
+  <link href="template/Default/css/bootstrap-combined.min.css" rel="stylesheet">
+
+  <script type="text/javascript" src="template/Default/js/jquery.min.js"></script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SGEN7V4BBG"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-SGEN7V4BBG');
+  </script>
+  <script>
+    function setCookie(cname, cvalue, exdays) {
+      const d = new Date();
+      d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+      let expires = "expires="+d.toUTCString();
+      document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    }
+    function getCookie(cname) {
+      let name = cname + "=";
+      let ca = document.cookie.split(';');
+      for(let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+          c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+          return c.substring(name.length, c.length);
+        }
+      }
+      return "";
+    }
+    $(document).scroll(function(e){
+      var scrollTop = $(document).scrollTop();
+      if(scrollTop > 200){
+        $("#alertok").html("");
+      }
+    });
+  </script>
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{
+        "@type": "Question",
+        "name": "Tra cứu phạt nguội 2025?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "<p>Phần mềm tra cứu phạt nguội 2025 cập nhật dữ liệu mới nhất từ cục cảnh sát giao thông. Để tiến hành tra cứu bạn hãy. <a href=https://phatnguoixe.com> Click vào đây.</a></p>"
+        }
+      }, {
+        "@type": "Question",
+        "name": "Cách kiểm tra xe bị phạt nguội?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "<p>Để kiểm tra xe của bạn có bị phạt nguội hay không?. Bạn hãy tiến hành tra cứu phạt nguội. <a href=https://phatnguoixe.com> Click vào đây </a> để tra cứu thông tin vi phạm.</p>"
+        }
+      }, {
+        "@type": "Question",
+        "name": "Đường link tra cứu phạt nguội?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "<p>Đây là đường link tra cứu phạt nguội miễn phí cho bạn. <a href=https://phatnguoixe.com>Link tra cứu phạt nguội </a> miễn phí cho bạn.</p>"
+        }
+      }, {
+        "@type": "Question",
+        "name": "Kiểm tra phạt nguội?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "<p>Cách kiểm tra phạt nguội cho ô tô, xe máy mới nhất, bạn hãy: <a href=https://phatnguoixe.com>Click vào đây </a> để kiểm tra miễn phí.</p>"
+        }
+      }, {
+        "@type": "Question",
+        "name": "Tra cứu phạt nguội?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "<p>Cách tra cứu phạt nguội cho ô tô, xe máy mới nhất, bạn hãy: <a href=https://phatnguoixe.com>Click vào đây </a> để tra cứu miễn phí.</p>"
+        }
+      }]
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Tra Cứu Phạt Nguội cho Android",
+      "operatingSystem": "ANDROID",
+      "applicationCategory": "BusinessApplication",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "2185"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "FREE"
+      }
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Tra Cứu Phạt Nguội cho iOS",
+      "operatingSystem": "IOS",
+      "applicationCategory": "BusinessApplication",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "142"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "FREE"
+      }
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "url": "https://phatnguoixe.com",
+      "logo": "https://phatnguoixe.com/media/tra-phat-nguoi.jpg"
+    }
+  </script>
+  <style>
+    .h1{
+      border: 1px solid #000000;
+      padding: 7px 15px;
+      display: inline-block;
+      border-radius: 10px;
+    }
+    .wrap-body {
+      background: #fff;
+      margin-top: 0px;
+    }
+    .bottomcss {
+      background: #E10054 !important;
+      color: #fff !important;
+      font-weight: bold;
+    }
+    .submit {
+      font-size:20px;
+    }
+    .csstv4, .css-hr {
+      width: 125px;
+      margin-right: 10px;
+    }
+    .css-ftuvwr, .css-hk {
+      display: inline-block;
+    }
+    .csstv2 {
+      font-size: 15px;
+      margin: 0 0 5px 0;
+      font-weight: 600;
+    }
+    .csstv3 {
+      margin: 10px 0;
+    }
+    .csstv4 {
+      width: 125px;
+    }
+    .css-tv {
+      margin-top: 20px;
+    }
+    .csspro.hidecss { display: none; }
+  </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="card">
-      <header>
-        <div class="logo">PN</div>
-        <div>
-          <h1>Tra cứu phạt nguội — Demo</h1>
-          <div class="muted small">Nhập biển số, chọn loại xe, bấm "Tra cứu". (Dùng proxy để gọi API thực)</div>
-        </div>
-      </header>
+<div class="container wrap-body group">
+  <div class="row row-offcanvas row-offcanvas-right">
+    <div class="col-xs-12 col-sm-12">
+      <div class="wrap-content row_zoom">
+        <div class="col-12" style="margin-left:5px; margin-right:5px;">
+          <div style="margin-left:10px; margin-right:10px;">
+            <div class="row-fluid">
+              <form action="" method="post" name="frmSubmit" id="frmSubmit" onSubmit="return false">
+                <h2 style="font-family: system-ui;font-weight: 700;font-size: 22px;">Phần mềm Tra Cứu Phạt Nguội Ô Tô, Xe Máy 2025</h2>
+                <p style="font-weight: 550;font-size: 17px;">Chọn loại phương tiện</p>
+                <label class="radio-inline">
+                  <input type="radio" name="loaixe" value="1" checked>
+                  <span style="margin-left: 5px;">Ô Tô</span>
+                </label>
+                <label class="radio-inline">
+                  <input type="radio" name="loaixe" value="2">
+                  <span style="margin-left: 5px;">Xe Máy</span>
+                </label>
+                <label class="radio-inline">
+                  <input type="radio" name="loaixe" value="3">
+                  <span style="margin-left: 5px;">Xe Máy Điện</span>
+                </label>
+                <div class="form-group" style="margin-top:10px">
+                  <label style="font-size: 17px;">
+                    Nhập biển số xe:
+                    <span style="font-size: 14px; font-weight: 400; color: #05133f;">Đã phát hiện <b>494.829</b> xe vi phạm phạt nguội</span>
+                    <span id="alert" style="color: rgb(255, 87, 34); opacity: 1;"></span>
+                  </label>
+                  <input class="form-control input-lg" id="bienso96" name="bienso" placeholder="51F-777.77" style="font-size: 18px!important;border: 1px solid #E10054;text-transform: uppercase;" />
+                  <label style="margin-top:5px;font-weight: 400;line-height: 18px!important; font-family: initial;color: #606060;">
+                    <i style="font-size: 14px;">Nhập biển số xe ví dụ: 19A32418, 51F-777.77</i>
+                  </label>
+                  <div id="alertok" style="color: #008e2c; text-align: center; margin-bottom: -10px; font-weight:550;"></div>
+                </div>
+                <div class="form-group col-12">
+                  <input style="font-size:20px;background: #E10054;" type="button" id="submit99" class="bottomcss btn-block input-lg submit" value="KIỂM TRA PHẠT NGUỘI"/>
+                </div>
+              </form>
+              <div style="text-align: center;">
+                <center style="margin-bottom:0px;display: inline-flex;">
+                  <div class="fb-share-button" data-href="https://phatnguoixe.com" data-layout="button_count" data-size="small">
+                    <a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://phatnguoixe.com" class="fb-xfbml-parse-ignore"></a>
+                  </div>
+                  &nbsp;&nbsp;
+                  <div class="zalo-share-button" data-href="https://phatnguoixe.com" data-oaid="579745863508352884" data-layout="1" data-color="blue" data-customize="false"></div>
+                </center>
+                <div style="float: left; width: 100%; text-align: center; margin-top:10px; margin-bottom:10px;">
+                  <a class="css-tt" href="https://www.facebook.com/sharer/sharer.php?u=https://phatnguoixe.com" type="button" style="border-color: #003b80; color: #003b80;padding:5px 10px;">↑ CHIA SẺ FACEBOOK</a>
+                </div>
+              </div>
+              <div class="row csspro hidecss"><center style="margin-bottom: 3px;">Đang kiểm tra, xin chờ...</center></div>
+              <div class="progress csspro hidecss" style="height:10px;">
+                <div class="progress-bar progress-bar-striped" id="progress" style="width: 0%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <div id="resultValue">
+                <p>
+                  Kể từ ngày 01/01/2025, khi <a title="Nghị định 168/2024/NĐ-CP" href="./nghi-dinh-168-2024-nd-cp-quy-dinh-xu-phat-vi-pham-hanh-chinh-ve-trat-tu-an-toan-giao-thong-duong-bo-27.html">Nghị định 168/2024/NĐ-CP</a> chính thức có hiệu lực, thì kèm với đó là nhiều hành vi vi phạm giao thông được tăng mạnh mức xử phạt từ vài lần cho đến thậm chí là vài chục lần.<br/>
+                  Xem thông tin chi tiết về mức phạt vi phạm giao thông mới nhất theo <a title="Nghị định 168/2024/NĐ-CP" href="./nghi-dinh-168-2024-nd-cp-quy-dinh-xu-phat-vi-pham-hanh-chinh-ve-trat-tu-an-toan-giao-thong-duong-bo-27.html">Nghị định 168/2024/NĐ-CP</a> đối với xe ô tô, xe máy.
+                </p>
+                <p>
+                  <a style="color:#ff0000;" href="https://phatnguoixe.com/muc-xu-phat-vi-pham-giao-thong-xe-o-to-2025-26.html" title="Mức xử phạt vi phạm giao thông xe ô tô 2025">🚚 Mức xử phạt vi phạm giao thông xe ô tô 2025</a>
+                  <br/><a style="color:green;" href="https://phatnguoixe.com/muc-xu-phat-vi-pham-giao-thong-xe-may-2025-25.html" title="Mức xử phạt vi phạm giao thông xe máy 2025">🛵 Mức xử phạt vi phạm giao thông xe máy 2025</a>
+                </p>
+                <p>Để tra cứu phạt nguội cho xe máy, quý khách hãy vào trang: <a target="_blank" style="color:#3692e2;" href="https://traphatnguoixemay.com" title="Tra cứu phạt nguội xe máy">🛵 https://traphatnguoixemay.com</a> để tra cứu thông tin phạt nguội mới nhất</p>
+                <p>🅿️ Phần mềm <a style="color:#008fdf;" href="https://phatnguoixe.com/tin-tuc/" title="kiểm tra phạt nguội">kiểm tra phạt nguội</a> lỗi vi phạm giao thông mới nhất năm 2025 nhanh chóng và chính xác<br/>
+                Cập nhật dữ liệu mới nhất từ <b>cục cảnh sát giao thông</b><br/>
+                <b style="font-weight:550;">Hãy chia sẻ phần mềm lên Facebook, Zalo... để mọi người cùng tra cứu quý vị nhé!</b><br/>
+                Tra Phạt Nguội Tra Cứu Lỗi Vi Phạm Giao Thông từ csgt.vn<br/>
+                Máy quét tự động biển số tra lỗi vi phạm giao thông mới nhất trên toàn quốc.</p>
+                <p>🚔 Thông tin từ ngày 01/06, tài xế toàn quốc có thể tự tra cứu vi phạm giao thông qua camera giám sát trên toàn quốc<br/>
+                Tra lỗi vi phạm giao thông cho xe máy, ô tô, xe máy điện, xe tải, xe container<br/>
+                Người dân có thể lên tra cứu thông tin trên ứng dụng để biết thông tin xe mình có vi phạm hay không.</p>
+                <p>🚔 Một thao tác đơn giản bằng cách quét biển số xe tự động bằng camera hoặc nhập biển số xe thủ công<br/>
+                Phần mềm này cũng thông báo cho chủ phương tiện biết đã bị tước giấy phép bao nhiêu lần, đã nộp phạt, xử lý vi phạm hay chưa<br/>
+                Tài xế cũng xem được mình có bị camera giám sát ghi hình vi phạm hay không.</p>
+                <p>🚔 Ứng dụng giúp bạn tra cứu phạt nguội dành cho xe ô tô, xe máy, xe đạp điện và tra cứu giấy phép lái xe thật giả hay bị tịch thu.</p>
+                <p>🚔 Hệ thống sẽ cung cấp thông tin số điện thoại để liên hệ giải quyết xử lý tại các đơn vị Công an nơi phát hiện vi phạm<br/>
+                Đây là một trong những hoạt động ứng dụng công nghệ thông tin trong quản lý Nhà nước, cải cách thủ tục hành chính và gắn kết CSGT với người dân.</p>
+                <p style="line-height: 32px;"><b>Chức năng chính của ứng dụng:</b><br/>
+                ➤ Quét biển số xe ô tô, xe máy tự động mà không cần nhập bằng tay<br/>
+                ➤ Tra cứu thông tin biển số xe có vi phạm giao thông không<br/>
+                ➤ Tra cứu thông tin phạt nguội của xe ô tô<br/>
+                ➤ Kết quả bao gồm cả thông tin chi tiết các lỗi vi phạm, ngày giờ và địa điểm vi phạm<br/>
+                ➤ Tra cứu số lần vi phạm theo số giấy phép lái xe<br/>
+                ➤ Kiểm tra phạt nguội toàn quốc các lỗi vi phạm giao thông<br/>
+                ➤ Kiểm tra xe có bị phạt nguội trước khi đăng kiểm<br/>
+                ➤ Kiểm tra phạt nguội ô tô, xe máy các lỗi vi phạm năm 2025</p>
+              </div>
+            </div>
+          </div><!-- /.span12 -->
+        </div><!-- /.row -->
+      </div><!-- /.container -->
+    </div><!--/span-->
+  </div>
+</div><!--/.container-->
 
-      <form id="searchForm" onsubmit="return false;">
-        <div>
-          <label for="bsx">Biển kiểm soát</label>
-          <input id="bsx" type="text" placeholder="Ví dụ: 30A12345 hoặc 51F-777.77" oninput="this.value=this.value.toUpperCase()">
-        </div>
-
-        <div>
-          <label for="loaixe">Loại phương tiện</label>
-          <select id="loaixe">
-            <option value="1">Ô tô</option>
-            <option value="2">Xe máy</option>
-            <option value="3">Xe máy điện</option>
-          </select>
-        </div>
-
-        <div class="controls" style="grid-column:1/-1">
-          <button id="btnSearch" class="btn" type="button">Tra cứu</button>
-          <button id="btnOpenOfficial" class="linkbtn" type="button">Mở trang Cục CSGT</button>
-          <a class="linkbtn" href="https://phatnguoixe.com" target="_blank">Mẫu: phatnguoixe.com</a>
-          <div style="flex:1"></div>
-        </div>
-      </form>
-
-      <div id="resultBox" role="status" aria-live="polite">
-        <div id="resultIntro" class="small muted">Kết quả sẽ hiển thị ở đây.</div>
-      </div>
-
-      <div class="note">
-        <strong>Ghi chú:</strong> file này là **frontend tĩnh**. Để tra cứu thực sự, bạn cần deploy 1 proxy server (Vercel/Netlify/VPS) và set biến <code>BASE_PROXY</code> trong script dưới thành domain proxy.
-      </div>
-    </div>
-
-    <div style="height:16px"></div>
-
-    <div class="card" aria-hidden="false" style="margin-top:12px">
-      <h2 style="margin:0 0 8px 0">Thông tin kỹ thuật (ngắn)</h2>
-      <ul class="list small">
-        <li><strong>DEFAULT:</strong> nếu không cấu hình proxy, trang sẽ hiển thị <em>kết quả mẫu</em>.</li>
-        <li><strong>Để kết nối API thật:</strong> deploy serverless proxy và trả JSON theo dạng mẫu (xem phía dưới).</li>
-        <li><strong>Trường JSON mẫu từ proxy (ví dụ):</strong>
-          <pre style="background:#f6f8fb;padding:8px;border-radius:6px">{
-  "status":"ok",
-  "vehicle":"30A12345",
-  "type":"Ô tô",
-  "violations":[
-    {"time":"2025-09-01 07:42","place":"Hà Nội - Nguyễn Trãi","code":"VĐ01","fine":"1.200.000","image_url": "..."},
-    {"time":"2025-08-11 16:20","place":"HCM - Lê Duẩn","code":"VĐ02","fine":"800.000"}
-  ]
-}</pre>
-        </li>
-      </ul>
+<footer>
+  <hr/>
+  <div class="css-tv">
+    <p class="csstv2">Bạn muốn sử dụng ứng dụng di động, nhấn để tải về</p>
+    <div class="csstv3">
+      <a class="css-ftuvwr" href="https://play.google.com/store/apps/details?id=tracuu.phatnguoi.oto.xemay"  title="Tra Phạt Nguội CH Play">
+        <img class="csstv4" src="https://phatnguoixe.com/media/ch-play-vi.png" alt="Tải về từ Google Play">
+      </a>
+      <a class="css-hk" href="https://apps.apple.com/app/id1617941075" title="Tra Phạt Nguội AppStore">
+        <img class="css-hr" src="https://phatnguoixe.com/media/apple-vi.svg" alt="Tải về từ AppStore">
+      </a>
     </div>
   </div>
-
+  <center>
+    Tin tức nổi bật: <a href="./3-cach-tra-cuu-phat-nguoi-nhanh-chong-va-chinh-xac-1.html" title="3 Cách Tra Cứu Phạt Nguội Ô Tô - Xe Máy">3 Cách Tra Cứu Phạt Nguội Ô Tô, Xe Máy</a> Nhanh Chóng Và Chính Xác Nhất
+    <p>
+      Kể từ ngày 01/01/2025, khi <a title="Nghị định 168/2024/NĐ-CP" href="./nghi-dinh-168-2024-nd-cp-quy-dinh-xu-phat-vi-pham-hanh-chinh-ve-trat-tu-an-toan-giao-thong-duong-bo-27.html">Nghị định 168/2024/NĐ-CP</a> chính thức có hiệu lực, thì kèm với đó là nhiều hành vi vi phạm giao thông được tăng mạnh mức xử phạt từ vài lần cho đến thậm chí là vài chục lần.<br/>
+      Xem thông tin chi tiết về mức phạt vi phạm giao thông mới nhất theo <a title="Nghị định 168/2024/NĐ-CP" href="./nghi-dinh-168-2024-nd-cp-quy-dinh-xu-phat-vi-pham-hanh-chinh-ve-trat-tu-an-toan-giao-thong-duong-bo-27.html">Nghị định 168/2024/NĐ-CP</a> đối với xe ô tô, xe máy.
+    </p>
+    <p>
+      <a style="color:#ff0000;" href="https://phatnguoixe.com/muc-xu-phat-vi-pham-giao-thong-xe-o-to-2025-26.html" title="Mức xử phạt vi phạm giao thông xe ô tô 2025">🚚 Mức xử phạt vi phạm giao thông xe ô tô 2025</a>
+      <br/><a style="color:green;" href="https://phatnguoixe.com/muc-xu-phat-vi-pham-giao-thong-xe-may-2025-25.html" title="Mức xử phạt vi phạm giao thông xe máy 2025">🛵 Mức xử phạt vi phạm giao thông xe máy 2025</a>
+    </p>
+  </center>
+  <div class="col-12" style="margin-top:10px;margin-bottom:10px;"></div>
+  <div class="col-12 col-xs-12 ft" style="margin-bottom:10px; margin-top:10px; padding-top:30px;padding-bottom:25px; text-align:center;">
+    <p>&copy; Bản quyền 2025 bởi phatnguoixe.com | <a href="./tra-cuu-phat-nguoi/" title="Tra Cứu Phạt Nguội">Tra Cứu Phạt Nguội</a> | <a href="./tin-tuc/" title="Tin tức">Tin Tức</a> | <a href="./gioi-thieu/">Giới Thiệu</a> | <a href="./chinh-sach-bao-mat/">Chính Sách Bảo Mật</a> | <a href="./lien-he/">Liên Hệ</a></p>
+  </div>
+</footer>
+<script defer src="https://sp.zalo.me/plugins/sdk.js"></script>
+<div id="fb-root"></div>
+<script defer crossorigin="anonymous" src="https://connect.facebook.net/vi_VN/sdk.js#xfbml=1&version=v13.0&appId=313860792132813&autoLogAppEvents=1" nonce="la6OCVO1"></script>
+<script src="template/Default/js/bootstrap.min.v8.js" defer></script>
+<script src="template/Default/js/offcanvas.js" defer></script>
+<script type="text/javascript" src="template/Default/js/node-check.js" defer></script>
 <script>
-/*
-  Cách sử dụng:
-  - Nếu bạn có proxy (ví dụ deploy Vercel): đặt BASE_PROXY = 'https://my-proxy.vercel.app'
-  - Proxy endpoint kỳ vọng: POST { bsx, type } -> trả JSON (ví dụ mẫu ở trên).
-  - Nếu không có proxy, trang sẽ hiển thị "kết quả mẫu" để demo.
-*/
-const BASE_PROXY = ''; // <-- Nếu bạn deploy proxy, gán domain ở đây (không có trailing /). Ex: 'https://my-proxy.vercel.app'
-const ENDPOINT = '/api/search'; // endpoint trên proxy (ví dụ: https://my-proxy.vercel.app/api/search)
-const btn = document.getElementById('btnSearch');
-const openOfficial = document.getElementById('btnOpenOfficial');
-const bsxInput = document.getElementById('bsx');
-const typeInput = document.getElementById('loaixe');
-const resultBox = document.getElementById('resultBox');
-const resultIntro = document.getElementById('resultIntro');
-
-function formatCurrency(x) {
-  try { return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + ' ₫'; } catch(e){return x}
-}
-
-function renderResult(json) {
-  // Normalize a few possible shapes
-  if (!json) {
-    resultBox.innerHTML = '<div class="small muted">Không có dữ liệu.</div>';
-    return;
-  }
-  if (json.status && json.status !== 'ok') {
-    resultBox.innerHTML = `<div class="small muted">Server trả: ${JSON.stringify(json)}</div>`;
-    return;
-  }
-
-  const vehicle = json.vehicle || (json.bsx || '');
-  const type = json.type || (json.vehicle_type || (typeInput.options[typeInput.selectedIndex].text));
-  const violations = json.violations || json.data || [];
-
-  if (!violations || violations.length === 0) {
-    resultBox.innerHTML = `<div><strong>${vehicle}</strong> — <span class="muted small">${type}</span>
-      <div style="margin-top:8px;color:#059669;font-weight:700">Không tìm thấy lỗi phạt nguội</div>
-      <div class="small muted" style="margin-top:8px">Lưu ý: kết quả chính thức từ Cục CSGT.</div>
-    </div>`;
-    return;
-  }
-
-  // Build html
-  let html = `<div><strong>${vehicle}</strong> — <span class="muted small">${type}</span></div>`;
-  html += `<div style="margin-top:10px"><strong style="color:#b91c1c">${violations.length}</strong> lỗi được tìm thấy:</div>`;
-  html += '<ul style="list-style:none;padding:0;margin-top:8px">';
-  for (const v of violations) {
-    html += `<li style="margin-bottom:10px;padding:10px;border-radius:8px;background:#fff;border:1px solid #f1f5f9">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-weight:700">${v.code || v.violation_code || 'LỖI'}</div>
-             <div class="small muted">${v.place || v.location || 'Địa điểm không rõ'}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-weight:700">${v.fine ? formatCurrency(v.fine) : (v.fee || '')}</div>
-          <div class="small muted">${v.time || v.detected_at || ''}</div>
-        </div>
-      </div>
-      ${v.image_url ? `<div style="margin-top:8px"><a href="${v.image_url}" target="_blank" class="linkbtn">Xem ảnh</a></div>` : ''}
-    </li>`;
-  }
-  html += '</ul>';
-  resultBox.innerHTML = html;
-}
-
-function renderSample(bsx) {
-  // Mẫu dữ liệu demo
-  const demo = {
-    status: 'ok',
-    vehicle: bsx || '30A12345',
-    type: typeInput.options[typeInput.selectedIndex].text,
-    violations: [
-      { time: '2025-09-01 07:42', place: 'Hà Nội - Nguyễn Trãi', code: 'VĐ01', fine: 1200000, image_url: '' },
-      { time: '2025-08-11 16:20', place: 'TP.HCM - Lê Duẩn', code: 'VĐ02', fine: 800000, image_url: '' }
-    ]
-  };
-  renderResult(demo);
-}
-
-async function callProxy(bsx, type) {
-  const url = (BASE_PROXY || '') + ENDPOINT;
-  // If BASE_PROXY empty -> simulate
-  if (!BASE_PROXY) {
-    // show sample result after short delay
-    resultBox.innerHTML = '<div class="small muted">Không tìm thấy proxy. Hiển thị kết quả mẫu (demo).</div>';
-    setTimeout(() => renderSample(bsx), 600);
-    return;
-  }
-
-  // Call the proxy (expect POST JSON)
-  try {
-    btn.disabled = true;
-    resultBox.innerHTML = '<div class="small muted">Đang truy vấn hệ thống, xin chờ...</div>';
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ bsx, type })
-    });
-    if (!res.ok) {
-      const txt = await res.text();
-      resultBox.innerHTML = `<div class="small muted">Lỗi từ proxy: ${res.status} ${res.statusText}<pre style="white-space:pre-wrap">${txt}</pre></div>`;
+  // Demo only: Hiển thị alert mẫu khi nhấn nút kiểm tra (KHÔNG gọi API)
+  $('#submit99').on('click', function() {
+    var bsx = $('#bienso96').val().trim().toUpperCase();
+    if(!bsx){
+      $('#alert').text('Vui lòng nhập biển số xe.');
+      $('#bienso96').focus();
       return;
     }
-    const json = await res.json();
-    renderResult(json);
-  } catch (err) {
-    resultBox.innerHTML = `<div class="small muted">Lỗi khi gọi proxy: ${err.message}</div>`;
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-btn.addEventListener('click', () => {
-  const bsx = bsxInput.value.trim().toUpperCase();
-  const type = typeInput.value;
-  if (!bsx) {
-    resultBox.innerHTML = '<div class="small" style="color:#b91c1c">Vui lòng nhập biển số.</div>';
-    bsxInput.focus();
-    return;
-  }
-  callProxy(bsx, type);
-});
-
-openOfficial.addEventListener('click', () => {
-  // Mở trang Cục CSGT hoặc trang mẫu
-  window.open('https://www.csgt.vn/', '_blank');
-});
+    $('#alert').text('');
+    $('.csspro').removeClass('hidecss');
+    setTimeout(function(){
+      $('.csspro').addClass('hidecss');
+      $('#alertok').html('<span>Đây là bản demo. Vui lòng sử dụng bản chính thức tại <a href="https://phatnguoixe.com" target="_blank">phatnguoixe.com</a></span>');
+    }, 1200);
+  });
 </script>
 </body>
 </html>
