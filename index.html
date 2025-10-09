@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+   <title>Tra cứu câu hỏi học tập CNTT DH Tu Xa TVU | tracuu.hugo.io.vn</title>
+  <meta name="description" content="Hệ thống tra cứu câu hỏi, tài liệu học tập theo môn học. Nhanh chóng, tiện lợi và miễn phí.">
+  <link rel="canonical" href="https://tracuu.hugo.io.vn/">
+  <meta name="robots" content="index, follow">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body {
+      padding-top: 70px;
+    }
+    .answer-correct {
+      background-color: #d1e7dd; /* Bootstrap's success background color */
+      font-weight: 700;
+      color: #0f5132; /* Bootstrap's success text color */
+    }
+    .answer-img,
+    .question-img {
+      max-width: 100%;
+      height: auto;
+      max-height: 150px;
+      margin: 6px 0 6px 16px;
+      display: block;
+    }
+    .online-counter-box {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      border-left: 5px solid #4caf50;
+      padding: 10px 16px;
+      margin: 20px auto 10px;
+      border-radius: 6px;
+      max-width: 600px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color:#3B5C94">
+  <div class="container-fluid">
+    <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/export">Đề Cương</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/outline">Đề cương Đóng góp</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/wifi-qrcode">Tạo QR Code Wifi</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="online-counter-box text-center">
+  🟢 Hiện có <span id="online-counter">0</span> người đang truy cập hệ thống.
+</div>
+
+<div class="container py-4">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title">🔍 Tra cứu câu hỏi</h5>
+      <form id="searchForm">
+        <div class="mb-3">
+          <label class="form-label" for="subjectSelect">Chọn môn học</label>
+          <select id="subjectSelect" class="form-select"></select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="keywordInput">Từ khóa</label>
+          <input id="keywordInput" class="form-control" placeholder="Nhập từ khóa (để trống để tìm tất cả)">
+        </div>
+        <button type="submit" class="btn btn-success w-100">🔎 Tìm kiếm</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="resultSection">
+    <h6 class="mb-3">📋 Kết quả tìm thấy: <span id="resultCount">0</span></h6>
+    <div id="resultList"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  // SỬA LỖI: Thêm query và where để tối ưu hóa truy vấn
+  import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getDatabase, ref, onValue, onDisconnect, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
+    authDomain: "tracuu-d3ee9.firebaseapp.com",
+    projectId: "tracuu-d3ee9",
+    storageBucket: "tracuu-d3ee9.appspot.com",
+    messagingSenderId: "593568604435",
+    appId: "1:593568604435:web:9a5145457a8ee734143ae6",
+    measurementId: "G-R0M6Y502NP"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const rtdb = getDatabase(app, "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app");
+
+  const onlineCounterEl = document.getElementById('online-counter');
+  const connectionsRef = ref(rtdb, 'connections');
+  const myConnectionRef = push(connectionsRef);
+  onDisconnect(myConnectionRef).remove();
+  set(myConnectionRef, true);
+
+  onValue(connectionsRef, (snapshot) => {
+    let count = 0;
+    if (snapshot.exists() && typeof snapshot.val() === 'object') {
+      count = Object.keys(snapshot.val()).length;
+    }
+    onlineCounterEl.textContent = count;
+  });
+
+  const subjectSelect = document.getElementById("subjectSelect");
+  const searchForm = document.getElementById("searchForm");
+  const keywordInput = document.getElementById("keywordInput");
+  const resultList = document.getElementById("resultList");
+  const resultCount = document.getElementById("resultCount");
+
+  async function loadSubjects() {
+    subjectSelect.innerHTML = "";
+    const snapshot = await getDocs(collection(db, "mon_hoc"));
+    snapshot.forEach(doc => {
+      const option = document.createElement("option");
+      option.value = doc.id;
+      option.textContent = doc.data().ten_mon;
+      subjectSelect.appendChild(option);
+    });
+  }
+
+  function convertToThumbnail(url) {
+    if (!url) return "";
+    // Logic chuyển đổi URL Google Drive nếu cần
+    const regex = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
+    const match = url.match(regex);
+    if (match && match[1]) {
+        return `https://drive.google.com/thumbnail?id=${match[1]}`;
+    }
+    return url;
+  }
+
+  function renderQuestion(data) {
+    const card = document.createElement("div");
+    card.className = "card mb-3 shadow-sm";
+    const cardBody = document.createElement("div");
+    cardBody.className = "card-body";
+
+    const questionP = document.createElement("p");
+    questionP.className = "mb-2 fw-semibold";
+    questionP.innerHTML = "📌 " + data.noi_dung;
+    cardBody.appendChild(questionP);
+
+    if (data.noi_dung_img) {
+      const img = document.createElement("img");
+      img.src = convertToThumbnail(data.noi_dung_img);
+      img.className = "question-img";
+      img.alt = "Ảnh câu hỏi";
+      cardBody.appendChild(img);
+    }
+
+    const list = document.createElement("ul");
+    list.className = "list-group list-group-flush";
+    const choices = data.lua_chon || {};
+
+    for (const key of ["a", "b", "c", "d"]) {
+      if (choices[key]) {
+        const item = document.createElement("li");
+        item.className = "list-group-item";
+        let content = `${key.toUpperCase()}. ${choices[key]}`;
+        if (choices[key + "Img"]) {
+          content += `<br><img src="${convertToThumbnail(choices[key + "Img"])}" class="answer-img" alt="Ảnh đáp án ${key}">`;
+        }
+        if (key === data.dap_an_dung) {
+          item.classList.add("answer-correct");
+          content = `✅ ${content}`;
+        }
+        item.innerHTML = content;
+        list.appendChild(item);
+      }
+    }
+
+    cardBody.appendChild(list);
+    card.appendChild(cardBody);
+    return card;
+  }
+
+  searchForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    resultList.innerHTML = "Đang tải...";
+    resultCount.textContent = "0";
+
+    const subjectId = subjectSelect.value;
+    const keyword = keywordInput.value.trim().toLowerCase();
+    let count = 0;
+
+    // SỬA LỖI: Tối ưu hóa bằng cách lọc theo môn học ngay trên server
+    const qCollection = collection(db, "cau_hoi");
+    const firestoreQuery = query(qCollection, where("mon_hoc_id", "==", subjectId));
+    const snapshot = await getDocs(firestoreQuery);
+    
+    resultList.innerHTML = ""; // Xóa chữ "Đang tải..."
+    
+    snapshot.forEach(doc => {
+      const q = doc.data();
+      const matchKeyword =
+        !keyword ||
+        (q.noi_dung && q.noi_dung.toLowerCase().includes(keyword)) ||
+        (q.lua_chon && Object.values(q.lua_chon).some(val => typeof val === 'string' && val.toLowerCase().includes(keyword)));
+
+      // Bỏ điều kiện lọc môn học ở đây vì server đã làm
+      if (matchKeyword) {
+        resultList.appendChild(renderQuestion(q));
+        count++;
+      }
+    });
+
+    resultCount.textContent = count;
+    
+    // SỬA LỖI: Dùng MathJax.typesetPromise() cho MathJax v3
+    if (window.MathJax) {
+        window.MathJax.typesetPromise();
+    }
+  });
+
+  loadSubjects();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
