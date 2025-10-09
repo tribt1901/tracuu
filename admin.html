@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Đăng nhập Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {font-family:Arial,sans-serif;background-color:#f2f2f2;padding-top:80px;display:flex;justify-content:center;align-items:center;min-height:100vh}
+    .login-container {background-color:#fff;padding:40px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:400px;width:100%}
+    h2 {text-align:center;margin-bottom:25px;color:#333}
+    input[type=email],input[type=password]{width:100%;padding:12px;margin:10px 0;border:1px solid #ccc;border-radius:6px}
+    button {width:100%;padding:12px;background-color:#4caf50;color:#fff;border:none;border-radius:6px;font-weight:700}
+    button:hover {background-color:#45a049}
+    .error {color:red;margin-top:10px;text-align:center}
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color:#3B5C94">
+  <div class="container-fluid">
+    <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-white" href="/">Trang Chủ</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/export">Đề Cương</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/outline">Hủ Đề cương</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/wifi-qrcode">Tạo QR Code Wifi</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="login-container">
+  <h2>Đăng nhập</h2>
+  <form id="loginForm">
+    <label for="email">Email:</label>
+    <input type="email" id="email" required>
+    <label for="password">Mật khẩu:</label>
+    <input type="password" id="password" required>
+    <button type="submit">Đăng nhập</button>
+    <div class="error" id="errorMsg"></div>
+  </form>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
+  authDomain: "tracuu-d3ee9.firebaseapp.com",
+  projectId: "tracuu-d3ee9",
+  storageBucket: "tracuu-d3ee9.appspot.com",
+  messagingSenderId: "593568604435",
+  appId: "1:593568604435:web:9a5145457a8ee734143ae6",
+  measurementId: "G-R0M6Y502NP"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// Nếu đã đăng nhập thì chuyển luôn tới subjects.html
+auth.onAuthStateChanged(function(user) {
+  if (user) {
+    window.location.replace("subjects.html");
+  }
+});
+
+document.getElementById("loginForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const errorMsg = document.getElementById("errorMsg");
+  errorMsg.textContent = "";
+
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    window.location.replace("subjects.html");
+  } catch (err) {
+    if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+      errorMsg.textContent = "Sai thông tin đăng nhập!";
+    } else if (err.code === "auth/too-many-requests") {
+      errorMsg.textContent = "Bạn đã nhập sai nhiều lần. Vui lòng thử lại sau!";
+    } else {
+      errorMsg.textContent = "Có lỗi xảy ra! Vui lòng thử lại.";
+    }
+    console.error(err);
+  }
+});
+</script>
+</body>
+</html>

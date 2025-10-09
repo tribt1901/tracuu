@@ -1,0 +1,17 @@
+{
+  "name": "tracuu",
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "node ./api/tracuu.js"
+  },
+  "dependencies": {
+    "googleapis": "^105.0.0",
+    "formidable": "^3.5.0",
+    "katex": "^0.16.9"
+  }
+}

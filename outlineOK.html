@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang=vi>
+<head>
+<meta charset=UTF-8>
+<title>Đề cương môn học</title>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel=stylesheet>
+<link href=https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css rel=stylesheet>
+<style>body{padding-top:70px;font-family:Roboto,Arial,sans-serif}.subject-btns .btn{margin-right:6px}.nav-link,.navbar-brand{font-family:Roboto,Arial,sans-serif}.subject-title-icon{font-size:1.15em;margin-right:6px}.syllabus-list{margin-top:10px}.syllabus-item{padding:7px 0;border-bottom:1px dashed #eee}.syllabus-link{font-weight:500;color:#06c;text-decoration:underline}.syllabus-owner{font-size:.95em;color:#333}</style>
+</head>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color:#3B5C94">
+    <div class="container-fluid">
+      <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link text-white" href="/">Trang Chủ</a></li>
+          <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+          <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+          <li class="nav-item"><a class="nav-link text-white" href="/export">Đề Cương</a></li>
+          <li class="nav-item"><a class="nav-link text-white" href="/outline">Đề cương Đóng góp</a></li>
+          <li class="nav-item"><a class="nav-link text-white" href="/wifi-qrcode">Tạo QR Code Wifi</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+<div class="container py-4">
+<div class="card shadow-sm mb-4">
+<div class=card-body>
+<h5 class=card-title>📂 Tải đề cương theo môn</h5>
+<div id=subjectList><div>Đang tải...</div></div>
+</div>
+</div>
+</div>
+<script src=https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js></script>
+<script src=https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js></script>
+<script type=module>const firebaseConfig={apiKey:"AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",authDomain:"tracuu-d3ee9.firebaseapp.com",projectId:"tracuu-d3ee9",storageBucket:"tracuu-d3ee9.appspot.com",messagingSenderId:"593568604435",appId:"1:593568604435:web:9a5145457a8ee734143ae6"};firebase.initializeApp(firebaseConfig);const db=firebase.firestore();async function getSubjects(){return(await db.collection("mon_hoc").get()).docs.map((e=>({id:e.id,...e.data()})))}async function getAllSyllabus(){return(await db.collection("syllabus").get()).docs.map((e=>e.data()))}let allSyllabus=[];async function loadSubjectsAndSyllabus(){const e=document.getElementById("subjectList");e.innerHTML="<div>Đang tải...</div>";const[n,t]=await Promise.all([getSubjects(),getAllSyllabus()]);allSyllabus=t,0!==n.length?(e.innerHTML="",n.forEach((n=>{const t=document.createElement("div");t.className="d-flex align-items-center justify-content-between border-bottom py-2",t.innerHTML=`\n        <span class="fw-bold"><span class="subject-title-icon">📘</span>${n.ten_mon}</span>\n        <div class="subject-btns">\n          <button class="btn btn-sm btn-outline-primary" data-id="${n.id}" data-name="${n.ten_mon}">⬇️ Download</button>\n        </div>\n      `,t.querySelector("button").addEventListener("click",(function(){const e=this.getAttribute("data-id"),n=this.getAttribute("data-name");let a=t.querySelector(".syllabus-list");if(a)return void a.remove();const l=document.createElement("div");l.className="syllabus-list",l.innerHTML="<div>Đang tải đề cương...</div>",t.appendChild(l);const s=allSyllabus.filter((n=>n.mon_hoc_id===e)).sort(((e,n)=>(n.uploaded_at||"").localeCompare(e.uploaded_at||"")));l.innerHTML="",s.length?s.forEach(((e,n)=>{const t=document.createElement("div");t.className="syllabus-item",t.innerHTML=`\n              <a class="syllabus-link" href="${e.file_url}" target="_blank">\n                🗂️ ${e.file_name||"Đề cương "+(n+1)}\n              </a>\n              ${e.owner?`<span class="syllabus-owner"> - người upload: ${e.owner}</span>`:""}\n              <span style="font-size:0.91em; color:#666; margin-left:6px;">\n                (${e.uploaded_at?new Date(e.uploaded_at).toLocaleString("vi-VN"):""})\n              </span>\n            `,l.appendChild(t)})):l.innerHTML=`<div class="text-danger">Chưa có đề cương nào cho môn <b>${n}</b>.</div>`})),e.appendChild(t)}))):e.innerHTML="<div>Không có dữ liệu môn học.</div>"}loadSubjectsAndSyllabus()</script>
+<script src=https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js></script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Wi-Fi QR Code Generator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body { padding-top: 80px; background: #f8f9fa; }
+
+    /* ========== POSTER NGANG ĐẸP, KHÔNG KHUNG VIỀN NGOÀI ========== */
+    .poster {
+      width: 950px; height: 420px;
+      background: white; margin: 20px auto; padding: 0;
+      display: flex; flex-direction: row; box-sizing: border-box;
+      align-items: stretch; justify-content: space-between;
+      /* border: none; */
+      /* box-shadow: 0 2px 10px #eee; */
+    }
+    .poster .left-area {
+      flex: 1.1 1 0;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      min-width: 0; min-height: 0; border: none; height: 100%;
+      padding: 0; margin: 0;
+    }
+    .poster .logo-wifi-group {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; width: 100%; margin: 0; padding: 0;
+    }
+    .poster .logo {
+      width: 76%; max-width: 350px; min-width: 180px; max-height: 90px; min-height: 50px;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto;
+    }
+    .poster .logo img {
+      max-width: 100%; max-height: 100%; object-fit: contain; display: block; width: auto; height: auto; margin: 0 auto;
+    }
+    .poster .wifi-custom {
+      max-width: 70px; max-height: 44px; width: auto; height: auto; display: block; object-fit: contain; margin: 0 auto;
+    }
+    .poster .title {
+      color: #202060; font-weight: bold; font-size: 34px; text-align:center; letter-spacing: 2px;
+      margin: 30px 0 0 0; width: 100%; line-height: 1.12;
+    }
+
+    .poster .info-box {
+      flex: 0 0 325px;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      border: 2px solid #202060; background: #fdfdfd;
+      margin: 25px 30px 25px 0; align-self: center; box-sizing: border-box;
+      min-height: 250px; max-height: 355px; height: 90%; padding: 0 16px;
+    }
+    .poster .info-content {
+      width: 100%; text-align: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px;
+    }
+    .poster .wifi-info { font-size: 21px; color: #202060; margin-bottom: 0; word-break: break-all; font-weight: bold;}
+    .poster .wifi-label { font-weight: normal; color: #202060; }
+    .poster .wifi-value { font-weight: bold; color: #202060; }
+    .poster .scan-block { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
+    .poster .hand { font-size: 28px; margin: 0; color: #202060; }
+    .poster .qr { width: 130px; height: 130px; margin-top: 3px;}
+
+    /* ========== POSTER DỌC KHÔNG KHUNG VIỀN NGOÀI ========== */
+    .poster-vertical {
+      width: 350px; height: 540px; background: white;
+      margin: 20px auto; padding: 0;
+      display: flex; flex-direction: column; align-items: center; box-sizing: border-box;
+      justify-content: flex-start;
+      /* border: none; */
+    }
+    .pv-header {
+      display: flex; flex-direction: column; align-items: center; width: 100%;
+      gap: 9px; margin-bottom: 10px; margin-top: 18px;
+    }
+    .poster-vertical .logo {
+      width: 86%; max-width: 170px; min-width: 110px; max-height: 72px; min-height: 36px;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 3px auto;
+    }
+    .poster-vertical .logo img {
+      max-width: 100%; max-height: 100%; object-fit: contain; width: auto; height: auto; display: block; margin: 0 auto;
+    }
+    .poster-vertical .wifi-custom { max-width: 44px; max-height: 32px; margin: 2px auto 0 auto; object-fit: contain;}
+    .poster-vertical .title { color: #202060; font-weight: bold; margin: 12px 0 12px 0; font-size: 22px; text-align:center; letter-spacing: 2px; }
+    .poster-vertical .info-box-vertical {
+      border: 2px solid #202060; background: #fdfdfd;
+      width: 100%; max-width: 98%; min-height: 180px; max-height: 295px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 14px 4px; box-sizing: border-box; margin-top: 2px;
+    }
+    .poster-vertical .wifi-info { font-size: 16px; color: #202060; margin-bottom: 2px; word-break: break-all; font-weight: bold;}
+    .poster-vertical .wifi-label { font-weight: normal; color: #202060; }
+    .poster-vertical .wifi-value { font-weight: bold; color: #202060; }
+    .poster-vertical .scan-block { display: flex; flex-direction: column; align-items: center; margin-top: 8px; }
+    .poster-vertical .hand { font-size: 22px; margin: 1px 0 2px 0; color: #202060; }
+    .poster-vertical .qr { width: 110px; height: 110px; }
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .poster { width: 99vw; height: auto; flex-direction: column; }
+      .poster-vertical { width: 97vw; min-width: 150px; }
+      .poster .logo-wifi-group {max-height: none;}
+    }
+    .btn-download { margin: 10px; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color: #3B5C94;">
+  <div class="container-fluid">
+    <a class="navbar-brand text-white" href="/">📥 Upload Dữ Liệu</a>
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarNav" type="button">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-white" href="/">Trang Chủ</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/subjects">Môn học</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/export">Đề Cương</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/outline">Đề cương Đóng góp</a></li>
+        <li class="nav-item"><a class="nav-link active bg-primary rounded px-2" href="#wifi">Wi-Fi QR Generator</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Form nhập WiFi -->
+<div class="container" id="wifi">
+  <div class="card shadow-sm p-4">
+    <h3 class="text-center mb-4">📶 Tạo Poster QR Wi-Fi</h3>
+    <form id="wifiForm" class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Tên Wi-Fi (SSID):</label>
+        <input type="text" id="ssid" class="form-control" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Mật khẩu:</label>
+        <input type="text" id="password" class="form-control">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Bảo mật Wi-Fi:</label>
+        <select id="encryption" class="form-select">
+          <option value="WPA">WPA/WPA2</option>
+          <option value="WEP">WEP</option>
+          <option value="nopass">None</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Logo:</label>
+        <input type="file" id="logoUpload" class="form-control" accept="image/*">
+      </div>
+      <div class="col-md-12">
+        <label class="form-label">Loại Poster:</label>
+        <select id="orientation" class="form-select">
+          <option value="horizontal">Ngang</option>
+          <option value="vertical">Dọc</option>
+        </select>
+      </div>
+      <div class="col-md-12 text-center">
+        <button type="submit" class="btn btn-success">Tạo Poster</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Kết quả Poster -->
+<div id="result" class="text-center"></div>
+
+<script>
+let uploadedLogo = "";
+const wifiIconUrl = "upload/logo.png"; // icon WiFi mặc định trong repo
+
+document.getElementById("logoUpload").addEventListener("change", function(event){
+  const file = event.target.files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = function(e){ uploadedLogo = e.target.result; }
+    reader.readAsDataURL(file);
+  }
+});
+
+document.getElementById("wifiForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const ssid = document.getElementById("ssid").value;
+  const password = document.getElementById("password").value;
+  const encryption = document.getElementById("encryption").value;
+  const type = document.getElementById("orientation").value;
+
+  let wifiString = `WIFI:T:${encryption};S:${ssid};`;
+  if(encryption !== "nopass") wifiString += `P:${password};`;
+  wifiString += ";";
+
+  const qrDiv = document.createElement("div");
+  new QRCode(qrDiv, { text: wifiString, width: type === "horizontal" ? 130 : 110, height: type === "horizontal" ? 130 : 110 });
+  setTimeout(()=>{
+    const qrCanvas = qrDiv.querySelector("canvas");
+    const qrImg = qrCanvas.toDataURL("image/png");
+
+    const logoHtml = uploadedLogo ? `<div class="logo"><img src="${uploadedLogo}" alt="Logo"></div>` : "";
+    const wifiIconHtml = `<img src="${wifiIconUrl}" class="wifi-custom" alt="WiFi Icon">`;
+
+    let poster = "";
+    if (type === "horizontal") {
+      poster = `
+      <div id="poster" class="poster">
+        <div class="left-area">
+          <div class="logo-wifi-group">
+            ${logoHtml}
+            ${wifiIconHtml}
+          </div>
+          <div class="title">WI-FI AVAILABLE HERE</div>
+        </div>
+        <div class="info-box">
+          <div class="info-content">
+            <div class="wifi-info"><span class="wifi-label">Network Name:</span> <span class="wifi-value">${ssid}</span></div>
+            <div class="wifi-info"><span class="wifi-label">Password:</span> <span class="wifi-value">${password || "(No Password)"}</span></div>
+            <div class="scan-block">
+              <span style="font-size:18px; color:#202060;">Scan Me!</span>
+              <div class="hand">👇</div>
+              <img class="qr" src="${qrImg}" alt="QR Code">
+            </div>
+          </div>
+        </div>
+      </div>`;
+    } else {
+      poster = `
+      <div id="poster" class="poster-vertical">
+        <div class="pv-header">
+          ${logoHtml}
+          ${wifiIconHtml}
+          <div class="title">WI-FI AVAILABLE HERE</div>
+        </div>
+        <div class="info-box-vertical">
+          <div class="wifi-info"><span class="wifi-label">Network Name:</span> <span class="wifi-value">${ssid}</span></div>
+          <div class="wifi-info"><span class="wifi-label">Password:</span> <span class="wifi-value">${password || "(No Password)"}</span></div>
+          <div class="scan-block">
+            <span style="font-size:15px; color:#202060;">Scan Me!</span>
+            <div class="hand">👇</div>
+            <img class="qr" src="${qrImg}" alt="QR Code">
+          </div>
+        </div>
+      </div>`;
+    }
+
+    document.getElementById("result").innerHTML = poster + `
+      <button class="btn btn-primary btn-download" onclick="downloadPoster()">📥 Tải Poster</button>
+    `;
+  },350);
+});
+
+function downloadPoster() {
+  const element = document.getElementById("poster");
+  html2canvas(element).then(canvas => {
+    const link = document.createElement("a");
+    link.download = "wifi-poster.png";
+    link.href = canvas.toDataURL();
+    link.click();
+  });
+}
+</script>
+</body>
+</html>
