@@ -13,7 +13,6 @@
             min-height: 100vh;
             margin: 0;
         }
-
         .container {
             background-color: white;
             padding: 30px;
@@ -22,17 +21,14 @@
             width: 400px;
             text-align: center;
         }
-
         h1 {
             color: #333;
             margin-bottom: 20px;
         }
-
         p {
             color: #666;
             margin-bottom: 25px;
         }
-
         input[type="date"] {
             width: 95%;
             padding: 10px;
@@ -41,7 +37,6 @@
             font-size: 16px;
             margin-bottom: 20px;
         }
-
         button {
             width: 100%;
             padding: 12px;
@@ -54,20 +49,79 @@
             cursor: pointer;
             transition: background-color 0.2s;
         }
-
         button:hover {
             background-color: #0056b3;
         }
-
         #result-container {
             margin-top: 25px;
             text-align: left;
         }
-
         #result-key {
             background-color: #e9ecef;
             padding: 15px;
             border-radius: 5px;
             font-family: 'Courier New', Courier, monospace;
             font-weight: bold;
-            color: #495
+            color: #495057;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Tạo License Key cho Extension</h1>
+        <p>Chọn ngày hết hạn và nhấn nút để tạo file <strong>.lic</strong></p>
+        
+        <input type="date" id="expiry-date-input">
+        
+        <button id="generate-btn">Tạo File .lic</button>
+
+        <div id="result-container" style="display: none;">
+            <p><strong>Key đã tạo:</strong></p>
+            <pre id="result-key"></pre>
+        </div>
+    </div>
+
+    <script>
+        const dateInput = document.getElementById('expiry-date-input');
+        const generateBtn = document.getElementById('generate-btn');
+        const resultContainer = document.getElementById('result-container');
+        const resultKeyEl = document.getElementById('result-key');
+
+        generateBtn.addEventListener('click', function() {
+            const selectedDate = dateInput.value;
+            if (!selectedDate) {
+                alert('Vui lòng chọn một ngày hết hạn!');
+                return;
+            }
+
+            const dateObj = new Date(selectedDate);
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            
+            // Tạo license key theo đúng định dạng RDI-YYYYMMDD
+            const licenseKey = `RDI-${year}${month}${day}`;
+
+            resultKeyEl.textContent = licenseKey;
+            resultContainer.style.display = 'block';
+
+            // Tạo và tải file .lic
+            createDownloadableFile(licenseKey, 'license.lic');
+        });
+
+        function createDownloadableFile(content, fileName) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+    </script>
+
+</body>
+</html>
