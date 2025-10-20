@@ -367,51 +367,12 @@
       document.getElementById("speakBtn").disabled = best.score === 0;
     }
 
-// --- Đọc đáp án (NÂNG CẤP V3: Sửa lỗi bất đồng bộ) ---
-    let allVoices = []; // Biến toàn cục để lưu danh sách giọng nói
-
-    // 1. Hàm để tải và lưu giọng nói
-    function loadVoices() {
-      allVoices = speechSynthesis.getVoices();
-      // Bạn có thể thêm dòng console.log ở đây để kiểm tra trong F12
-      // console.log("Các giọng nói đã tải:", allVoices); 
-    }
-
-    // 2. Yêu cầu trình duyệt tải ngay khi có thể
-    loadVoices();
-
-    // 3. Đăng ký sự kiện: "Khi nào tải xong, gọi lại hàm loadVoices lần nữa"
-    // Đây là mấu chốt để đảm bảo danh sách được cập nhật
-    speechSynthesis.onvoiceschanged = loadVoices;
-
-    // 4. Hàm onclick bây giờ sẽ SỬ DỤNG danh sách đã tải
-    document.getElementById("speakBtn").onclick = () => {
-      const textToSpeak = answer.textContent;
-      if (!textToSpeak) return;
-
-      const utter = new SpeechSynthesisUtterance(textToSpeak);
-      utter.lang = "vi-VN"; 
-
-      // **SỬA LỖI:** Dùng biến allVoices (đã tải sẵn)
-      // thay vì gọi speechSynthesis.getVoices()
-      
-      let googleVoice = null;
-      for (let i = 0; i < allVoices.length; i++) {
-        if (allVoices[i].lang === "vi-VN" && allVoices[i].name.includes("Google")) {
-          googleVoice = allVoices[i];
-          break; 
-        }
-      }
-
-      if (googleVoice) {
-        utter.voice = googleVoice;
-      } else {
-        // Nếu vẫn không tìm thấy, báo cho bạn biết
-        console.warn("Không tìm thấy giọng 'Google Tiếng Việt', dùng giọng mặc định.");
-      }
-      
-      speechSynthesis.speak(utter);
-    };
+// --- Đọc đáp án (Giữ nguyên) ---
+document.getElementById("speakBtn").onclick = () => {
+  const utter = new SpeechSynthesisUtterance(answer.textContent);
+  utter.lang = "vi-VN"; // 👈 Bạn đã yêu cầu giọng "vi-VN"
+  speechSynthesis.speak(utter);
+};
   </script>
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
