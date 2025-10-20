@@ -16,23 +16,7 @@
   </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark shadow-sm fixed-top" style="background-color:#3B5C94">
-  <div class="container-fluid">
-    <a class="navbar-brand text-white" href="/">📘 Hệ thống tra cứu</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link text-white" href="/">Trang Chủ</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/upload">Upload</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/export">Đề Cương</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/outline">Hủ Đề cương</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/wifi-qrcode">Tạo QR Code Wifi</a></li>
-      </ul>
-    </div>
-  </div>
-</nav>
+<header id="navbar-placeholder"></header>
 <div class="login-container">
   <h2>Đăng nhập</h2>
   <form id="loginForm">
@@ -89,5 +73,14 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
   }
 });
 </script>
+  <script>
+  // Tải nội dung của file nav.html
+  fetch('/menu.html') // Quan trọng: Đường dẫn này phải trỏ đúng file nav.html
+    .then(response => response.text())
+    .then(data => {
+      // Chèn nội dung menu vào thẻ "navbar-placeholder"
+      document.getElementById('navbar-placeholder').innerHTML = data;
+    });
+  </script>
 </body>
 </html>
