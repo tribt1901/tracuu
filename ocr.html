@@ -21,6 +21,8 @@
     #similarityFill { height: 100%; width: 0%; background: #0078d7; transition: width 0.4s; }
   </style>
 </head>
+  <body class="bg-light">
+<header id="navbar-placeholder"></header>
 <body>
   <div class="container">
     <h1>🧠 OCR + Excel + Nhập/Đọc Câu Hỏi</h1>
@@ -195,6 +197,15 @@
       utter.lang = "vi-VN";
       speechSynthesis.speak(utter);
     };
+  </script>
+   <script>
+  // Tải nội dung của file nav.html
+  fetch('/menu.html') // Quan trọng: Đường dẫn này phải trỏ đúng file nav.html
+    .then(response => response.text())
+    .then(data => {
+      // Chèn nội dung menu vào thẻ "navbar-placeholder"
+      document.getElementById('navbar-placeholder').innerHTML = data;
+    });
   </script>
 </body>
 </html>
