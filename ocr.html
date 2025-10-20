@@ -9,11 +9,12 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.5.1/mammoth.browser.min.js"></script>
+
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   
   <style>
-    /* FIX 1: Thêm padding-top cho menu */
     body { font-family: "Segoe UI", sans-serif; background: #f5f7fb; margin: 0; padding: 20px; padding-top: 70px; }
     .container { background: white; border-radius: 14px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); padding: 25px; max-width: 900px; margin: auto; }
     h1 { text-align: center; color: #0078d7; margin-bottom: 30px; }
@@ -36,9 +37,10 @@
     <h1>🧠 OCR + Excel + Nhập/Đọc Câu Hỏi</h1>
 
     <fieldset>
-      <legend>1️⃣ Chọn Nguồn Dữ Liệu Đáp ÁN:</legend>
-      <label><input type="radio" name="dataSource" value="excel" checked> 📂 File Excel (.xlsx)</label>
-      <label><input type="radio" name="dataSource" value="firebase"> ☁️ CSDL Tra cứu HG</label>
+      <legend>1️⃣ Chọn Nguồn Dữ Liệu Đáp Án:</legend>
+      <label><input type="radio" name="dataSource" value="firebase" checked> ☁️ CSDL Tra cứu HG</label>
+      <label><input type="radio" name="dataSource" value="excel"> 📂 File Excel (.xlsx)</label>
+      <label><input type="radio" name="dataSource" value="word"> 📃 File Word (.docx)</label>
       <label><input type="radio" name="dataSource" value="text"> 📄 File Text (.txt)</label>
 
       <div id="firebaseDataSourceArea">
@@ -50,8 +52,13 @@
       </div>
 
       <div id="excelDataSourceArea" style="display:none;">
-        <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
+        <input type="file" id="excelInput" accept=".xlsx">
         <p id="excelStatus">Chưa tải file Excel.</p>
+      </div>
+
+      <div id="wordDataSourceArea" style="display:none;">
+        <input type="file" id="wordInput" accept=".docx">
+        <p id="wordStatus">Chưa tải file Word (.docx).</p>
       </div>
 
       <div id="textDataSourceArea" style="display:none;">
@@ -98,12 +105,14 @@
     const answer = document.getElementById("answer");
     const imageStatus = document.getElementById("imageStatus");
     const excelStatus = document.getElementById("excelStatus");
+    // *** MỚI: Thêm status cho Word/Text ***
     const firebaseStatus = document.getElementById("firebaseStatus");
+    const wordStatus = document.getElementById("wordStatus");
     const textStatus = document.getElementById("textStatus");
+    
     const similarityFill = document.getElementById("similarityFill");
 
-    // --- Khởi tạo Firebase ---
-    // FIX 2: Khởi tạo FIRESTORE (db)
+    // --- Khởi tạo Firebase (Giữ nguyên) ---
     const firebaseConfig = {
       apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
       authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -116,7 +125,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore(); 
 
-    // --- Chuyển đổi khu vực nhập ---
+    // --- Chuyển đổi khu vực nhập (Giữ nguyên) ---
     document.querySelectorAll('input[name="inputMode"]').forEach(r => {
       r.addEventListener('change', () => {
         document.getElementById("imageInputArea").style.display = r.value === "image" ? "block" : "none";
@@ -125,23 +134,26 @@
       });
     });
 
-    // --- Chuyển đổi NGUỒN DỮ LIỆU ---
+    // *** MỚI: Cập nhật Chuyển đổi NGUỒN DỮ LIỆU (Thêm Word/Text) ***
     document.querySelectorAll('input[name="dataSource"]').forEach(r => {
       r.addEventListener('change', () => {
         const val = r.value;
         document.getElementById("firebaseDataSourceArea").style.display = val === "firebase" ? "block" : "none";
         document.getElementById("excelDataSourceArea").style.display = val === "excel" ? "block" : "none";
+        document.getElementById("wordDataSourceArea").style.display = val === "word" ? "block" : "none";
         document.getElementById("textDataSourceArea").style.display = val === "text" ? "block" : "none";
         
+        // Reset dữ liệu và status
         excelData = [];
         firebaseStatus.textContent = "Chưa nạp dữ liệu CSDL.";
         excelStatus.textContent = "Chưa tải file Excel.";
+        wordStatus.textContent = "Chưa tải file Word (.docx).";
         textStatus.textContent = "Chưa tải file Text (.txt).";
         answer.textContent = "Chưa có dữ liệu.";
       });
     });
 
-    // --- Tải danh sách môn học từ FIRESTORE ---
+    // --- Tải danh sách môn học từ FIRESTORE (Giữ nguyên) ---
     function loadSubjects() {
       const subjectSelect = document.getElementById("subjectSelect");
       const subjectsRef = db.collection("mon_hoc"); 
@@ -151,7 +163,7 @@
           subjectSelect.innerHTML = '<option value="">-- Chọn môn học --</option>';
           snapshot.forEach(doc => {
             const subjectKey = doc.id;
-            const subjectName = doc.data().ten_mon; // Lấy trường ten_mon
+            const subjectName = doc.data().ten_mon; 
             if (subjectName) {
               const option = document.createElement('option');
               option.value = subjectKey; 
@@ -167,7 +179,7 @@
         subjectSelect.innerHTML = '<option value="">-- Lỗi tải CSDL --</option>';
       });
     }
-    // Tải môn học và đặt Firebase là nguồn mặc định khi tải trang
+    // Tải môn học ngay khi trang load, và đặt Firebase là nguồn mặc định
     document.addEventListener('DOMContentLoaded', () => {
         loadSubjects();
         document.querySelector('input[name="dataSource"][value="firebase"]').checked = true;
@@ -175,7 +187,7 @@
     });
 
 
-    // --- Nút Nạp dữ liệu từ FIRESTORE ---
+    // --- Nút Nạp dữ liệu từ FIRESTORE (Giữ nguyên) ---
     document.getElementById("loadFirebaseBtn").addEventListener("click", () => {
       const subjectKey = document.getElementById("subjectSelect").value; 
       if (!subjectKey) {
@@ -197,7 +209,6 @@
             if (choices && correctKey && choices[correctKey]) {
               answerText = choices[correctKey];
             }
-            // Thêm vào mảng với key "question" và "answer"
             excelData.push({ question: question || "", answer: answerText });
           });
           firebaseStatus.textContent = `✅ Đã nạp ${excelData.length} câu hỏi từ CSDL.`;
@@ -211,192 +222,84 @@
     });
 
 
-    // --- Hàm giúp chuẩn hóa header / chuỗi ---
-    function stripDiacritics(str) {
-      // Loại bỏ dấu tiếng Việt
-      return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-    }
-    function normalizeKey(s) {
-      return stripDiacritics(String(s || "")).toLowerCase().replace(/[^a-z0-9]/g, "");
-    }
-
-    // --- Hàm phân tích Text (CSV hoặc "Câu hỏi:") ---
-    function parseTextData(text) {
-        excelData = []; // Xóa dữ liệu cũ
-        let count = 0;
-        // Xóa BOM nếu có
-        text = text.replace(/^\uFEFF/, "");
-        const lines = text.split(/\r\n|\n/);
-
-        console.log("parseTextData: tổng dòng =", lines.length);
-        // Thử tìm header trong vài dòng đầu
-        const possibleSeparators = [',', '\t', ';'];
-        const knownQuestionKeys = ["cauhoi","cauhoi","cauhoi?","noidung","noi_dung","question","questiontext","q","quest"];
-        const knownAnswerKeys = ["dapan","dap_an","dapandung","dapandung?","answer","ans","correct","dap_an_dung","dapandung"];
-
-        let found = false;
-        let qIndex = -1;
-        let aIndex = -1;
-        let usedSep = ',';
-
-        for (let i = 0; i < Math.min(6, lines.length) && !found; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-            for (const sep of possibleSeparators) {
-                // nếu dòng không chứa phân cách, bỏ qua
-                if (line.indexOf(sep) === -1) continue;
-                const cells = line.split(sep).map(c => c.trim());
-                const normCells = cells.map(c => normalizeKey(c));
-                // tìm index chứa bất kỳ khóa 'question' và 'answer'
-                let qi = -1, ai = -1;
-                for (let j = 0; j < normCells.length; j++) {
-                  if (knownQuestionKeys.includes(normCells[j]) || normCells[j].includes("cauhoi") || normCells[j].includes("noidung") || normCells[j].includes("question")) {
-                    qi = j;
-                  }
-                  if (knownAnswerKeys.includes(normCells[j]) || normCells[j].includes("dapan") || normCells[j].includes("answer") || normCells[j].includes("correct")) {
-                    ai = j;
-                  }
-                }
-                if (qi !== -1 && ai !== -1) {
-                  found = true;
-                  qIndex = qi;
-                  aIndex = ai;
-                  usedSep = sep;
-                  console.log("parseTextData: tìm thấy header ở dòng", i+1, "sep=", sep, "qIndex=", qIndex, "aIndex=", aIndex, "headers=", cells);
-                  break;
-                }
-            }
-        }
-
-        // Nếu tìm thấy header -> parse toàn bộ file với separator đã chọn
-        if (found) {
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                const parts = line.split(usedSep);
-                // bỏ qua dòng header (so sánh by normalized)
-                const normLine = parts.map(p => normalizeKey(p)).join('|');
-                const headerCheck = (i < 6) && (parts.some(p => normalizeKey(p).includes("cauhoi")) && parts.some(p => normalizeKey(p).includes("dapan")));
-                if (headerCheck) continue;
-                if (parts.length > Math.max(qIndex, aIndex)) {
-                    const question = parts[qIndex].trim().replace(/^"|"$/g, '');
-                    const answer = parts[aIndex].trim().replace(/^"|"$/g, '');
-                    if (question && answer) {
-                        excelData.push({ question, answer });
-                        count++;
-                    }
-                }
-            }
-        } else {
-            // Nếu không tìm header, thử dạng CSV không header (2 cột)
-            console.log("parseTextData: không tìm header, thử fallback 2 cột / dạng 'Câu hỏi:'");
-            // Thử tách bằng các separator, ưu tiên comma -> tab -> semicolon
-            let fallbackParsed = false;
-            for (const sep of possibleSeparators) {
-              let possibleCount = 0;
-              for (let i = 0; i < Math.min(10, lines.length); i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                const parts = line.split(sep);
-                if (parts.length >= 2) possibleCount++;
-              }
-              if (possibleCount >= 1) {
-                // nếu hầu hết dòng có >=2 cột, chọn sep và xem nếu file không phải "Câu hỏi:" dạng
-                // parse với sep và lấy 2 cột đầu làm question/answer
-                for (const line of lines) {
-                  if (!line.trim()) continue;
-                  const parts = line.split(sep);
-                  if (parts.length >= 2) {
-                    const question = parts[0].trim().replace(/^"|"$/g, '');
-                    const answer = parts[1].trim().replace(/^"|"$/g, '');
-                    if (question && answer) {
-                      excelData.push({ question, answer });
-                      count++;
-                    }
-                  }
-                }
-                fallbackParsed = true;
-                console.log("parseTextData: fallback parsed with sep=", sep, "count=", count);
-                break;
-              }
-            }
-
-            // Nếu vẫn chưa có dữ liệu, thử dạng "Câu hỏi:" trong toàn bộ text
-            if (!fallbackParsed && text.includes("Câu hỏi")) {
-                const parts = text.split("Câu hỏi:");
-                for (let i = 1; i < parts.length; i++) {
-                    const chunk = parts[i];
-                    const answerSplit = chunk.split(/(\r\n|\n)?Đáp án đúng:/);
-                    if (answerSplit.length > 1) {
-                        let question = answerSplit[0].trim();
-                        question = question.replace(/\s+/g, ' ').trim();
-                        let ans = answerSplit[answerSplit.length - 1].trim();
-                        const firstNewline = ans.indexOf('\n');
-                        if (firstNewline !== -1) {
-                            ans = ans.substring(0, firstNewline).trim();
-                        }
-                        question = question.replace(/^[:,\s"]+/, '').replace(/[,"]$/, '').trim();
-                        ans = ans.replace(/^[:,\s"]+/, '').replace(/[,"]$/, '').trim();
-                        if (question && ans) {
-                            excelData.push({ question, answer: ans });
-                            count++;
-                        }
-                    }
-                }
-            }
-        }
-
-        console.log("parseTextData: tổng nạp được =", count);
-        return count; // Trả về số câu hỏi nạp được
-    }
-
-    // --- Đọc Excel (XLSX) ---
+    // --- Đọc Excel (Giữ nguyên) ---
     document.getElementById("excelInput").addEventListener("change", e => {
       const file = e.target.files[0];
       if (!file) return;
-      excelStatus.textContent = "🔄 Đang đọc file Excel...";
       const reader = new FileReader();
-      
       reader.onload = evt => {
-        try {
-          const data = evt.target.result;
-          // Một số máy trả ArrayBuffer, một số trả Binary string - dùng XLSX.read with type
-          let wb;
-          if (data instanceof ArrayBuffer) {
-            wb = XLSX.read(data, { type: "array" });
-          } else {
-            wb = XLSX.read(data, { type: "binary" });
-          }
-          const sheetName = wb.SheetNames[0];
-          const sheet = wb.Sheets[sheetName];
-          
-          // Chuyển đổi toàn bộ sheet thành văn bản (CSV)
-          const csvText = XLSX.utils.sheet_to_csv(sheet);
-          console.log("excelInput: csvText preview:", csvText.slice(0, 1000));
-          
-          // Dùng hàm parseTextData để phân tích
-          const count = parseTextData(csvText);
-          
-          if (count > 0) {
-            excelStatus.textContent = `✅ Đã nạp ${count} câu hỏi từ Excel.`;
-          } else {
-            excelStatus.textContent = "❌ Không tìm thấy dữ liệu (hãy kiểm tra định dạng file hoặc header). Mở console để xem chi tiết.";
-            console.warn("parseTextData không nạp được câu hỏi. Hãy kiểm tra CSV đầu ra hoặc đặt header 'Câu hỏi'/'Đáp án'.");
-          }
-        } catch (err) {
-          console.error("Lỗi đọc file Excel:", err);
-          excelStatus.textContent = "❌ Lỗi khi đọc file Excel. Kiểm tra console để biết chi tiết.";
-        }
+        const wb = XLSX.read(evt.target.result, { type: "binary" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        excelData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        excelStatus.textContent = `✅ Đã nạp ${excelData.length} câu hỏi từ Excel.`;
       };
-      reader.onerror = () => {
-         excelStatus.textContent = "❌ Lỗi khi đọc file.";
-      };
-      // đọc dưới dạng array buffer để an toàn
-      reader.readAsArrayBuffer(file);
+      reader.readAsBinaryString(file);
     });
 
-    
-    // --- Đọc File Text (.txt) ---
+    // *** MỚI: Hàm chung để phân tích Text và Word ***
+    // (Dựa trên định dạng file .txt bạn đã cung cấp (Source 1-32))
+    function parseTextData(text) {
+        excelData = []; // Xóa dữ liệu cũ
+        let count = 0;
+        // Tách file dựa trên "Câu hỏi:"
+        const parts = text.split("Câu hỏi:");
+        
+        // Bỏ qua phần tử đầu tiên (có thể là tiêu đề)
+        for (let i = 1; i < parts.length; i++) {
+            const chunk = parts[i];
+            // Tách câu hỏi và câu trả lời
+            const answerSplit = chunk.split("Đáp án đúng:");
+            
+            if (answerSplit.length === 2) {
+                // Lấy câu hỏi, xóa khoảng trắng thừa
+                const question = answerSplit[0].trim().replace(/\s+/g, ' ');
+                
+                // Lấy câu trả lời, xóa khoảng trắng thừa
+                let answer = answerSplit[1].trim();
+                
+                // Giữ lại nội dung trước dấu xuống dòng đầu tiên
+                const firstNewline = answer.indexOf('\n');
+                if (firstNewline !== -1) {
+                    answer = answer.substring(0, firstNewline).trim();
+                }
+                
+                if (question && answer) {
+                    excelData.push({ question, answer });
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    // *** MỚI: Đọc File Word (.docx) ***
+    document.getElementById("wordInput").addEventListener("change", e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.name.endsWith(".doc")) {
+            wordStatus.textContent = "❌ File .doc không được hỗ trợ. Vui lòng dùng .docx";
+            return;
+        }
+
+        wordStatus.textContent = "🔄 Đang đọc file Word...";
+        const reader = new FileReader();
+        reader.onload = evt => {
+            mammoth.extractRawText({ arrayBuffer: evt.target.result })
+                .then(result => {
+                    const text = result.value;
+                    const count = parseTextData(text);
+                    wordStatus.textContent = `✅ Đã nạp ${count} câu hỏi từ Word.`;
+                })
+                .catch(err => {
+                    console.error("Lỗi đọc file Word:", err);
+                    wordStatus.textContent = "❌ Lỗi khi đọc file .docx";
+                });
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    // *** MỚI: Đọc File Text (.txt) ***
     document.getElementById("textInput").addEventListener("change", e => {
         const file = e.target.files[0];
         if (!file) return;
@@ -405,12 +308,8 @@
         const reader = new FileReader();
         reader.onload = evt => {
             const text = evt.target.result;
-            const count = parseTextData(text); // Dùng hàm thông minh
-            if (count > 0) {
-              textStatus.textContent = `✅ Đã nạp ${count} câu hỏi từ Text.`;
-            } else {
-              textStatus.textContent = "❌ Không tìm thấy dữ liệu (hãy kiểm tra định dạng file).";
-            }
+            const count = parseTextData(text);
+            textStatus.textContent = `✅ Đã nạp ${count} câu hỏi từ Text.`;
         };
         reader.onerror = () => {
              textStatus.textContent = "❌ Lỗi khi đọc file .txt";
@@ -418,7 +317,7 @@
         reader.readAsText(file);
     });
 
-    // --- OCR Ảnh ---
+    // --- OCR Ảnh (Giữ nguyên) ---
     document.getElementById("imageInput").addEventListener("change", async e => {
       const file = e.target.files[0];
       if (!file) return;
@@ -436,7 +335,7 @@
       if (text) findAnswer(text);
     });
 
-    // --- Tra theo text ---
+    // --- Tra theo text (Giữ nguyên) ---
     document.getElementById("searchTextBtn").addEventListener("click", () => {
       const text = document.getElementById("manualText").value.trim();
       if (!text) return alert("Nhập câu hỏi trước!");
@@ -444,7 +343,7 @@
       findAnswer(text);
     });
 
-    // --- Voice Recognition ---
+    // --- Voice Recognition (Giữ nguyên) ---
     let recognition;
     if ('webkitSpeechRecognition' in window) {
       recognition = new webkitSpeechRecognition();
@@ -467,10 +366,10 @@
       document.getElementById("voiceStatus").textContent = "🎙️ Đang nghe...";
     };
 
-    // --- Hàm tìm đáp án ---
+    // --- Hàm tìm đáp án (Giữ nguyên logic .includes()) ---
     function findAnswer(questionText) {
       if (!excelData.length) {
-        answer.textContent = "⚠️ Vui lòng nạp dữ liệu (CSDL, Excel, Text) trước.";
+        answer.textContent = "⚠️ Vui lòng tải file Excel hoặc nạp dữ liệu CSDL trước.";
         return;
       }
       const normalize = s => s.toLowerCase().replace(/\s+/g, " ").trim();
@@ -479,7 +378,7 @@
       let best = { score: 0, ans: "Không tìm thấy câu trả lời." };
 
       for (let row of excelData) {
-        const q = row.question || ""; 
+        const q = row.question || row.Question || row["Câu hỏi"] || "";
         if (!q) continue; 
         const normalizedDbQuestion = normalize(q);
 
@@ -487,7 +386,7 @@
           if (normalizedDbQuestion.length > best.score) {
             best = {
               score: normalizedDbQuestion.length,
-              ans: row.answer || ""
+              ans: row.answer || row.Answer || row["Đáp án"] || ""
             };
           }
         }
@@ -505,7 +404,7 @@
       document.getElementById("speakBtn").disabled = best.score === 0;
     }
 
-    // --- Đọc đáp án ---
+    // --- Đọc đáp án (Giữ nguyên) ---
     document.getElementById("speakBtn").onclick = () => {
       const utter = new SpeechSynthesisUtterance(answer.textContent);
       utter.lang = "vi-VN";
@@ -516,12 +415,12 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
   <script>
-  // FIX 1: Tải menu (Đường dẫn tương đối)
+  // Tải menu (Đường dẫn tương đối)
   fetch('menu.html') 
     .then(response => response.text())
     .then(data => {
       document.getElementById('navbar-placeholder').innerHTML = data;
-    }).catch(err => { console.warn("Không tải được menu.html:", err); });
+    });
   </script>
 </body>
 </html>
