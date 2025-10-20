@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>🧠 OCR + Excel + Nhập/Đọc Câu Hỏi</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -11,7 +13,8 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   
   <style>
-    body { font-family: "Segoe UI", sans-serif; background: #f5f7fb; margin: 0; padding: 20px; }
+    /* Giữ nguyên style cũ của bạn */
+    body { font-family: "Segoe UI", sans-serif; background: #f5f7fb; margin: 0; padding: 20px; padding-top: 70px; /* Thêm padding-top cho menu */ }
     .container { background: white; border-radius: 14px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); padding: 25px; max-width: 900px; margin: auto; }
     h1 { text-align: center; color: #0078d7; margin-bottom: 30px; }
     h2 { margin-top: 25px; color: #333; }
@@ -29,7 +32,6 @@
 </head>
   <body class="bg-light">
 <header id="navbar-placeholder"></header>
-  </body>
 <body>
   <div class="container">
     <h1>🧠 OCR + Excel + Nhập/Đọc Câu Hỏi</h1>
@@ -39,17 +41,14 @@
       <label><input type="radio" name="inputMode" value="image" checked> 🖼️ Ảnh (OCR)</label>
       <label><input type="radio" name="inputMode" value="text"> ✍️ Nhập văn bản</label>
       <label><input type="radio" name="inputMode" value="voice"> 🎤 Đọc bằng giọng nói</label>
-
       <div id="imageInputArea">
         <input type="file" id="imageInput" accept="image/*">
         <p id="imageStatus">Chưa chọn ảnh.</p>
       </div>
-
       <div id="textInputArea" style="display:none;">
         <textarea id="manualText" placeholder="Nhập câu hỏi tại đây..."></textarea>
         <button id="searchTextBtn">🔍 Tra đáp án</button>
       </div>
-
       <div id="voiceInputArea" style="display:none;">
         <button id="startVoice">🎙️ Bắt đầu nói</button>
         <p id="voiceStatus">Chưa nói gì...</p>
@@ -60,12 +59,10 @@
       <legend>2️⃣ Chọn Nguồn Dữ Liệu Đáp Án:</legend>
       <label><input type="radio" name="dataSource" value="excel" checked> 📂 File Excel (.xlsx)</label>
       <label><input type="radio" name="dataSource" value="firebase"> ☁️ CSDL Tra cứu HG</label>
-
       <div id="excelDataSourceArea">
         <input type="file" id="excelInput" accept=".xlsx">
         <p id="excelStatus">Chưa tải file Excel.</p>
       </div>
-
       <div id="firebaseDataSourceArea" style="display:none;">
         <select id="subjectSelect">
           <option value="">-- Đang tải danh sách môn... --</option>
@@ -89,14 +86,14 @@
   </div>
 
   <script>
-    let excelData = []; // Biến này sẽ chứa dữ liệu từ Excel HOẶC Firebase
+    let excelData = []; 
     const output = document.getElementById("output");
     const answer = document.getElementById("answer");
     const imageStatus = document.getElementById("imageStatus");
     const excelStatus = document.getElementById("excelStatus");
     const similarityFill = document.getElementById("similarityFill");
 
-    // *** SỬA LỖI: Khởi tạo Firebase và Firestore (v8) ***
+    // --- Khởi tạo Firebase (Giữ nguyên) ---
     const firebaseConfig = {
       apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
       authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -107,7 +104,7 @@
       measurementId: "G-R0M6Y502NP"
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore(); // <<< *** SỬA LỖI: Khởi tạo FIRESTORE ***
+    const db = firebase.firestore(); 
 
     // --- Chuyển đổi khu vực nhập (Giữ nguyên) ---
     document.querySelectorAll('input[name="inputMode"]').forEach(r => {
@@ -131,10 +128,9 @@
       });
     });
 
-    // *** SỬA LỖI: Tải danh sách môn học từ FIRESTORE ***
+    // --- Tải danh sách môn học từ FIRESTORE (Giữ nguyên) ---
     function loadSubjects() {
       const subjectSelect = document.getElementById("subjectSelect");
-      // Dùng collection "mon_hoc" và field "ten_mon" (giống index.html)
       const subjectsRef = db.collection("mon_hoc"); 
       
       subjectsRef.get().then(snapshot => {
@@ -142,13 +138,11 @@
           subjectSelect.innerHTML = '<option value="">-- Chọn môn học --</option>';
           snapshot.forEach(doc => {
             const subjectKey = doc.id;
-            // Lấy đúng tên trường 'ten_mon'
             const subjectName = doc.data().ten_mon; 
-            
             if (subjectName) {
               const option = document.createElement('option');
-              option.value = subjectKey; // Lưu ID của document
-              option.textContent = subjectName; // Hiển thị tên môn
+              option.value = subjectKey; 
+              option.textContent = subjectName; 
               subjectSelect.appendChild(option);
             }
           });
@@ -163,9 +157,9 @@
     document.addEventListener('DOMContentLoaded', loadSubjects);
 
 
-    // *** SỬA LỖI: Nút Nạp dữ liệu từ FIRESTORE ***
+    // --- Nút Nạp dữ liệu từ FIRESTORE (Giữ nguyên) ---
     document.getElementById("loadFirebaseBtn").addEventListener("click", () => {
-      const subjectKey = document.getElementById("subjectSelect").value; // Đây là ID của môn học
+      const subjectKey = document.getElementById("subjectSelect").value; 
       const firebaseStatus = document.getElementById("firebaseStatus");
 
       if (!subjectKey) {
@@ -174,32 +168,27 @@
       }
       
       firebaseStatus.textContent = "🔄 Đang tải dữ liệu...";
-      excelData = []; // Xóa dữ liệu cũ
+      excelData = []; 
 
-      // Truy vấn collection 'cau_hoi' nơi 'mon_hoc_id' bằng với ID môn học đã chọn
       const questionsRef = db.collection("cau_hoi").where("mon_hoc_id", "==", subjectKey);
       
       questionsRef.get().then(snapshot => {
         if (!snapshot.empty) {
-          // Lặp qua từng câu hỏi
           snapshot.forEach(doc => {
             const data = doc.data();
-            const question = data.noi_dung; // Lấy nội dung câu hỏi
-            const correctKey = data.dap_an_dung; // Lấy key đáp án đúng (vd: 'a')
-            const choices = data.lua_chon; // Lấy object các lựa chọn
+            const question = data.noi_dung; 
+            const correctKey = data.dap_an_dung; 
+            const choices = data.lua_chon; 
 
-            let answer = "Không có đáp án"; // Mặc định
+            let answerText = "Không có đáp án"; 
             
-            // Lấy text của đáp án đúng từ object lựa chọn
             if (choices && correctKey && choices[correctKey]) {
-              answer = choices[correctKey];
+              answerText = choices[correctKey];
             }
             
-            // Thêm vào mảng excelData với cấu trúc {question, answer}
-            // Hàm findAnswer() sẽ đọc từ đây
             excelData.push({ 
               question: question || "", 
-              answer: answer 
+              answer: answerText 
             });
           });
           
@@ -279,56 +268,54 @@
       document.getElementById("voiceStatus").textContent = "🎙️ Đang nghe...";
     };
 
-    // --- Hàm tìm đáp án (Giữ nguyên, chỉ sửa thông báo lỗi) ---
+    // *** FIX 2: Thay thế hoàn toàn hàm findAnswer ***
     function findAnswer(questionText) {
       if (!excelData.length) {
-        // Cập nhật thông báo lỗi chung chung hơn
         answer.textContent = "⚠️ Vui lòng tải file Excel hoặc nạp dữ liệu CSDL trước.";
         return;
       }
 
+      // Chuẩn hóa văn bản OCR
       const normalize = s => s.toLowerCase().replace(/\s+/g, " ").trim();
-
-      function similarity(a, b) {
-        a = normalize(a); b = normalize(b);
-        const al = a.length, bl = b.length;
-        if (!al || !bl) return 0;
-        const dp = Array.from({ length: bl + 1 }, () => Array(al + 1).fill(0));
-        for (let i = 0; i <= bl; i++) dp[i][0] = i;
-        for (let j = 0; j <= al; j++) dp[0][j] = j;
-        for (let i = 1; i <= bl; i++)
-          for (let j = 1; j <= al; j++)
-            dp[i][j] = b[i - 1] === a[j - 1]
-              ? dp[i - 1][j - 1]
-              : 1 + Math.min(dp[i - 1][j - 1], dp[i][j - 1], dp[i - 1][j]);
-        const dist = dp[bl][al];
-        return 1 - dist / Math.max(al, bl);
-      }
+      const normalizedOcrText = normalize(questionText);
 
       let best = { score: 0, ans: "Không tìm thấy câu trả lời." };
+
       for (let row of excelData) {
-        // Hỗ trợ nhiều tên cột (từ Excel hoặc Firebase)
-        // (Firebase nạp vào key 'question' và 'answer')
         const q = row.question || row.Question || row["Câu hỏi"] || "";
-        const sim = similarity(questionText, q);
-        if (sim > best.score) {
-          best = { 
-            score: sim, 
-            ans: row.answer || row.Answer || row["Đáp án"] || "" 
-          };
+        if (!q) continue; // Bỏ qua nếu câu hỏi trong CSDL rỗng
+
+        // Chuẩn hóa câu hỏi từ CSDL
+        const normalizedDbQuestion = normalize(q);
+
+        // Kiểm tra xem câu hỏi CSDL (ngắn) có nằm BÊN TRONG văn bản OCR (dài) không
+        // và phải đủ dài (vd: > 5 ký tự) để tránh khớp "là", "a", "b"...
+        if (normalizedDbQuestion.length > 5 && normalizedOcrText.includes(normalizedDbQuestion)) {
+          
+          // Nếu khớp, 'score' là độ dài của câu hỏi CSDL.
+          // Chúng ta muốn tìm câu hỏi CSDL dài nhất (khớp chi tiết nhất)
+          if (normalizedDbQuestion.length > best.score) {
+            best = {
+              score: normalizedDbQuestion.length,
+              ans: row.answer || row.Answer || row["Đáp án"] || ""
+            };
+          }
         }
       }
 
-      const percent = Math.round(best.score * 100);
-      similarityFill.style.width = percent + "%";
-      similarityFill.style.background = percent >= 70 ? "#28a745" : (percent >= 50 ? "#ffc107" : "#dc3545");
-
-      if (best.score >= 0.7) {
-        answer.textContent = `✅ Giống ${percent}% → ${best.ans}`;
+      // Hiển thị kết quả
+      if (best.score > 0) {
+        // Tìm thấy
+        answer.textContent = `✅ Khớp → ${best.ans}`;
+        similarityFill.style.width = "100%"; // Cho 100% luôn vì đã tìm thấy
+        similarityFill.style.background = "#28a745";
       } else {
-        answer.textContent = `❌ Giống ${percent}% – chưa đủ 70% để xác định.`;
+        // Không tìm thấy
+        answer.textContent = `❌ Không tìm thấy câu hỏi khớp trong CSDL.`;
+        similarityFill.style.width = "0%";
+        similarityFill.style.background = "#dc3545";
       }
-      document.getElementById("speakBtn").disabled = false;
+      document.getElementById("speakBtn").disabled = best.score === 0;
     }
 
     // --- Đọc đáp án (Giữ nguyên) ---
@@ -338,8 +325,11 @@
       speechSynthesis.speak(utter);
     };
   </script>
-    <script>
-  // *** SỬA LỖI: Tải menu bằng đường dẫn tương đối (xóa dấu /) ***
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+  // Tải menu (Giữ nguyên)
   fetch('menu.html') 
     .then(response => response.text())
     .then(data => {
