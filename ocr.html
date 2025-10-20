@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>🧠 OCR + Excel + Nhập/Đọc Câu Hỏi</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: "Segoe UI", sans-serif; background: #f5f7fb; margin: 0; padding: 20px; }
+    .container { background: white; border-radius: 14px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); padding: 25px; max-width: 900px; margin: auto; }
+    h1 { text-align: center; color: #0078d7; margin-bottom: 30px; }
+    h2 { margin-top: 25px; color: #333; }
+    fieldset { border: 2px solid #0078d7; border-radius: 10px; margin-top: 15px; padding: 15px; }
+    legend { color: #0078d7; font-weight: bold; padding: 0 10px; }
+    input[type="file"], textarea, button { margin-top: 10px; font-size: 15px; }
+    textarea { width: 100%; height: 90px; border-radius: 8px; border: 1px solid #ccc; padding: 10px; }
+    button { background: #0078d7; color: white; border: none; border-radius: 8px; padding: 10px 16px; cursor: pointer; margin-top: 10px; }
+    button:hover { background: #005fa3; }
+    #output, #answer { background: #f1f1f1; padding: 15px; border-radius: 8px; margin-top: 10px; min-height: 50px; white-space: pre-wrap; }
+    #similarityBar { height: 12px; background: #ccc; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+    #similarityFill { height: 100%; width: 0%; background: #0078d7; transition: width 0.4s; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧠 OCR + Excel + Nhập/Đọc Câu Hỏi</h1>
+
+    <fieldset>
+      <legend>1️⃣ Chọn cách nhập câu hỏi:</legend>
+      <label><input type="radio" name="inputMode" value="image" checked> 🖼️ Ảnh (OCR)</label>
+      <label><input type="radio" name="inputMode" value="text"> ✍️ Nhập văn bản</label>
+      <label><input type="radio" name="inputMode" value="voice"> 🎤 Đọc bằng giọng nói</label>
+
+      <div id="imageInputArea">
+        <input type="file" id="imageInput" accept="image/*">
+        <p id="imageStatus">Chưa chọn ảnh.</p>
+      </div>
+
+      <div id="textInputArea" style="display:none;">
+        <textarea id="manualText" placeholder="Nhập câu hỏi tại đây..."></textarea>
+        <button id="searchTextBtn">🔍 Tra đáp án</button>
+      </div>
+
+      <div id="voiceInputArea" style="display:none;">
+        <button id="startVoice">🎙️ Bắt đầu nói</button>
+        <p id="voiceStatus">Chưa nói gì...</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>2️⃣ Chọn file Excel đáp án (.xlsx):</legend>
+      <input type="file" id="excelInput" accept=".xlsx">
+      <p id="excelStatus">Chưa tải file Excel.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>📋 Câu hỏi nhận được:</legend>
+      <div id="output">Chưa nhận dạng.</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>💡 Đáp án tìm được:</legend>
+      <div id="answer">Chưa có dữ liệu.</div>
+      <div id="similarityBar"><div id="similarityFill"></div></div>
+      <button id="speakBtn" disabled>🔊 Đọc đáp án</button>
+    </fieldset>
+  </div>
+
+  <script>
+    let excelData = [];
+    const output = document.getElementById("output");
+    const answer = document.getElementById("answer");
+    const imageStatus = document.getElementById("imageStatus");
+    const excelStatus = document.getElementById("excelStatus");
+    const similarityFill = document.getElementById("similarityFill");
+
+    // --- Chuyển đổi khu vực nhập ---
+    document.querySelectorAll('input[name="inputMode"]').forEach(r => {
+      r.addEventListener('change', () => {
+        document.getElementById("imageInputArea").style.display = r.value === "image" ? "block" : "none";
+        document.getElementById("textInputArea").style.display = r.value === "text" ? "block" : "none";
+        document.getElementById("voiceInputArea").style.display = r.value === "voice" ? "block" : "none";
+      });
+    });
+
+    // --- Đọc Excel ---
+    document.getElementById("excelInput").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = evt => {
+        const wb = XLSX.read(evt.target.result, { type: "binary" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        excelData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        excelStatus.textContent = `✅ Đã nạp ${excelData.length} câu hỏi từ Excel.`;
+      };
+      reader.readAsBinaryString(file);
+    });
+
+    // --- OCR Ảnh ---
+    document.getElementById("imageInput").addEventListener("change", async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      imageStatus.textContent = "🔍 Đang nhận dạng ảnh...";
+      output.textContent = "";
+      answer.textContent = "";
+
+      const result = await Tesseract.recognize(file, "vie+eng", {
+        logger: m => { if (m.status === "recognizing text") imageStatus.textContent = `🧠 OCR: ${Math.round(m.progress * 100)}%`; }
+      });
+
+      const text = result.data.text.trim();
+      output.textContent = text || "(Không nhận được chữ)";
+      imageStatus.textContent = "✅ Hoàn tất OCR.";
+      if (text) findAnswer(text);
+    });
+
+    // --- Tra theo text ---
+    document.getElementById("searchTextBtn").addEventListener("click", () => {
+      const text = document.getElementById("manualText").value.trim();
+      if (!text) return alert("Nhập câu hỏi trước!");
+      output.textContent = text;
+      findAnswer(text);
+    });
+
+    // --- Voice Recognition ---
+    let recognition;
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.lang = "vi-VN";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onresult = e => {
+        const text = e.results[0][0].transcript;
+        document.getElementById("voiceStatus").textContent = "✅ Nghe được: " + text;
+        output.textContent = text;
+        findAnswer(text);
+      };
+      recognition.onend = () => document.getElementById("voiceStatus").textContent = "⏹️ Đã dừng ghi âm.";
+    } else {
+      document.getElementById("voiceStatus").textContent = "⚠️ Trình duyệt không hỗ trợ giọng nói.";
+      document.getElementById("startVoice").disabled = true;
+    }
+
+    document.getElementById("startVoice").onclick = () => {
+      recognition.start();
+      document.getElementById("voiceStatus").textContent = "🎙️ Đang nghe...";
+    };
+
+    // --- Hàm tìm đáp án (>=70%) ---
+    function findAnswer(questionText) {
+      if (!excelData.length) return answer.textContent = "⚠️ Vui lòng tải file Excel trước.";
+
+      const normalize = s => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+      function similarity(a, b) {
+        a = normalize(a); b = normalize(b);
+        const al = a.length, bl = b.length;
+        if (!al || !bl) return 0;
+        const dp = Array.from({ length: bl + 1 }, () => Array(al + 1).fill(0));
+        for (let i = 0; i <= bl; i++) dp[i][0] = i;
+        for (let j = 0; j <= al; j++) dp[0][j] = j;
+        for (let i = 1; i <= bl; i++)
+          for (let j = 1; j <= al; j++)
+            dp[i][j] = b[i - 1] === a[j - 1]
+              ? dp[i - 1][j - 1]
+              : 1 + Math.min(dp[i - 1][j - 1], dp[i][j - 1], dp[i - 1][j]);
+        const dist = dp[bl][al];
+        return 1 - dist / Math.max(al, bl);
+      }
+
+      let best = { score: 0, ans: "Không tìm thấy câu trả lời." };
+      for (let row of excelData) {
+        const q = row.question || row.Question || row["Câu hỏi"] || "";
+        const sim = similarity(questionText, q);
+        if (sim > best.score) best = { score: sim, ans: row.answer || row.Answer || row["Đáp án"] || "" };
+      }
+
+      const percent = Math.round(best.score * 100);
+      similarityFill.style.width = percent + "%";
+      similarityFill.style.background = percent >= 70 ? "#28a745" : (percent >= 50 ? "#ffc107" : "#dc3545");
+
+      if (best.score >= 0.7) {
+        answer.textContent = `✅ Giống ${percent}% → ${best.ans}`;
+      } else {
+        answer.textContent = `❌ Giống ${percent}% – chưa đủ 70% để xác định.`;
+      }
+      document.getElementById("speakBtn").disabled = false;
+    }
+
+    // --- Đọc đáp án ---
+    document.getElementById("speakBtn").onclick = () => {
+      const utter = new SpeechSynthesisUtterance(answer.textContent);
+      utter.lang = "vi-VN";
+      speechSynthesis.speak(utter);
+    };
+  </script>
+</body>
+</html>
