@@ -3,61 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chính Sách Bảo Mật</title>
+    <title>Chính Sách Bảo Mật - Hugo.io.vn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            background-color: #f4f4f4;
-            color: #333;
-            margin: 0;
-            padding: 0;
+        :root {
+            --primary-blue: #3B82F6; /* Tông màu xanh dương chính */
+            --light-blue: #EFF6FF;
+            --background-gray: #F3F4F6;
+            --border-gray: #E5E7EB;
+            --text-dark: #1F2937;
+            --text-medium: #4B5563;
+            --text-light: #6B7280;
+            --white: #FFFFFF;
         }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.7;
+            background-color: var(--background-gray);
+            color: var(--text-medium);
+            margin: 0;
+            padding: 20px 10px;
+        }
+
         .container {
             max-width: 800px;
             margin: 20px auto;
-            padding: 25px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 30px 40px;
+            background-color: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-gray);
         }
+
         h1 {
-            color: #2c3e50;
-            border-bottom: 2px solid #ecf0f1;
-            padding-bottom: 10px;
+            color: var(--text-dark);
+            font-size: 2.25rem;
+            font-weight: 700;
+            border-bottom: 2px solid var(--primary-blue);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
         }
+
         h2 {
-            color: #34495e;
-            margin-top: 30px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
+            color: var(--text-dark);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 40px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-gray);
         }
+
         h3 {
-            color: #7f8c8d;
-            margin-top: 20px;
+            color: var(--text-medium);
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-top: 25px;
         }
+
         p, li {
-            font-size: 16px;
+            font-size: 1rem;
         }
+
         ul {
             padding-left: 20px;
+            list-style-type: disc;
         }
+        
+        li::marker {
+            color: var(--primary-blue);
+        }
+
+        strong, b {
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+        
+        strong.highlight {
+            color: var(--primary-blue);
+        }
+
         .update-date {
             font-style: italic;
-            color: #888;
+            color: var(--text-light);
+            font-size: 0.9em;
+            margin-bottom: 25px;
+            display: block;
+        }
+
+        code {
+            background-color: var(--background-gray);
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-family: "Courier New", Courier, monospace;
+            color: var(--primary-blue);
+            font-weight: 600;
             font-size: 0.9em;
         }
-        code {
-            background-color: #ecf0f1;
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-family: "Courier New", Courier, monospace;
-        }
+
         .contact {
-            background-color: #f9f9f9;
-            border-left: 4px solid #3498db;
-            padding: 15px;
-            margin-top: 20px;
+            background-color: var(--light-blue);
+            border-left: 5px solid var(--primary-blue);
+            padding: 20px;
+            margin-top: 30px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .contact p {
+            margin: 0;
+        }
+        
+        hr {
+            border: none;
+            border-top: 1px dashed var(--border-gray);
+            margin: 40px 0;
+        }
+
+        a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -65,33 +136,33 @@
 
     <div class="container">
         <h1>Chính Sách Bảo Mật</h1>
-        <p class="update-date">Cập nhật lần cuối: 20 tháng 10, 2025</p>
+        <span class="update-date">Cập nhật lần cuối: 20 tháng 10, 2025</span>
 
-        <p>Chúng tôi cam kết bảo vệ quyền riêng tư của bạn khi bạn sử dụng các dịch vụ của chúng tôi, bao gồm website <strong>tracuu.hugo.io.vn</strong> ("Website") và tiện ích trình duyệt <strong>"Trợ lý học tập HG"</strong> ("Tiện ích").</p>
-        <p>Chính sách này giải thích rõ ràng về cách chúng tôi xử lý dữ liệu của bạn cho từng sản phẩm.</p>
+        <p>Chào mừng bạn đến với các dịch vụ của chúng tôi! Chúng tôi cam kết bảo vệ tuyệt đối quyền riêng tư và dữ liệu của bạn khi bạn sử dụng website <a href="https://tracuu.hugo.io.vn" target="_blank">tracuu.hugo.io.vn</a> ("Website") và tiện ích trình duyệt <strong class="highlight">"Trợ lý học tập HG"</strong> ("Tiện ích").</p>
+        <p>Chính sách này sẽ giải thích minh bạch cách chúng tôi xử lý dữ liệu của bạn cho từng sản phẩm.</p>
 
         <hr>
 
         <h2>A. Đối với Website (tracuu.hugo.io.vn)</h2>
         
-        <p>Website được thiết kế với mục tiêu tối đa hóa quyền riêng tư của người dùng.</p>
+        <p>Website được xây dựng trên nguyên tắc cốt lõi là <strong class="highlight">tôn trọng và tối đa hóa quyền riêng tư</strong> của người dùng.</p>
 
         <h3>1. Dữ Liệu Tra Cứu</h3>
-        <p>Chúng tôi không thu thập, lưu trữ, hoặc chia sẻ bất kỳ thông tin nhận dạng cá nhân nào (PII) từ các truy vấn tra cứu của bạn. Mọi thông tin bạn nhập vào (ví dụ: biển số xe, số hiệu văn bản) chỉ được sử dụng để xử lý yêu cầu của bạn và trả về kết quả. Dữ liệu này không được lưu trữ gắn liền với danh tính cá nhân của bạn.</p>
+        <p>Chúng tôi <strong>không thu thập, lưu trữ, hoặc chia sẻ</strong> bất kỳ thông tin nhận dạng cá nhân nào (PII) từ các truy vấn tra cứu của bạn. Mọi thông tin bạn nhập (ví dụ: số hiệu văn bản) chỉ được dùng để xử lý yêu cầu tức thời và trả về kết quả. Dữ liệu này không được lưu lại dưới bất kỳ hình thức nào gắn với danh tính của bạn.</p>
 
-        <h3>2. Dữ Liệu Truy Cập (Server Logs)</h3>
-        <p>Như hầu hết các website khác, máy chủ của chúng tôi có thể tự động ghi lại thông tin truy cập cơ bản (như địa chỉ IP, loại trình duyệt, thời gian truy cập). Dữ liệu này được sử dụng cho mục đích kỹ thuật (như gỡ lỗi, đảm bảo an ninh hệ thống) và không được sử dụng để nhận dạng hay theo dõi cá nhân người dùng.</p>
+        <h3>2. Dữ Liệu Truy Cập Hệ Thống (Server Logs)</h3>
+        <p>Máy chủ của chúng tôi có thể tự động ghi lại các thông tin truy cập cơ bản (như địa chỉ IP, loại trình duyệt, thời gian truy cập). Dữ liệu này được sử dụng cho mục đích kỹ thuật như <strong>gỡ lỗi, đảm bảo an ninh hệ thống</strong> và sẽ được ẩn danh hoặc xóa định kỳ. Chúng tôi không sử dụng dữ liệu này để nhận dạng hay theo dõi cá nhân người dùng.</p>
 
         <h3>3. Cookies</h3>
-        <p>Chúng tôi không sử dụng cookie theo dõi (tracking cookies) của bên thứ ba. Chúng tôi chỉ có thể sử dụng cookie cần thiết (essential cookies) để duy trì hoạt động cơ bản của website, và các cookie này không chứa thông tin cá nhân.</p>
+        <p>Chúng tôi <strong>không sử dụng cookie theo dõi (tracking cookies)</strong> của bên thứ ba. Website chỉ sử dụng các cookie cần thiết (essential cookies) để duy trì hoạt động cơ bản và các cookie này không chứa thông tin cá nhân.</p>
 
         <hr>
 
         <h2>B. Đối với Tiện Ích ("Trợ lý học tập HG")</h2>
 
-        <p>Phần này áp dụng riêng cho Tiện ích "Trợ lý Học tập" cài đặt trên trình duyệt của bạn.</p>
+        <p>Phần này áp dụng riêng cho Tiện ích "Trợ lý học tập" được cài đặt trên trình duyệt của bạn.</p>
 
-        <h3>1. Không Thu Thập Dữ Liệu Cá Nhân</h3>
+        <h3>1. Cam Kết Không Thu Thập Dữ Liệu</h3>
         <p>Chúng tôi tuyên bố một cách rõ ràng: <strong>Tiện ích này không thu thập, lưu trữ, hay chia sẻ bất kỳ thông tin nhận dạng cá nhân nào</strong> của người dùng.</p>
         <ul>
             <li>Không theo dõi lịch sử duyệt web.</li>
@@ -99,23 +170,23 @@
             <li>Không gửi bất kỳ dữ liệu nào về máy chủ của chúng tôi hoặc của bên thứ ba.</li>
         </ul>
 
-        <h3>2. Xử Lý Dữ Liệu Tại Chỗ</h3>
-        <p>Mọi hoạt động của Tiện ích đều diễn ra hoàn toàn trên trình duyệt của bạn (cục bộ):</p>
+        <h3>2. Xử Lý Dữ Liệu Hoàn Toàn Tại Chỗ</h3>
+        <p>Mọi hoạt động của Tiện ích đều diễn ra <strong>100% trên trình duyệt của bạn</strong> (cục bộ):</p>
         <ul>
-            <li><strong>Dữ liệu từ file:</strong> Khi bạn import một file đáp án (.xlsx, .csv, .txt, .pdf), nội dung của file đó chỉ được đọc và xử lý tạm thời trong bộ nhớ của trình duyệt để thực hiện chức năng highlight. Dữ liệu này sẽ bị xóa ngay khi bạn đóng tab hoặc trình duyệt.</li>
-            <li><strong>License Key:</strong> Khi bạn kích hoạt tiện ích, License Key đã được mã hóa sẽ được lưu trữ cục bộ trên trình duyệt của bạn bằng cách sử dụng API <code>chrome.storage.local</code>. Dữ liệu này không bao giờ được gửi ra ngoài máy tính của bạn.</li>
+            <li><strong>Dữ liệu từ file:</strong> Khi bạn import một file đáp án (.xlsx, .csv, .txt, .pdf), nội dung của file chỉ được đọc và xử lý tạm thời trong bộ nhớ của trình duyệt. Dữ liệu này sẽ bị xóa ngay khi bạn đóng tab hoặc trình duyệt.</li>
+            <li><strong>License Key:</strong> Khi bạn kích hoạt, License Key đã mã hóa sẽ được lưu trữ cục bộ trên trình duyệt bằng API <code>chrome.storage.local</code>. Dữ liệu này không bao giờ được gửi ra ngoài máy tính của bạn.</li>
         </ul>
 
         <hr>
 
-        <h2>C. Điều Khoản Chung (Cho Cả Website và Tiện Ích)</h2>
+        <h2>C. Điều Khoản Chung</h2>
 
         <h3>1. Thay Đổi Chính Sách</h3>
-        <p>Chúng tôi có thể cập nhật Chính sách Bảo mật này trong tương lai. Mọi thay đổi sẽ được đăng tải trên trang này và ngày "Cập nhật lần cuối" sẽ được sửa đổi. Chúng tôi khuyến khích bạn thỉnh thoảng xem lại trang này để biết về những thay đổi.</p>
+        <p>Chúng tôi có thể cập nhật Chính sách Bảo mật này trong tương lai để phản ánh những thay đổi trong dịch vụ. Mọi thay đổi sẽ được đăng tải trên trang này và ngày "Cập nhật lần cuối" sẽ được sửa đổi. Chúng tôi khuyến khích bạn thỉnh thoảng xem lại trang này để luôn nắm rõ thông tin.</p>
 
         <h3>2. Liên Hệ</h3>
         <div class="contact">
-            <p>Nếu bạn có bất kỳ câu hỏi nào về Chính sách Bảo mật này, vui lòng liên hệ với chúng tôi qua email: <strong>helpdesk@hugo.io.vn</strong>.</p>
+            <p>Nếu bạn có bất kỳ câu hỏi nào về Chính sách Bảo mật này, vui lòng liên hệ với chúng tôi qua email: <a href="mailto:tribt@hugo.io.vn"><strong>tribt@hugo.io.vn</strong></a>.</p>
         </div>
 
     </div>
