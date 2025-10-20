@@ -475,19 +475,23 @@ function showEditSyllabusModal(id) {
 }
 window.showEditSyllabusModal = showEditSyllabusModal;
 closeEditSyllabusModal.onclick = () => { editSyllabusModal.style.display = "none" };
+// SAU KHI SỬA:
 editSyllabusForm.onsubmit = async function(e) {
   e.preventDefault();
   const subjectId = editSyllabusSubjectDropdown.value,
     owner = editSyllabusOwner.value.trim(),
     fileUrl = editSyllabusFileLink.value.trim();
+    
   const current = allSyllabusRaw.find(x => x.id === currentEditSyllabusId);
+  
   await updateDoc(doc(db, "syllabus", currentEditSyllabusId), {
     mon_hoc_id: subjectId,
     owner: owner,
-    file_url: fileUrl || current.file_url,
-    file_name: current.file_name,
+    file_url: fileUrl || current.file_url || null, 
+    file_name: current.file_name || null, 
     uploaded_at: (new Date).toISOString()
   });
+  
   editSyllabusModal.style.display = "none";
   editSyllabusForm.reset();
   await refreshSyllabusList();
