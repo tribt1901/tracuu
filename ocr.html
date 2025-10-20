@@ -9,15 +9,15 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.5.1/mammoth.browser.min.js"></script>
+
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   
   <style>
-    /* Giữ nguyên style cũ của bạn */
-    body { font-family: "Segoe UI", sans-serif; background: #f5f7fb; margin: 0; padding: 20px; padding-top: 70px; /* Thêm padding-top cho menu */ }
+    body { font-family: "Segoe UI", sans-serif; background: #f5f7fb; margin: 0; padding: 20px; padding-top: 70px; }
     .container { background: white; border-radius: 14px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); padding: 25px; max-width: 900px; margin: auto; }
     h1 { text-align: center; color: #0078d7; margin-bottom: 30px; }
-    h2 { margin-top: 25px; color: #333; }
     fieldset { border: 2px solid #0078d7; border-radius: 10px; margin-top: 15px; padding: 15px; }
     legend { color: #0078d7; font-weight: bold; padding: 0 10px; }
     input[type="file"], textarea, button, select { margin-top: 10px; font-size: 15px; }
@@ -37,7 +37,38 @@
     <h1>🧠 OCR + Excel + Nhập/Đọc Câu Hỏi</h1>
 
     <fieldset>
-      <legend>1️⃣ Chọn cách nhập câu hỏi:</legend>
+      <legend>1️⃣ Chọn Nguồn Dữ Liệu Đáp Án:</legend>
+      <label><input type="radio" name="dataSource" value="firebase" checked> ☁️ CSDL Tra cứu HG</label>
+      <label><input type="radio" name="dataSource" value="excel"> 📂 File Excel (.xlsx)</label>
+      <label><input type="radio" name="dataSource" value="word"> 📃 File Word (.docx)</label>
+      <label><input type="radio" name="dataSource" value="text"> 📄 File Text (.txt)</label>
+
+      <div id="firebaseDataSourceArea">
+        <select id="subjectSelect">
+          <option value="">-- Đang tải danh sách môn... --</option>
+        </select>
+        <button id="loadFirebaseBtn">⚡ Nạp dữ liệu CSDL</button>
+        <p id="firebaseStatus">Chưa nạp dữ liệu CSDL.</p>
+      </div>
+
+      <div id="excelDataSourceArea" style="display:none;">
+        <input type="file" id="excelInput" accept=".xlsx">
+        <p id="excelStatus">Chưa tải file Excel.</p>
+      </div>
+
+      <div id="wordDataSourceArea" style="display:none;">
+        <input type="file" id="wordInput" accept=".docx">
+        <p id="wordStatus">Chưa tải file Word (.docx).</p>
+      </div>
+
+      <div id="textDataSourceArea" style="display:none;">
+        <input type="file" id="textInput" accept=".txt">
+        <p id="textStatus">Chưa tải file Text (.txt).</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>2️⃣ Chọn cách nhập câu hỏi:</legend>
       <label><input type="radio" name="inputMode" value="image" checked> 🖼️ Ảnh (OCR)</label>
       <label><input type="radio" name="inputMode" value="text"> ✍️ Nhập văn bản</label>
       <label><input type="radio" name="inputMode" value="voice"> 🎤 Đọc bằng giọng nói</label>
@@ -52,23 +83,6 @@
       <div id="voiceInputArea" style="display:none;">
         <button id="startVoice">🎙️ Bắt đầu nói</button>
         <p id="voiceStatus">Chưa nói gì...</p>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>2️⃣ Chọn Nguồn Dữ Liệu Đáp Án:</legend>
-      <label><input type="radio" name="dataSource" value="excel" checked> 📂 File Excel (.xlsx)</label>
-      <label><input type="radio" name="dataSource" value="firebase"> ☁️ CSDL Tra cứu HG</label>
-      <div id="excelDataSourceArea">
-        <input type="file" id="excelInput" accept=".xlsx">
-        <p id="excelStatus">Chưa tải file Excel.</p>
-      </div>
-      <div id="firebaseDataSourceArea" style="display:none;">
-        <select id="subjectSelect">
-          <option value="">-- Đang tải danh sách môn... --</option>
-        </select>
-        <button id="loadFirebaseBtn">⚡ Nạp dữ liệu CSDL</button>
-        <p id="firebaseStatus">Chưa nạp dữ liệu CSDL.</p>
       </div>
     </fieldset>
     
@@ -91,6 +105,11 @@
     const answer = document.getElementById("answer");
     const imageStatus = document.getElementById("imageStatus");
     const excelStatus = document.getElementById("excelStatus");
+    // *** MỚI: Thêm status cho Word/Text ***
+    const firebaseStatus = document.getElementById("firebaseStatus");
+    const wordStatus = document.getElementById("wordStatus");
+    const textStatus = document.getElementById("textStatus");
+    
     const similarityFill = document.getElementById("similarityFill");
 
     // --- Khởi tạo Firebase (Giữ nguyên) ---
@@ -115,15 +134,21 @@
       });
     });
 
-    // --- Chuyển đổi NGUỒN DỮ LIỆU (Giữ nguyên) ---
+    // *** MỚI: Cập nhật Chuyển đổi NGUỒN DỮ LIỆU (Thêm Word/Text) ***
     document.querySelectorAll('input[name="dataSource"]').forEach(r => {
       r.addEventListener('change', () => {
-        const isExcel = r.value === "excel";
-        document.getElementById("excelDataSourceArea").style.display = isExcel ? "block" : "none";
-        document.getElementById("firebaseDataSourceArea").style.display = isExcel ? "none" : "block";
+        const val = r.value;
+        document.getElementById("firebaseDataSourceArea").style.display = val === "firebase" ? "block" : "none";
+        document.getElementById("excelDataSourceArea").style.display = val === "excel" ? "block" : "none";
+        document.getElementById("wordDataSourceArea").style.display = val === "word" ? "block" : "none";
+        document.getElementById("textDataSourceArea").style.display = val === "text" ? "block" : "none";
+        
+        // Reset dữ liệu và status
         excelData = [];
+        firebaseStatus.textContent = "Chưa nạp dữ liệu CSDL.";
         excelStatus.textContent = "Chưa tải file Excel.";
-        document.getElementById("firebaseStatus").textContent = "Chưa nạp dữ liệu CSDL.";
+        wordStatus.textContent = "Chưa tải file Word (.docx).";
+        textStatus.textContent = "Chưa tải file Text (.txt).";
         answer.textContent = "Chưa có dữ liệu.";
       });
     });
@@ -154,22 +179,23 @@
         subjectSelect.innerHTML = '<option value="">-- Lỗi tải CSDL --</option>';
       });
     }
-    document.addEventListener('DOMContentLoaded', loadSubjects);
+    // Tải môn học ngay khi trang load, và đặt Firebase là nguồn mặc định
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSubjects();
+        document.querySelector('input[name="dataSource"][value="firebase"]').checked = true;
+        document.getElementById("firebaseDataSourceArea").style.display = "block";
+    });
 
 
     // --- Nút Nạp dữ liệu từ FIRESTORE (Giữ nguyên) ---
     document.getElementById("loadFirebaseBtn").addEventListener("click", () => {
       const subjectKey = document.getElementById("subjectSelect").value; 
-      const firebaseStatus = document.getElementById("firebaseStatus");
-
       if (!subjectKey) {
         firebaseStatus.textContent = "⚠️ Vui lòng chọn một môn học.";
         return;
       }
-      
       firebaseStatus.textContent = "🔄 Đang tải dữ liệu...";
       excelData = []; 
-
       const questionsRef = db.collection("cau_hoi").where("mon_hoc_id", "==", subjectKey);
       
       questionsRef.get().then(snapshot => {
@@ -179,19 +205,12 @@
             const question = data.noi_dung; 
             const correctKey = data.dap_an_dung; 
             const choices = data.lua_chon; 
-
             let answerText = "Không có đáp án"; 
-            
             if (choices && correctKey && choices[correctKey]) {
               answerText = choices[correctKey];
             }
-            
-            excelData.push({ 
-              question: question || "", 
-              answer: answerText 
-            });
+            excelData.push({ question: question || "", answer: answerText });
           });
-          
           firebaseStatus.textContent = `✅ Đã nạp ${excelData.length} câu hỏi từ CSDL.`;
         } else {
           firebaseStatus.textContent = "⚠️ Không tìm thấy câu hỏi nào cho môn này.";
@@ -215,6 +234,87 @@
         excelStatus.textContent = `✅ Đã nạp ${excelData.length} câu hỏi từ Excel.`;
       };
       reader.readAsBinaryString(file);
+    });
+
+    // *** MỚI: Hàm chung để phân tích Text và Word ***
+    // (Dựa trên định dạng file .txt bạn đã cung cấp (Source 1-32))
+    function parseTextData(text) {
+        excelData = []; // Xóa dữ liệu cũ
+        let count = 0;
+        // Tách file dựa trên "Câu hỏi:"
+        const parts = text.split("Câu hỏi:");
+        
+        // Bỏ qua phần tử đầu tiên (có thể là tiêu đề)
+        for (let i = 1; i < parts.length; i++) {
+            const chunk = parts[i];
+            // Tách câu hỏi và câu trả lời
+            const answerSplit = chunk.split("Đáp án đúng:");
+            
+            if (answerSplit.length === 2) {
+                // Lấy câu hỏi, xóa khoảng trắng thừa
+                const question = answerSplit[0].trim().replace(/\s+/g, ' ');
+                
+                // Lấy câu trả lời, xóa khoảng trắng thừa
+                let answer = answerSplit[1].trim();
+                
+                // Giữ lại nội dung trước dấu xuống dòng đầu tiên
+                const firstNewline = answer.indexOf('\n');
+                if (firstNewline !== -1) {
+                    answer = answer.substring(0, firstNewline).trim();
+                }
+                
+                if (question && answer) {
+                    excelData.push({ question, answer });
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    // *** MỚI: Đọc File Word (.docx) ***
+    document.getElementById("wordInput").addEventListener("change", e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.name.endsWith(".doc")) {
+            wordStatus.textContent = "❌ File .doc không được hỗ trợ. Vui lòng dùng .docx";
+            return;
+        }
+
+        wordStatus.textContent = "🔄 Đang đọc file Word...";
+        const reader = new FileReader();
+        reader.onload = evt => {
+            mammoth.extractRawText({ arrayBuffer: evt.target.result })
+                .then(result => {
+                    const text = result.value;
+                    const count = parseTextData(text);
+                    wordStatus.textContent = `✅ Đã nạp ${count} câu hỏi từ Word.`;
+                })
+                .catch(err => {
+                    console.error("Lỗi đọc file Word:", err);
+                    wordStatus.textContent = "❌ Lỗi khi đọc file .docx";
+                });
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    // *** MỚI: Đọc File Text (.txt) ***
+    document.getElementById("textInput").addEventListener("change", e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        textStatus.textContent = "🔄 Đang đọc file Text...";
+        const reader = new FileReader();
+        reader.onload = evt => {
+            const text = evt.target.result;
+            const count = parseTextData(text);
+            textStatus.textContent = `✅ Đã nạp ${count} câu hỏi từ Text.`;
+        };
+        reader.onerror = () => {
+             textStatus.textContent = "❌ Lỗi khi đọc file .txt";
+        };
+        reader.readAsText(file);
     });
 
     // --- OCR Ảnh (Giữ nguyên) ---
@@ -250,7 +350,6 @@
       recognition.lang = "vi-VN";
       recognition.continuous = false;
       recognition.interimResults = false;
-
       recognition.onresult = e => {
         const text = e.results[0][0].transcript;
         document.getElementById("voiceStatus").textContent = "✅ Nghe được: " + text;
@@ -262,20 +361,17 @@
       document.getElementById("voiceStatus").textContent = "⚠️ Trình duyệt không hỗ trợ giọng nói.";
       document.getElementById("startVoice").disabled = true;
     }
-
     document.getElementById("startVoice").onclick = () => {
       recognition.start();
       document.getElementById("voiceStatus").textContent = "🎙️ Đang nghe...";
     };
 
-    // *** FIX 2: Thay thế hoàn toàn hàm findAnswer ***
+    // --- Hàm tìm đáp án (Giữ nguyên logic .includes()) ---
     function findAnswer(questionText) {
       if (!excelData.length) {
         answer.textContent = "⚠️ Vui lòng tải file Excel hoặc nạp dữ liệu CSDL trước.";
         return;
       }
-
-      // Chuẩn hóa văn bản OCR
       const normalize = s => s.toLowerCase().replace(/\s+/g, " ").trim();
       const normalizedOcrText = normalize(questionText);
 
@@ -283,17 +379,10 @@
 
       for (let row of excelData) {
         const q = row.question || row.Question || row["Câu hỏi"] || "";
-        if (!q) continue; // Bỏ qua nếu câu hỏi trong CSDL rỗng
-
-        // Chuẩn hóa câu hỏi từ CSDL
+        if (!q) continue; 
         const normalizedDbQuestion = normalize(q);
 
-        // Kiểm tra xem câu hỏi CSDL (ngắn) có nằm BÊN TRONG văn bản OCR (dài) không
-        // và phải đủ dài (vd: > 5 ký tự) để tránh khớp "là", "a", "b"...
         if (normalizedDbQuestion.length > 5 && normalizedOcrText.includes(normalizedDbQuestion)) {
-          
-          // Nếu khớp, 'score' là độ dài của câu hỏi CSDL.
-          // Chúng ta muốn tìm câu hỏi CSDL dài nhất (khớp chi tiết nhất)
           if (normalizedDbQuestion.length > best.score) {
             best = {
               score: normalizedDbQuestion.length,
@@ -303,14 +392,11 @@
         }
       }
 
-      // Hiển thị kết quả
       if (best.score > 0) {
-        // Tìm thấy
         answer.textContent = `✅ Khớp → ${best.ans}`;
-        similarityFill.style.width = "100%"; // Cho 100% luôn vì đã tìm thấy
+        similarityFill.style.width = "100%"; 
         similarityFill.style.background = "#28a745";
       } else {
-        // Không tìm thấy
         answer.textContent = `❌ Không tìm thấy câu hỏi khớp trong CSDL.`;
         similarityFill.style.width = "0%";
         similarityFill.style.background = "#dc3545";
@@ -329,7 +415,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
   <script>
-  // Tải menu (Giữ nguyên)
+  // Tải menu (Đường dẫn tương đối)
   fetch('menu.html') 
     .then(response => response.text())
     .then(data => {
