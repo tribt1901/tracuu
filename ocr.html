@@ -8,7 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   
   <style>
     body { font-family: "Segoe UI", sans-serif; background: #f5f7fb; margin: 0; padding: 20px; }
@@ -29,6 +29,7 @@
 </head>
   <body class="bg-light">
 <header id="navbar-placeholder"></header>
+  </body>
 <body>
   <div class="container">
     <h1>🧠 OCR + Excel + Nhập/Đọc Câu Hỏi</h1>
@@ -95,7 +96,7 @@
     const excelStatus = document.getElementById("excelStatus");
     const similarityFill = document.getElementById("similarityFill");
 
-    // *** MỚI: Khởi tạo Firebase ***
+    // *** SỬA LỖI: Khởi tạo Firebase và Firestore (v8) ***
     const firebaseConfig = {
       apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
       authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -106,7 +107,7 @@
       measurementId: "G-R0M6Y502NP"
     };
     firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+    const db = firebase.firestore(); // <<< *** SỬA LỖI: Khởi tạo FIRESTORE ***
 
     // --- Chuyển đổi khu vực nhập (Giữ nguyên) ---
     document.querySelectorAll('input[name="inputMode"]').forEach(r => {
@@ -117,14 +118,12 @@
       });
     });
 
-    // *** MỚI: Chuyển đổi NGUỒN DỮ LIỆU (Excel/Firebase) ***
+    // --- Chuyển đổi NGUỒN DỮ LIỆU (Giữ nguyên) ---
     document.querySelectorAll('input[name="dataSource"]').forEach(r => {
       r.addEventListener('change', () => {
         const isExcel = r.value === "excel";
         document.getElementById("excelDataSourceArea").style.display = isExcel ? "block" : "none";
         document.getElementById("firebaseDataSourceArea").style.display = isExcel ? "none" : "block";
-        
-        // Reset dữ liệu khi chuyển đổi
         excelData = [];
         excelStatus.textContent = "Chưa tải file Excel.";
         document.getElementById("firebaseStatus").textContent = "Chưa nạp dữ liệu CSDL.";
@@ -132,25 +131,26 @@
       });
     });
 
-    // *** MỚI: Tải danh sách môn học từ Firebase ***
+    // *** SỬA LỖI: Tải danh sách môn học từ FIRESTORE ***
     function loadSubjects() {
       const subjectSelect = document.getElementById("subjectSelect");
-      // Giả định: các môn học nằm trong node 'subjects'
-      const subjectsRef = database.ref('subjects'); 
+      // Dùng collection "mon_hoc" và field "ten_mon" (giống index.html)
+      const subjectsRef = db.collection("mon_hoc"); 
       
-      subjectsRef.once('value').then(snapshot => {
-        if (snapshot.exists()) {
-          subjectSelect.innerHTML = '<option value="">-- Chọn môn học --</option>'; // Xóa text "đang tải"
-          snapshot.forEach(childSnapshot => {
-            const subjectKey = childSnapshot.key;
-            // Giả định: tên môn học nằm trong childSnapshot.val().tenMonHoc
-            // Nếu tên môn học chính là key, dùng: const subjectName = subjectKey;
-            const subjectName = childSnapshot.val().tenMonHoc || subjectKey; // Ưu tiên 'tenMonHoc', nếu không có thì dùng key
+      subjectsRef.get().then(snapshot => {
+        if (!snapshot.empty) {
+          subjectSelect.innerHTML = '<option value="">-- Chọn môn học --</option>';
+          snapshot.forEach(doc => {
+            const subjectKey = doc.id;
+            // Lấy đúng tên trường 'ten_mon'
+            const subjectName = doc.data().ten_mon; 
             
-            const option = document.createElement('option');
-            option.value = subjectKey; // Lưu key (ví dụ: 'Toan')
-            option.textContent = subjectName; // Hiển thị tên (ví dụ: 'Toán học')
-            subjectSelect.appendChild(option);
+            if (subjectName) {
+              const option = document.createElement('option');
+              option.value = subjectKey; // Lưu ID của document
+              option.textContent = subjectName; // Hiển thị tên môn
+              subjectSelect.appendChild(option);
+            }
           });
         } else {
           subjectSelect.innerHTML = '<option value="">-- Không tìm thấy môn học --</option>';
@@ -160,13 +160,12 @@
         subjectSelect.innerHTML = '<option value="">-- Lỗi tải CSDL --</option>';
       });
     }
-    // Gọi hàm tải môn học ngay khi trang được tải
     document.addEventListener('DOMContentLoaded', loadSubjects);
 
 
-    // *** MỚI: Nút Nạp dữ liệu từ Firebase ***
+    // *** SỬA LỖI: Nút Nạp dữ liệu từ FIRESTORE ***
     document.getElementById("loadFirebaseBtn").addEventListener("click", () => {
-      const subjectKey = document.getElementById("subjectSelect").value;
+      const subjectKey = document.getElementById("subjectSelect").value; // Đây là ID của môn học
       const firebaseStatus = document.getElementById("firebaseStatus");
 
       if (!subjectKey) {
@@ -177,14 +176,33 @@
       firebaseStatus.textContent = "🔄 Đang tải dữ liệu...";
       excelData = []; // Xóa dữ liệu cũ
 
-      // Giả định: Câu hỏi nằm trong 'subjects/KEY_MON_HOC/questions'
-      const questionsRef = database.ref(`subjects/${subjectKey}/questions`);
+      // Truy vấn collection 'cau_hoi' nơi 'mon_hoc_id' bằng với ID môn học đã chọn
+      const questionsRef = db.collection("cau_hoi").where("mon_hoc_id", "==", subjectKey);
       
-      questionsRef.once('value').then(snapshot => {
-        const data = snapshot.val();
-        if (data) {
-          // Chuyển đổi object từ Firebase thành mảng (giống hệt cấu trúc Excel)
-          excelData = Object.values(data);
+      questionsRef.get().then(snapshot => {
+        if (!snapshot.empty) {
+          // Lặp qua từng câu hỏi
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const question = data.noi_dung; // Lấy nội dung câu hỏi
+            const correctKey = data.dap_an_dung; // Lấy key đáp án đúng (vd: 'a')
+            const choices = data.lua_chon; // Lấy object các lựa chọn
+
+            let answer = "Không có đáp án"; // Mặc định
+            
+            // Lấy text của đáp án đúng từ object lựa chọn
+            if (choices && correctKey && choices[correctKey]) {
+              answer = choices[correctKey];
+            }
+            
+            // Thêm vào mảng excelData với cấu trúc {question, answer}
+            // Hàm findAnswer() sẽ đọc từ đây
+            excelData.push({ 
+              question: question || "", 
+              answer: answer 
+            });
+          });
+          
           firebaseStatus.textContent = `✅ Đã nạp ${excelData.length} câu hỏi từ CSDL.`;
         } else {
           firebaseStatus.textContent = "⚠️ Không tìm thấy câu hỏi nào cho môn này.";
@@ -261,10 +279,10 @@
       document.getElementById("voiceStatus").textContent = "🎙️ Đang nghe...";
     };
 
-    // --- Hàm tìm đáp án (Cập nhật thông báo lỗi) ---
+    // --- Hàm tìm đáp án (Giữ nguyên, chỉ sửa thông báo lỗi) ---
     function findAnswer(questionText) {
-      // *** CẬP NHẬT: Thông báo lỗi chung chung hơn ***
       if (!excelData.length) {
+        // Cập nhật thông báo lỗi chung chung hơn
         answer.textContent = "⚠️ Vui lòng tải file Excel hoặc nạp dữ liệu CSDL trước.";
         return;
       }
@@ -290,6 +308,7 @@
       let best = { score: 0, ans: "Không tìm thấy câu trả lời." };
       for (let row of excelData) {
         // Hỗ trợ nhiều tên cột (từ Excel hoặc Firebase)
+        // (Firebase nạp vào key 'question' và 'answer')
         const q = row.question || row.Question || row["Câu hỏi"] || "";
         const sim = similarity(questionText, q);
         if (sim > best.score) {
@@ -320,8 +339,8 @@
     };
   </script>
     <script>
-  // Tải nội dung của file nav.html (Giữ nguyên)
-  fetch('/menu.html') 
+  // *** SỬA LỖI: Tải menu bằng đường dẫn tương đối (xóa dấu /) ***
+  fetch('menu.html') 
     .then(response => response.text())
     .then(data => {
       document.getElementById('navbar-placeholder').innerHTML = data;
