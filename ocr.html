@@ -9,8 +9,6 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.5.1/mammoth.browser.min.js"></script>
-
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   
@@ -40,7 +38,6 @@
       <legend>1️⃣ Chọn Nguồn Dữ Liệu Đáp Án:</legend>
       <label><input type="radio" name="dataSource" value="firebase" checked> ☁️ CSDL Tra cứu HG</label>
       <label><input type="radio" name="dataSource" value="excel"> 📂 File Excel (.xlsx)</label>
-      <label><input type="radio" name="dataSource" value="word"> 📃 File Word (.docx)</label>
       <label><input type="radio" name="dataSource" value="text"> 📄 File Text (.txt)</label>
 
       <div id="firebaseDataSourceArea">
@@ -50,14 +47,12 @@
         <button id="loadFirebaseBtn">⚡ Nạp dữ liệu CSDL</button>
         <p id="firebaseStatus">Chưa nạp dữ liệu CSDL.</p>
       </div>
+
       <div id="excelDataSourceArea" style="display:none;">
         <input type="file" id="excelInput" accept=".xlsx">
         <p id="excelStatus">Chưa tải file Excel.</p>
       </div>
-      <div id="wordDataSourceArea" style="display:none;">
-        <input type="file" id="wordInput" accept=".docx">
-        <p id="wordStatus">Chưa tải file Word (.docx).</p>
-      </div>
+
       <div id="textDataSourceArea" style="display:none;">
         <input type="file" id="textInput" accept=".txt">
         <p id="textStatus">Chưa tải file Text (.txt).</p>
@@ -103,7 +98,7 @@
     const imageStatus = document.getElementById("imageStatus");
     const excelStatus = document.getElementById("excelStatus");
     const firebaseStatus = document.getElementById("firebaseStatus");
-    const wordStatus = document.getElementById("wordStatus");
+    // *** ĐÃ XÓA: Biến wordStatus ***
     const textStatus = document.getElementById("textStatus");
     const similarityFill = document.getElementById("similarityFill");
 
@@ -135,13 +130,13 @@
         const val = r.value;
         document.getElementById("firebaseDataSourceArea").style.display = val === "firebase" ? "block" : "none";
         document.getElementById("excelDataSourceArea").style.display = val === "excel" ? "block" : "none";
-        document.getElementById("wordDataSourceArea").style.display = val === "word" ? "block" : "none";
+        // *** ĐÃ XÓA: Dòng wordDataSourceArea ***
         document.getElementById("textDataSourceArea").style.display = val === "text" ? "block" : "none";
         
         excelData = [];
         firebaseStatus.textContent = "Chưa nạp dữ liệu CSDL.";
         excelStatus.textContent = "Chưa tải file Excel.";
-        wordStatus.textContent = "Chưa tải file Word (.docx).";
+        // *** ĐÃ XÓA: Dòng wordStatus.textContent ***
         textStatus.textContent = "Chưa tải file Text (.txt).";
         answer.textContent = "Chưa có dữ liệu.";
       });
@@ -230,41 +225,32 @@
     });
 
     
-    // *** SỬA LỖI: Hàm "thông minh" để phân tích cả hai định dạng (CSV và Text) ***
+    // --- Hàm phân tích Text (CSV hoặc "Câu hỏi:") ---
+    // (Hàm này vẫn được giữ lại để đọc file .txt)
     function parseTextData(text) {
         excelData = []; // Xóa dữ liệu cũ
         let count = 0;
         const lines = text.split('\n'); // Tách file thành từng dòng
 
-        // --- CHUẨN 1: Dạng CSV/Bảng (giống file .docx mới ) ---
-        // Tìm dòng tiêu đề
+        // --- CHUẨN 1: Dạng CSV/Bảng ---
         let headerLine = lines.find(line => 
             line.toUpperCase().includes("CÂU HỎI") && 
             line.toUpperCase().includes("ĐÁP ÁN")
         );
 
         if (headerLine) {
-            // Đã tìm thấy định dạng bảng (CSV)
-            // Thay thế tab bằng dấu phẩy nếu cần
             const csvText = headerLine.includes(',') ? ',' : '\t';
             const headers = headerLine.split(csvText).map(h => h.trim().toUpperCase());
             const qIndex = headers.indexOf("CÂU HỎI");
             const aIndex = headers.indexOf("ĐÁP ÁN");
 
             if (qIndex !== -1 && aIndex !== -1) {
-                // Lặp qua các dòng dữ liệu (bỏ qua dòng tiêu đề)
                 for (const line of lines) {
                     if (line === headerLine || line.trim() === "") continue;
-                    
-                    const parts = line.split(csvText); // Tách bằng dấu phẩy hoặc tab
-                    
+                    const parts = line.split(csvText); 
                     if (parts.length > Math.max(qIndex, aIndex)) {
-                        const question = parts[qIndex].trim().replace(/"/g, ''); // Lấy câu hỏi
-                        
-                        // Xử lý câu trả lời (nối tất cả các phần từ cột ĐÁP ÁN trở về sau,
-                        // phòng trường hợp câu trả lời chứa dấu phân cách )
+                        const question = parts[qIndex].trim().replace(/"/g, ''); 
                         const answer = parts.slice(aIndex).join(csvText).trim().replace(/"/g, ''); 
-                        
                         if (question && answer) {
                             excelData.push({ question, answer });
                             count++;
@@ -274,8 +260,7 @@
             }
         } 
         
-        // --- CHUẨN 2: Dạng Text (giống file .txt cũ) ---
-        // Nếu không nạp được câu nào từ CHUẨN 1, thử CHUẨN 2
+        // --- CHUẨN 2: Dạng "Câu hỏi:" ---
         if (count === 0 && text.includes("Câu hỏi:")) {
             const parts = text.split("Câu hỏi:");
             
@@ -290,7 +275,6 @@
                     if (firstNewline !== -1) {
                         answer = answer.substring(0, firstNewline).trim();
                     }
-                    
                     if (question && answer) {
                         excelData.push({ question, answer });
                         count++;
@@ -301,33 +285,7 @@
         return count; // Trả về số câu hỏi nạp được
     }
 
-
-    // --- Đọc File Word (.docx) ---
-    document.getElementById("wordInput").addEventListener("change", e => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (file.name.endsWith(".doc")) {
-            wordStatus.textContent = "❌ File .doc không được hỗ trợ. Vui lòng dùng .docx";
-            return;
-        }
-
-        wordStatus.textContent = "🔄 Đang đọc file Word...";
-        const reader = new FileReader();
-        reader.onload = evt => {
-            mammoth.extractRawText({ arrayBuffer: evt.target.result })
-                .then(result => {
-                    const text = result.value;
-                    const count = parseTextData(text); // Dùng hàm thông minh
-                    wordStatus.textContent = `✅ Đã nạp ${count} câu hỏi từ Word.`;
-                })
-                .catch(err => {
-                    console.error("Lỗi đọc file Word:", err);
-                    wordStatus.textContent = "❌ Lỗi khi đọc file .docx";
-                });
-        };
-        reader.readAsArrayBuffer(file);
-    });
+    // *** ĐÃ XÓA: Hàm đọc File Word (.docx) ***
 
     // --- Đọc File Text (.txt) ---
     document.getElementById("textInput").addEventListener("change", e => {
@@ -396,10 +354,10 @@
       document.getElementById("voiceStatus").textContent = "🎙️ Đang nghe...";
     };
 
-    // --- Hàm tìm đáp án (Logic .includes() giữ nguyên) ---
+    // --- Hàm tìm đáp án ---
     function findAnswer(questionText) {
       if (!excelData.length) {
-        answer.textContent = "⚠️ Vui lòng nạp dữ liệu (CSDL, Excel, Word, Text) trước.";
+        answer.textContent = "⚠️ Vui lòng nạp dữ liệu (CSDL, Excel, Text) trước.";
         return;
       }
       const normalize = s => s.toLowerCase().replace(/\s+/g, " ").trim();
