@@ -9,7 +9,9 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.5.1/mammoth.browser.min.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   
   <style>
@@ -30,17 +32,17 @@
 </head>
   <body class="bg-light">
 <header id="navbar-placeholder"></header>
-<body>
   <div class="container">
     <h1>🧠 OCR + Excel + Nhập/Đọc Câu Hỏi</h1>
 
     <fieldset>
       <legend>1️⃣ Chọn Nguồn Dữ Liệu Đáp Án:</legend>
-            <label><input type="radio" name="dataSource" value="firebase"> ☁️ CSDL Tra cứu HG</label>
-      <label><input type="radio" name="dataSource" value="excel" checked> 📂 File Excel (.xlsx)</label>
-            <label><input type="radio" name="dataSource" value="text"> 📄 File Text (.txt)</label>
+      <label><input type="radio" name="dataSource" value="firebase" checked> ☁️ CSDL Tra cứu HG</label>
+      <label><input type="radio" name="dataSource" value="excel"> 📂 File Excel (.xlsx)</label>
+      <label><input type="radio" name="dataSource" value="word"> 📃 File Word (.docx)</label>
+      <label><input type="radio" name="dataSource" value="text"> 📄 File Text (.txt)</label>
 
-            <div id="firebaseDataSourceArea" style="display:none;">
+      <div id="firebaseDataSourceArea">
         <select id="subjectSelect">
           <option value="">-- Đang tải danh sách môn... --</option>
         </select>
@@ -48,13 +50,17 @@
         <p id="firebaseStatus">Chưa nạp dữ liệu CSDL.</p>
       </div>
 
-            <div id="excelDataSourceArea" style="display:block;">
+      <div id="excelDataSourceArea" style="display:none;">
         <input type="file" id="excelInput" accept=".xlsx">
-                <a href="#" id="downloadTemplateBtn" style="font-size: 13px; margin-left: 10px; text-decoration: none;">📥 Tải template Excel chuẩn</a>
         <p id="excelStatus">Chưa tải file Excel.</p>
       </div>
 
-            <div id="textDataSourceArea" style="display:none;">
+      <div id="wordDataSourceArea" style="display:none;">
+        <input type="file" id="wordInput" accept=".docx">
+        <p id="wordStatus">Chưa tải file Word (.docx).</p>
+      </div>
+
+      <div id="textDataSourceArea" style="display:none;">
         <input type="file" id="textInput" accept=".txt">
         <p id="textStatus">Chưa tải file Text (.txt).</p>
       </div>
@@ -99,7 +105,7 @@
     const imageStatus = document.getElementById("imageStatus");
     const excelStatus = document.getElementById("excelStatus");
     const firebaseStatus = document.getElementById("firebaseStatus");
-    // --- ĐÃ XÓA: Biến wordStatus ---
+    const wordStatus = document.getElementById("wordStatus");
     const textStatus = document.getElementById("textStatus");
     const similarityFill = document.getElementById("similarityFill");
 
@@ -125,26 +131,25 @@
       });
     });
 
-    // --- Cập nhật Chuyển đổi NGUỒN DỮ LIỆU (Đã xóa Word) ---
+    // --- Cập nhật Chuyển đổi NGUỒN DỮ LIỆU (Giữ nguyên) ---
     document.querySelectorAll('input[name="dataSource"]').forEach(r => {
       r.addEventListener('change', () => {
         const val = r.value;
         document.getElementById("firebaseDataSourceArea").style.display = val === "firebase" ? "block" : "none";
-        document.getElementById("excelDataSourceArea").style.display = val === "excel" ? "block" : "none";
-        // --- ĐÃ XÓA: Dòng wordDataSourceArea ---
+s       document.getElementById("excelDataSourceArea").style.display = val === "excel" ? "block" : "none";
+        document.getElementById("wordDataSourceArea").style.display = val === "word" ? "block" : "none";
         document.getElementById("textDataSourceArea").style.display = val === "text" ? "block" : "none";
         
-        // Reset dữ liệu và status
         excelData = [];
         firebaseStatus.textContent = "Chưa nạp dữ liệu CSDL.";
         excelStatus.textContent = "Chưa tải file Excel.";
-        // --- ĐÃ XÓA: Dòng wordStatus.textContent ---
+        wordStatus.textContent = "Chưa tải file Word (.docx).";
         textStatus.textContent = "Chưa tải file Text (.txt).";
         answer.textContent = "Chưa có dữ liệu.";
       });
     });
 
-    // --- Tải danh sách môn học từ FIRESTORE ---
+    // --- Tải danh sách môn học từ FIRESTORE (Giữ nguyên) ---
     function loadSubjects() {
       const subjectSelect = document.getElementById("subjectSelect");
       const subjectsRef = db.collection("mon_hoc"); 
@@ -170,10 +175,11 @@
         subjectSelect.innerHTML = '<option value="">-- Lỗi tải CSDL --</option>';
       });
     }
-    
-    // SỬA LỖI: Chỉ tải môn học, không ép chọn Firebase
+    // Tải môn học và đặt Firebase là nguồn mặc định (Như code cũ của bạn)
     document.addEventListener('DOMContentLoaded', () => {
         loadSubjects();
+        document.querySelector('input[name="dataSource"][value="firebase"]').checked = true;
+        document.getElementById("firebaseDataSourceArea").style.display = "block";
     });
 
 
@@ -194,7 +200,7 @@
             const data = doc.data();
             const question = data.noi_dung; 
             const correctKey = data.dap_an_dung; 
-            const choices = data.lua_chon; 
+            const choices = data.lua_chon;dot 
             let answerText = "Không có đáp án"; 
             if (choices && correctKey && choices[correctKey]) {
               answerText = choices[correctKey];
@@ -212,26 +218,22 @@
     });
 
 
-    // --- Đọc Excel (Giữ nguyên - Dùng sheet_to_json) ---
+    // --- Đọc Excel (Giữ nguyên) ---
     document.getElementById("excelInput").addEventListener("change", e => {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = evt => {
-        try {
-          const wb = XLSX.read(evt.target.result, { type: "binary" });
-          const sheet = wb.Sheets[wb.SheetNames[0]];
-          excelData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-          excelStatus.textContent = `✅ Đã nạp ${excelData.length} câu hỏi từ Excel.`;
-        } catch (err) {
-            console.error("Lỗi đọc file Excel:", err);
-            excelStatus.textContent = "❌ Lỗi khi đọc file Excel.";
-        }
+        const wb = XLSX.read(evt.target.result, { type: "binary" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        // Đây là hàm đọc Excel chuẩn, chỉ đọc dạng bảng
+        excelData = XLSX.utils.sheet_to_json(sheet, { defval: "" }); 
+        excelStatus.textContent = `✅ Đã nạp ${excelData.length} câu hỏi từ Excel.`;
       };
       reader.readAsBinaryString(file);
     });
 
-    // --- Hàm chung để phân tích Text (Cho file .txt) ---
+    // --- Hàm chung để phân tích Text và Word ---
     function parseTextData(text) {
         excelData = []; // Xóa dữ liệu cũ
         let count = 0;
@@ -258,7 +260,32 @@
         return count;
     }
 
-    // --- ĐÃ XÓA: Hàm đọc File Word (.docx) ---
+    // --- Đọc File Word (.docx) ---
+    document.getElementById("wordInput").addEventListener("change", e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.name.endsWith(".doc")) {
+            wordStatus.textContent = "❌ File .doc không được hỗ trợ. Vui lòng dùng .docx";
+            return;
+        }
+
+        wordStatus.textContent = "🔄 Đang đọc file Word...";
+        const reader = new FileReader();
+        reader.onload = evt => {
+            mammoth.extractRawText({ arrayBuffer: evt.target.result })
+                .then(result => {
+                    const text = result.value;
+                    const count = parseTextData(text);
+                    wordStatus.textContent = `✅ Đã nạp ${count} câu hỏi từ Word.`;
+                })
+                .catch(err => {
+                    console.error("Lỗi đọc file Word:", err);
+                    wordStatus.textContent = "❌ Lỗi khi đọc file .docx";
+                });
+        };
+        reader.readAsArrayBuffer(file);
+    });
 
     // --- Đọc File Text (.txt) ---
     document.getElementById("textInput").addEventListener("change", e => {
@@ -277,29 +304,6 @@
         };
         reader.readAsText(file);
     });
-
-    <script>
-    document.getElementById("downloadTemplateBtn").addEventListener("click", e => {
-        e.preventDefault(); // Ngăn link tự điều hướng
-        
-        // Dữ liệu mẫu
-        const templateData = [
-            // Hàm findAnswer sẽ tìm "Câu hỏi" và "Đáp án"
-            { "Câu hỏi": "Trái đất hình gì?", "Đáp án": "Hình cầu" },
-            { "Câu hỏi": "Thủ đô Việt Nam là gì?", "Đáp án": "Hà Nội" }
-        ];
-        
-        // Tạo sheet từ JSON
-        const ws = XLSX.utils.json_to_sheet(templateData);
-        // Tạo workbook mới
-        const wb = XLSX.utils.book_new();
-        // Thêm sheet vào workbook
-        XLSX.utils.book_append_sheet(wb, ws, "Template");
-        
-        // Xuất file
-        XLSX.writeFile(wb, "Template_Cau_Hoi.xlsx");
-    });
-    </script>
 
     // --- OCR Ảnh (Giữ nguyên) ---
     document.getElementById("imageInput").addEventListener("change", async e => {
@@ -334,14 +338,14 @@
       recognition.lang = "vi-VN";
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.onresult = e => {
+S      recognition.onresult = e => {
         const text = e.results[0][0].transcript;
         document.getElementById("voiceStatus").textContent = "✅ Nghe được: " + text;
         output.textContent = text;
         findAnswer(text);
       };
       recognition.onend = () => document.getElementById("voiceStatus").textContent = "⏹️ Đã dừng ghi âm.";
-    } else {
+s   } else {
       document.getElementById("voiceStatus").textContent = "⚠️ Trình duyệt không hỗ trợ giọng nói.";
       document.getElementById("startVoice").disabled = true;
     }
@@ -350,11 +354,10 @@
       document.getElementById("voiceStatus").textContent = "🎙️ Đang nghe...";
     };
 
-    // --- Hàm tìm đáp án (Logic .includes() giữ nguyên) ---
+    // --- Hàm tìm đáp án (Giữ nguyên logic .includes()) ---
     function findAnswer(questionText) {
       if (!excelData.length) {
-        // Cập nhật thông báo lỗi
-        answer.textContent = "⚠️ Vui lòng nạp dữ liệu (CSDL, Excel, Text) trước.";
+        answer.textContent = "⚠️ Vui lòng tải file Excel hoặc nạp dữ liệu CSDL trước.";
         return;
       }
       const normalize = s => s.toLowerCase().replace(/\s+/g, " ").trim();
@@ -363,6 +366,7 @@
       let best = { score: 0, ans: "Không tìm thấy câu trả lời." };
 
       for (let row of excelData) {
+        // Đã sửa lại để hỗ trợ nhiều key
         const q = row.question || row.Question || row["Câu hỏi"] || "";
         if (!q) continue; 
         const normalizedDbQuestion = normalize(q);
@@ -409,3 +413,4 @@
   </script>
 </body>
 </html>
+bạn xóa tính năng import word và thêm tải mẫu excel. Bạn làm mất giao diện rồi. code này của tôi có file word và nó không bị lỗi giao diện. bạn làm lại đi.
