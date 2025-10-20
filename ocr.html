@@ -38,9 +38,8 @@
 
     <fieldset>
       <legend>1️⃣ Chọn Nguồn Dữ Liệu Đáp Án:</legend>
-      <label><input type="radio" name="dataSource" value="firebase" checked> ☁️ CSDL Tra cứu HG</label>
       <label><input type="radio" name="dataSource" value="excel"> 📂 File Excel (.xlsx)</label>
-      <label><input type="radio" name="dataSource" value="word"> 📃 File Word (.docx)</label>
+      <label><input type="radio" name="dataSource" value="firebase" checked> ☁️ CSDL Tra cứu HG</label>
       <label><input type="radio" name="dataSource" value="text"> 📄 File Text (.txt)</label>
 
       <div id="firebaseDataSourceArea">
@@ -53,12 +52,10 @@
 
       <div id="excelDataSourceArea" style="display:none;">
         <input type="file" id="excelInput" accept=".xlsx">
+        <a href="template_excel.xlsx" download="Mau_Cau_Hoi.xlsx" style="display: inline-block; margin-top: 10px; margin-left: 5px; font-size: 14px;">
+          📥 Tải file Excel mẫu
+        </a>
         <p id="excelStatus">Chưa tải file Excel.</p>
-      </div>
-
-      <div id="wordDataSourceArea" style="display:none;">
-        <input type="file" id="wordInput" accept=".docx">
-        <p id="wordStatus">Chưa tải file Word (.docx).</p>
       </div>
 
       <div id="textDataSourceArea" style="display:none;">
@@ -107,7 +104,6 @@
     const excelStatus = document.getElementById("excelStatus");
     // *** MỚI: Thêm status cho Word/Text ***
     const firebaseStatus = document.getElementById("firebaseStatus");
-    const wordStatus = document.getElementById("wordStatus");
     const textStatus = document.getElementById("textStatus");
     
     const similarityFill = document.getElementById("similarityFill");
@@ -140,14 +136,12 @@
         const val = r.value;
         document.getElementById("firebaseDataSourceArea").style.display = val === "firebase" ? "block" : "none";
         document.getElementById("excelDataSourceArea").style.display = val === "excel" ? "block" : "none";
-        document.getElementById("wordDataSourceArea").style.display = val === "word" ? "block" : "none";
         document.getElementById("textDataSourceArea").style.display = val === "text" ? "block" : "none";
         
         // Reset dữ liệu và status
         excelData = [];
         firebaseStatus.textContent = "Chưa nạp dữ liệu CSDL.";
         excelStatus.textContent = "Chưa tải file Excel.";
-        wordStatus.textContent = "Chưa tải file Word (.docx).";
         textStatus.textContent = "Chưa tải file Text (.txt).";
         answer.textContent = "Chưa có dữ liệu.";
       });
@@ -271,33 +265,6 @@
         }
         return count;
     }
-
-    // *** MỚI: Đọc File Word (.docx) ***
-    document.getElementById("wordInput").addEventListener("change", e => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (file.name.endsWith(".doc")) {
-            wordStatus.textContent = "❌ File .doc không được hỗ trợ. Vui lòng dùng .docx";
-            return;
-        }
-
-        wordStatus.textContent = "🔄 Đang đọc file Word...";
-        const reader = new FileReader();
-        reader.onload = evt => {
-            mammoth.extractRawText({ arrayBuffer: evt.target.result })
-                .then(result => {
-                    const text = result.value;
-                    const count = parseTextData(text);
-                    wordStatus.textContent = `✅ Đã nạp ${count} câu hỏi từ Word.`;
-                })
-                .catch(err => {
-                    console.error("Lỗi đọc file Word:", err);
-                    wordStatus.textContent = "❌ Lỗi khi đọc file .docx";
-                });
-        };
-        reader.readAsArrayBuffer(file);
-    });
 
     // *** MỚI: Đọc File Text (.txt) ***
     document.getElementById("textInput").addEventListener("change", e => {
