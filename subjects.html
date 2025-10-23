@@ -298,10 +298,10 @@ async function uploadToDrive(file) {
 }
 
 onAuthStateChanged(auth, (user) => {
-  if (!user) location.href = "admin";
+  if (!user) location.href = "ad.login";
 });
 document.getElementById("logoutBtn").addEventListener("click", () => {
-  signOut(auth).then(() => { location.href = "admin"; });
+  signOut(auth).then(() => { location.href = "ad.login"; });
 });
 
 // -- CRUD MÔN HỌC --
