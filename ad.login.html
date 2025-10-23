@@ -44,10 +44,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
-// Nếu đã đăng nhập thì chuyển luôn tới subjects.html
+// Nếu đã đăng nhập thì chuyển luôn tới subjects
 auth.onAuthStateChanged(function(user) {
   if (user) {
-    window.location.replace("subjects.html");
+    window.location.replace("subjects");
   }
 });
 
