@@ -1,35 +1,220 @@
 <!doctype html>
-<html lang=vi>
+<html lang="vi">
 <head>
-<meta charset=UTF-8>
-<title>Đề cương môn học</title>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel=stylesheet>
-<link href=https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css rel=stylesheet>
-<style>body{padding-top:70px;font-family:Roboto,Arial,sans-serif}.subject-btns .btn{margin-right:6px}.nav-link,.navbar-brand{font-family:Roboto,Arial,sans-serif}.subject-title-icon{font-size:1.15em;margin-right:6px}.syllabus-list{margin-top:10px}.syllabus-item{padding:7px 0;border-bottom:1px dashed #eee}.syllabus-link{font-weight:500;color:#06c;text-decoration:underline}.syllabus-owner{font-size:.95em;color:#333}</style>
+  <meta charset="UTF-8">
+  <title>Đề cương môn học</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body{padding-top:70px;font-family:Roboto,Arial,sans-serif}
+    .online-counter-box {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      border-left: 5px solid #4caf50;
+      padding: 10px 16px;
+      margin: 20px auto 10px;
+      border-radius: 6px;
+      max-width: 600px;
+      font-weight: 500;
+    }
+    .subject-btns .btn{margin-right:6px}
+    .nav-link,.navbar-brand{font-family:Roboto,Arial,sans-serif}
+    .subject-title-icon{font-size:1.15em;margin-right:6px}
+    .syllabus-list{margin-top:10px}
+    .syllabus-item{padding:7px 0;border-bottom:1px dashed #eee}
+    .syllabus-link{font-weight:500;color:#06c;text-decoration:underline}
+    .syllabus-owner{font-size:.95em;color:#333}
+  </style>
 </head>
 <body class="bg-light">
-<header id="navbar-placeholder"></header>
-<div class="container py-4">
-<div class="card shadow-sm mb-4">
-<div class=card-body>
-<h5 class=card-title>📂 Tải đề cương theo môn</h5>
-<div id=subjectList><div>Đang tải...</div></div>
-</div>
-</div>
-</div>
-<script src=https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js></script>
-<script src=https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js></script>
-<script type=module>const firebaseConfig={apiKey:"AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",authDomain:"tracuu-d3ee9.firebaseapp.com",projectId:"tracuu-d3ee9",storageBucket:"tracuu-d3ee9.appspot.com",messagingSenderId:"593568604435",appId:"1:593568604435:web:9a5145457a8ee734143ae6"};firebase.initializeApp(firebaseConfig);const db=firebase.firestore();async function getSubjects(){return(await db.collection("mon_hoc").get()).docs.map((e=>({id:e.id,...e.data()})))}async function getAllSyllabus(){return(await db.collection("syllabus").get()).docs.map((e=>e.data()))}let allSyllabus=[];async function loadSubjectsAndSyllabus(){const e=document.getElementById("subjectList");e.innerHTML="<div>Đang tải...</div>";const[n,t]=await Promise.all([getSubjects(),getAllSyllabus()]);allSyllabus=t,0!==n.length?(e.innerHTML="",n.forEach((n=>{const t=document.createElement("div");t.className="d-flex align-items-center justify-content-between border-bottom py-2",t.innerHTML=`\n        <span class="fw-bold"><span class="subject-title-icon">📘</span>${n.ten_mon}</span>\n        <div class="subject-btns">\n          <button class="btn btn-sm btn-outline-primary" data-id="${n.id}" data-name="${n.ten_mon}">⬇️ Download</button>\n        </div>\n      `,t.querySelector("button").addEventListener("click",(function(){const e=this.getAttribute("data-id"),n=this.getAttribute("data-name");let a=t.querySelector(".syllabus-list");if(a)return void a.remove();const l=document.createElement("div");l.className="syllabus-list",l.innerHTML="<div>Đang tải đề cương...</div>",t.appendChild(l);const s=allSyllabus.filter((n=>n.mon_hoc_id===e)).sort(((e,n)=>(n.uploaded_at||"").localeCompare(e.uploaded_at||"")));l.innerHTML="",s.length?s.forEach(((e,n)=>{const t=document.createElement("div");t.className="syllabus-item",t.innerHTML=`\n              <a class="syllabus-link" href="${e.file_url}" target="_blank">\n                🗂️ ${e.file_name||"Đề cương "+(n+1)}\n              </a>\n              ${e.owner?`<span class="syllabus-owner"> - người upload: ${e.owner}</span>`:""}\n              <span style="font-size:0.91em; color:#666; margin-left:6px;">\n                (${e.uploaded_at?new Date(e.uploaded_at).toLocaleString("vi-VN"):""})\n              </span>\n            `,l.appendChild(t)})):l.innerHTML=`<div class="text-danger">Chưa có đề cương nào cho môn <b>${n}</b>.</div>`})),e.appendChild(t)}))):e.innerHTML="<div>Không có dữ liệu môn học.</div>"}loadSubjectsAndSyllabus()</script>
-<script src=https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js></script>
+  <header id="navbar-placeholder"></header>
+
+  <div class="online-counter-box text-center">
+    🟢 Hiện có Bạn và <span id="online-counter">0</span> người nữa đang truy cập hệ thống.
+  </div>
+
+  <div class="container py-4">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title">📂 Tải đề cương theo môn</h5>
+        <div id="subjectList"><div>Đang tải...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase modular SDK sẽ được import trong script type="module" -->
+  <script type="module">
+    // SỬ DỤNG HOÀN TOÀN FIREBASE MODULAR SDK (không mix compat + modular)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore, collection, getDocs
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getDatabase, ref, onValue, onDisconnect, set, push
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    // ==== FIREBASE CONFIG ====
+    const firebaseConfig = {
+      apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
+      authDomain: "tracuu-d3ee9.firebaseapp.com",
+      projectId: "tracuu-d3ee9",
+      storageBucket: "tracuu-d3ee9.appspot.com",
+      messagingSenderId: "593568604435",
+      appId: "1:593568604435:web:9a5145457a8ee734143ae6"
+    };
+
+    // Khởi tạo app 1 lần
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const rtdb = getDatabase(app, "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app");
+
+    // ==== Firestore helpers ====
+    async function getSubjects() {
+      const snap = await getDocs(collection(db, "mon_hoc"));
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+    async function getAllSyllabus() {
+      const snap = await getDocs(collection(db, "syllabus"));
+      // Return object with id and data, keep uploaded_at as-is (could be timestamp)
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    // ==== Utilities ====
+    function formatUploadedAt(value) {
+      // value can be Firestore Timestamp, ISO string, or number
+      if (!value) return "";
+      // Firestore Timestamp has toDate()
+      if (value && typeof value.toDate === "function") {
+        return value.toDate();
+      }
+      const date = new Date(value);
+      if (!isNaN(date)) return date;
+      return null;
+    }
+
+    // ==== UI: load subjects and show syllabus list per subject ====
+    let allSyllabus = [];
+    async function loadSubjectsAndSyllabus() {
+      const container = document.getElementById("subjectList");
+      container.innerHTML = "<div>Đang tải...</div>";
+      try {
+        const [subjects, syllabi] = await Promise.all([getSubjects(), getAllSyllabus()]);
+        allSyllabus = syllabi || [];
+        if (!subjects || subjects.length === 0) {
+          container.innerHTML = "<div>Không có dữ liệu môn học.</div>";
+          return;
+        }
+        container.innerHTML = "";
+        subjects.forEach(subject => {
+          const wrap = document.createElement("div");
+          wrap.className = "d-flex align-items-center justify-content-between border-bottom py-2";
+          wrap.innerHTML = `
+            <div>
+              <span class="fw-bold"><span class="subject-title-icon">📘</span>${subject.ten_mon || subject.id}</span>
+            </div>
+            <div class="subject-btns">
+              <button class="btn btn-sm btn-outline-primary" data-id="${subject.id}" data-name="${subject.ten_mon || ''}">⬇️ Download</button>
+            </div>
+          `;
+          const btn = wrap.querySelector("button");
+          btn.addEventListener("click", function () {
+            const subjId = this.getAttribute("data-id");
+            const subjName = this.getAttribute("data-name") || subjId;
+            // Toggle: nếu đã hiện danh sách -> remove; nếu chưa -> render
+            const existing = wrap.querySelector(".syllabus-list");
+            if (existing) {
+              existing.remove();
+              return;
+            }
+            const listEl = document.createElement("div");
+            listEl.className = "syllabus-list";
+            listEl.innerHTML = "<div>Đang tải đề cương...</div>";
+            wrap.appendChild(listEl);
+
+            // Lọc và sort syllabus theo uploaded_at (mới nhất trước)
+            const items = allSyllabus
+              .filter(s => String(s.mon_hoc_id) === String(subjId))
+              .map(s => {
+                const dateObj = formatUploadedAt(s.uploaded_at);
+                return { ...s, _uploaded_date: dateObj ? dateObj.getTime() : 0 };
+              })
+              .sort((a, b) => (b._uploaded_date || 0) - (a._uploaded_date || 0));
+
+            listEl.innerHTML = "";
+            if (!items || items.length === 0) {
+              listEl.innerHTML = `<div class="text-danger">Chưa có đề cương nào cho môn <b>${subjName}</b>.</div>`;
+              return;
+            }
+            items.forEach((s, idx) => {
+              const item = document.createElement("div");
+              item.className = "syllabus-item";
+              const uploadedStr = s._uploaded_date ? new Date(s._uploaded_date).toLocaleString("vi-VN") : "";
+              item.innerHTML = `
+                <a class="syllabus-link" href="${s.file_url || '#'}" target="_blank" rel="noopener noreferrer">
+                  🗂️ ${s.file_name || ("Đề cương " + (idx + 1))}
+                </a>
+                ${s.owner ? `<span class="syllabus-owner"> - người upload: ${s.owner}</span>` : ""}
+                <span style="font-size:0.91em; color:#666; margin-left:6px;">
+                  (${uploadedStr})
+                </span>
+              `;
+              listEl.appendChild(item);
+            });
+          });
+          container.appendChild(wrap);
+        });
+      } catch (err) {
+        console.error("Lỗi khi load subjects/ syllabi:", err);
+        container.innerHTML = "<div class='text-danger'>Lỗi khi tải dữ liệu. Xem console để biết chi tiết.</div>";
+      }
+    }
+
+    // ==== Realtime DB: online counter ====
+    const onlineCounterEl = document.getElementById('online-counter');
+    if (onlineCounterEl) {
+      try {
+        const connectionsRef = ref(rtdb, 'connections');
+        const myConnectionRef = push(connectionsRef);
+        onDisconnect(myConnectionRef).remove();
+        // mark as online
+        set(myConnectionRef, true).catch(err => console.error("set connection error", err));
+        onValue(connectionsRef, (snapshot) => {
+          const val = snapshot.val();
+          let count = 0;
+          if (!snapshot.exists()) {
+            count = 0;
+          } else if (val && typeof val === 'object') {
+            count = Object.keys(val).length;
+          } else {
+            // fallback: if value is single primitive, treat as 1
+            count = 1;
+          }
+          onlineCounterEl.textContent = count;
+        }, err => {
+          console.error("onValue connections error", err);
+        });
+      } catch (err) {
+        console.error("Realtime DB init error", err);
+      }
+    }
+
+    // ==== INIT ====
+    loadSubjectsAndSyllabus();
+
+    // Expose for debug (optional)
+    window._debug_app = { app, db, rtdb };
+
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
   <script>
-  // Tải nội dung của file nav.html
-  fetch('/menu.html') // Quan trọng: Đường dẫn này phải trỏ đúng file nav.html
-    .then(response => response.text())
-    .then(data => {
-      // Chèn nội dung menu vào thẻ "navbar-placeholder"
-      document.getElementById('navbar-placeholder').innerHTML = data;
-    });
+    // Tải nội dung của file menu.html (nếu có)
+    fetch('/menu.html')
+      .then(response => response.text())
+      .then(data => { document.getElementById('navbar-placeholder').innerHTML = data; })
+      .catch(err => console.warn('Không thể tải menu.html', err));
   </script>
 </body>
 </html>
