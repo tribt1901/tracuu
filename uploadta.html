@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   loadSubjectsToDropdown(document.getElementById("subjectDropdownImport"), true);
 
-  // duplication & normalization (Giữ lại cho Moodle Import)
+  // duplication & normalization
   let importedQuestions = [];
   let allQuestionsForSubject = [];
   let imagesFoundCount = 0;
@@ -161,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveImportBtn = document.getElementById("saveImportBtn");
   const subjectDropdownImport = document.getElementById("subjectDropdownImport");
 
-  // security checks (chỉ giữ lại của Import)
+  // security checks
   let questionSecOKImport = false;
   document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() {
     const val = this.value.trim();
@@ -195,6 +195,10 @@ document.addEventListener("DOMContentLoaded", () => {
     allQuestionsForSubject = this.value ? await loadQuestionsForSubject(this.value) : [];
   });
 
+  // =================================================================
+  // === SỬA ĐỔI TẠI ĐÂY ===
+  // Hàm này đã được cập nhật để bỏ qua các khối answer, outcome, và specificfeedback
+  // khi trích xuất văn bản.
   function extractTextAndLaTeX(node) {
     let result = "";
     if (!node) return result;
@@ -202,6 +206,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (child.nodeType === Node.TEXT_NODE) {
         result += child.textContent;
       } else if (child.nodeType === Node.ELEMENT_NODE) {
+        
+        // Logic mới: Bỏ qua các khối div không mong muốn
+        if (child.classList && (
+            child.classList.contains('answer') || 
+            child.classList.contains('outcome') || 
+            child.classList.contains('specificfeedback')
+        )) {
+          return; // Bỏ qua node này và không duyệt sâu hơn
+        }
+
         if (child.tagName === 'SCRIPT' && child.type && child.type.startsWith('math/tex')) {
           result += `\\(${child.textContent.trim()}\\)`;
         } else if (child.tagName === 'SPAN' && (child.classList.contains('MathJax_Preview') || child.classList.contains('MathJax'))) {
@@ -210,12 +224,14 @@ document.addEventListener("DOMContentLoaded", () => {
           imagesFoundCount++;
           result += `<span class="image-warning-text">[HÌNH ẢNH]</span>`;
         } else {
-          result += extractTextAndLaTeX(child);
+          result += extractTextAndLaTeX(child); // Duyệt sâu hơn
         }
       }
     });
     return result.replace(/\s+/g, ' ').trim();
   }
+  // === KẾT THÚC SỬA ĐỔI ===
+  // =================================================================
 
   importHtmlInput.addEventListener("change", async function(e) {
     const file = e.target.files[0];
@@ -236,14 +252,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       docx.querySelectorAll('.que').forEach(q => {
         let qtextNode = q.querySelector('.qtext');
+        // Hàm extractTextAndLaTeX mới sẽ chỉ lấy nội dung câu hỏi
         let questionText = qtextNode ? extractTextAndLaTeX(qtextNode) : '';
+        
         const answerNodes = Array.from(q.querySelectorAll('.answer > div'));
         
-        // =================================================================
-        // === SỬA ĐỔI TẠI ĐÂY (ĐÃ SỬA TỪ LẦN TRƯỚC) ===
-        // Đọc text từ 'label' thay vì '.specificfeedback'
+        // Logic này đã được sửa ở lần trước, tiếp tục dùng 'label'
         const answers = answerNodes.map(ansNode => extractTextAndLaTeX(ansNode.querySelector('.flex-fill, div.ml-1, label') || ansNode));
-        // =================================================================
 
         let correctIdx = -1;
         
@@ -253,6 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (match) {
           const correctValue = match[1].trim();
+          // Việc extract 'answers' chính xác là mấu chốt ở đây
           correctIdx = answers.findIndex(a => normalizeCompareString(a) === normalizeCompareString(correctValue));
         }
         if (correctIdx === -1) {
@@ -306,7 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsText(file);
   });
 
-  // save imported questions (keep security_code saved as requested)
+  // save imported questions
   saveImportBtn.onclick = async function() {
     if (!questionSecOKImport) { alert("Chưa xác thực mã bảo mật!"); return; }
     const mon_hoc_id = subjectDropdownImport.value;
