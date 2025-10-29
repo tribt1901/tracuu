@@ -1,113 +1,172 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Công cụ Học tiếng Anh — Transcription Online</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { font-family: Inter, sans-serif; }
-    .input-tab-content { display: none; }
-    .input-tab-content.active { display: block; }
-    .tab-btn.active { border-bottom-color: #3B82F6; color:#3B82F6; font-weight:600 }
-    .muted { color:#6b7280; font-size:0.9rem }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Công cụ Học tiếng Anh — Offline Transcription</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body { font-family: Inter, sans-serif; }
+.input-tab-content { display: none; }
+.input-tab-content.active { display: block; }
+.tab-btn.active { border-bottom-color: #3B82F6; color:#3B82F6; font-weight:600 }
+.muted { color:#6b7280; font-size:0.9rem }
+</style>
 </head>
 <body class="bg-light">
 
-<header class="bg-blue-600 p-6 text-white rounded-b-lg shadow">
-  <h1 class="text-2xl font-bold">Công cụ Học tiếng Anh — Transcription</h1>
-  <p class="text-blue-100 mt-1">Upload MP3 → tự động chuyển sang văn bản → tìm kiếm trong nội dung</p>
-</header>
+<div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden my-6">
+  <header class="bg-blue-600 p-6">
+    <h1 class="text-2xl text-white font-bold">Công cụ Học tiếng Anh — Offline Transcription</h1>
+    <p class="text-blue-100 mt-1">Chạy hoàn toàn trên trình duyệt (WASM + model lưu trong repo).</p>
+  </header>
 
-<div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden my-6 p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <main class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-  <!-- Upload + transcript -->
-  <div class="space-y-6">
-    <div class="rounded-lg border p-4">
-      <label class="block font-medium mb-2">1. Chọn file âm thanh (MP3)</label>
-      <input id="audio-upload" type="file" accept="audio/*" class="w-full" />
-      <audio id="audio-player" controls class="w-full mt-3 hidden"></audio>
-      <div id="status" class="mt-2 muted">Sẵn sàng</div>
-    </div>
+    <!-- Upload + Transcript -->
+    <div class="space-y-6">
+      <div class="rounded-lg border p-4">
+        <label class="block font-medium mb-2">Chọn file âm thanh (MP3)</label>
+        <input id="audio-upload" type="file" accept="audio/*" class="w-full" />
+        <audio id="audio-player" controls class="w-full mt-3 hidden"></audio>
+        <div id="worker-status" class="mt-2 muted">Worker: chưa khởi tạo</div>
+        <div id="transcription-progress" class="mt-2 muted"></div>
+      </div>
 
-    <div class="rounded-lg border p-4">
-      <h3 class="font-semibold mb-2">Nội dung văn bản</h3>
-      <div id="transcript-display" class="w-full h-48 bg-gray-50 rounded p-3 overflow-y-auto text-sm text-gray-700 border">
-        Vui lòng tải MP3 lên. Kết quả trích xuất sẽ xuất hiện ở đây.
+      <div class="rounded-lg border p-4">
+        <h3 class="font-semibold mb-2">Nội dung văn bản</h3>
+        <div id="transcript-display" class="w-full h-48 bg-gray-50 rounded p-3 overflow-y-auto text-sm text-gray-700 border">
+          Vui lòng tải MP3 lên. Kết quả trích xuất sẽ xuất hiện ở đây.
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Tra cứu -->
-  <div class="space-y-6">
-    <div class="rounded-lg border p-4">
-      <h3 class="font-semibold mb-2">2. Nhập câu hỏi</h3>
-      <textarea id="text-input" class="w-full h-24 p-2 border rounded" placeholder="Nhập câu hỏi..."></textarea>
-      <button id="search-btn" class="w-full mt-4 py-3 bg-blue-600 text-white rounded">Tìm kiếm trong nội dung</button>
-    </div>
+    <!-- Tìm kiếm câu hỏi -->
+    <div class="space-y-6">
+      <div class="rounded-lg border p-4">
+        <h3 class="font-semibold mb-3">Nhập câu hỏi</h3>
+        <div class="border-b mb-4">
+          <nav class="flex space-x-4">
+            <button class="tab-btn active" data-tab="text">Gõ tay</button>
+            <button class="tab-btn" data-tab="voice">Giọng nói</button>
+          </nav>
+        </div>
 
-    <div class="rounded-lg border p-4">
-      <h3 class="font-semibold mb-2">3. Kết quả</h3>
-      <div id="answer-display" class="min-h-[5rem] bg-gray-50 p-3 border text-gray-700">Kết quả sẽ xuất hiện ở đây...</div>
+        <div>
+          <div id="tab-text" class="input-tab-content active">
+            <textarea id="text-input" class="w-full h-24 p-2 border rounded" placeholder="Nhập câu hỏi..."></textarea>
+          </div>
+          <div id="tab-voice" class="input-tab-content">
+            <button id="voice-input-btn" class="w-full py-3 bg-red-600 text-white rounded">Nhấn để nói</button>
+          </div>
+        </div>
+
+        <button id="search-btn" class="w-full mt-4 py-3 bg-blue-600 text-white rounded">Tìm kiếm trong nội dung</button>
+      </div>
+
+      <div class="rounded-lg border p-4">
+        <h3 class="font-semibold mb-2">Kết quả</h3>
+        <div id="status" class="text-sm italic text-gray-500 mb-2">Sẵn sàng</div>
+        <div id="answer-display" class="min-h-[5rem] bg-gray-50 p-3 border text-gray-700">Kết quả sẽ xuất hiện ở đây...</div>
+      </div>
     </div>
-  </div>
+  </main>
 </div>
 
-<script>
-  const audioUpload = document.getElementById('audio-upload');
-  const audioPlayer = document.getElementById('audio-player');
-  const transcriptDisplay = document.getElementById('transcript-display');
-  const textInput = document.getElementById('text-input');
-  const searchBtn = document.getElementById('search-btn');
-  const answerDisplay = document.getElementById('answer-display');
-  const statusEl = document.getElementById('status');
+<script type="module">
+import initWhisper from './whisper/whisper.js';
 
-  let transcriptContent = '';
+let transcriptContent = '';
+let worker = null;
+let workerReady = false;
 
-  audioUpload.addEventListener('change', async (ev) => {
-    const file = ev.target.files[0];
-    if (!file) return;
+const audioUpload = document.getElementById('audio-upload');
+const audioPlayer = document.getElementById('audio-player');
+const transcriptDisplay = document.getElementById('transcript-display');
+const workerStatusEl = document.getElementById('worker-status');
+const transcriptionProgress = document.getElementById('transcription-progress');
+const textInput = document.getElementById('text-input');
+const searchBtn = document.getElementById('search-btn');
+const statusEl = document.getElementById('status');
+const answerDisplay = document.getElementById('answer-display');
+const tabs = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.input-tab-content');
 
-    audioPlayer.src = URL.createObjectURL(file);
-    audioPlayer.classList.remove('hidden');
-    statusEl.textContent = 'Đang gửi file tới server...';
+async function initWorker() {
+  if (worker) return;
+  workerStatusEl.textContent = 'Worker: đang khởi tạo...';
+  worker = await initWhisper('/whisper/ggml-small.en.bin');
+  workerReady = true;
+  workerStatusEl.textContent = 'Worker: sẵn sàng';
+}
 
-    try {
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: file
-      });
-      const data = await response.json();
-      if (data.text) {
-        transcriptContent = data.text;
-        transcriptDisplay.textContent = transcriptContent;
-        statusEl.textContent = 'Đã trích xuất thành công.';
-      } else {
-        statusEl.textContent = 'Lỗi khi trích xuất: ' + (data.error||'');
-      }
-    } catch (err) {
-      statusEl.textContent = 'Lỗi mạng: ' + err.message;
-    }
+function arrayBufferTo16BitPCM(buffer) {
+  const float32 = new Float32Array(buffer);
+  const out = new Int16Array(float32.length);
+  for (let i=0;i<float32.length;i++){
+    let s = Math.max(-1, Math.min(1,float32[i]));
+    out[i] = s<0 ? s*0x8000 : s*0x7FFF;
+  }
+  return out;
+}
+
+async function decodeAudio(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const ctx = new AudioContext();
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+  const channel = audioBuffer.numberOfChannels >1
+    ? audioBuffer.getChannelData(0).map((v,i)=> (v + audioBuffer.getChannelData(1)[i])/2)
+    : audioBuffer.getChannelData(0);
+  return channel;
+}
+
+audioUpload.addEventListener('change', async e=>{
+  const file = e.target.files[0];
+  if (!file) return;
+  await initWorker();
+  audioPlayer.src = URL.createObjectURL(file);
+  audioPlayer.classList.remove('hidden');
+  transcriptionProgress.textContent = 'Đang giải mã...';
+  try {
+    const samples = await decodeAudio(file);
+    const int16 = arrayBufferTo16BitPCM(samples);
+    transcriptionProgress.textContent = 'Đang chuyển văn bản...';
+    const text = await worker.transcribe(int16);
+    transcriptContent = text;
+    transcriptDisplay.textContent = text;
+    transcriptionProgress.textContent = '';
+    statusEl.textContent = 'Đã trích xuất thành công.';
+  } catch(err) {
+    statusEl.textContent = 'Lỗi: '+err.message;
+  }
+});
+
+tabs.forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    const t = tab.dataset.tab;
+    tabs.forEach(x=>x.classList.remove('active'));
+    tabContents.forEach(c=>c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-'+t).classList.add('active');
   });
+});
 
-  searchBtn.addEventListener('click', () => {
-    const q = textInput.value.trim().toLowerCase();
-    if (!q) { statusEl.textContent = 'Nhập câu hỏi.'; return; }
-    if (!transcriptContent) { statusEl.textContent = 'Chưa có transcript.'; return; }
-
-    const idx = transcriptContent.toLowerCase().indexOf(q);
-    if (idx === -1) {
-      statusEl.textContent = 'Không tìm thấy.';
-      answerDisplay.textContent = 'Không tìm thấy.';
-      return;
-    }
-    const before = Math.max(0, idx - 80);
-    const after = Math.min(transcriptContent.length, idx + 220);
-    const snippet = transcriptContent.substring(before, after);
-    answerDisplay.innerHTML = snippet.replace(new RegExp(q, 'gi'), m => `<mark style="background:yellow">${m}</mark>`);
-    statusEl.textContent = 'Đã tìm thấy.';
-  });
+searchBtn.addEventListener('click', ()=>{
+  const q = textInput.value.trim().toLowerCase();
+  if (!q){statusEl.textContent='Nhập câu hỏi.'; return;}
+  if (!transcriptContent){statusEl.textContent='Chưa có transcript.'; return;}
+  const idx = transcriptContent.toLowerCase().indexOf(q);
+  if (idx===-1){
+    statusEl.textContent='Không tìm thấy.';
+    answerDisplay.textContent='Không tìm thấy.';
+    return;
+  }
+  const before = Math.max(0, idx-80);
+  const after = Math.min(transcriptContent.length, idx+220);
+  const snippet = transcriptContent.substring(before,after);
+  answerDisplay.innerHTML = snippet.replace(new RegExp(q,'gi'), m=>`<mark style="background:yellow">${m}</mark>`);
+  statusEl.textContent='Đã tìm thấy.';
+});
 </script>
 </body>
 </html>
