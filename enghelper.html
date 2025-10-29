@@ -1,77 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>English Helper - Whisper WASM</title>
+  <meta charset="UTF‑8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Công cụ Tra cứu Nội dung Âm thanh — Offline trên trình duyệt</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; }
-    h1 { color: #333; }
-    input[type=file] { margin-bottom: 1rem; }
-    textarea { width: 100%; height: 300px; margin-top: 1rem; }
-    #status { margin-top: 1rem; font-weight: bold; }
+    body { font-family: Arial, sans‑serif; margin: 20px; }
+    input, button, textarea { width: 100%; margin-top: 10px; }
+    textarea { height: 200px; }
+    #status { margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
-  <h1>English Helper - Whisper WASM</h1>
-  <p>Upload an MP3 file and get the transcription below:</p>
-  <input type="file" id="fileInput" accept=".mp3,.wav"/>
-  <div id="status">Waiting for file...</div>
-  <textarea id="transcript" placeholder="Transcription will appear here..." readonly></textarea>
+  <h1>Tra cứu Nội dung Âm thanh</h1>
+  <p>Upload file âm thanh (MP3/WAV) và nhận văn bản chuyển đổi trực tiếp trên trình duyệt.</p>
 
+  <input type="file" id="audio-upload" accept="audio/*">
+  <div id="status">Chưa chọn file.</div>
+  <textarea id="transcript" placeholder="Kết quả chuyển đổi sẽ hiện ở đây…" readonly></textarea>
+
+  <script src="https://cdn.jsdelivr.net/npm/vosk-browser@0.0.8/dist/vosk.js"></script>
   <script>
-    let Module;
+    let model, recognizer;
 
-    async function loadWhisper() {
-      document.getElementById('status').innerText = 'Loading Whisper WASM...';
-      
-      // Load whisper.wasm script
-      Module = await new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = './whisper.js'; // nếu bạn có whisper.js kèm với whisper.wasm
-        script.onload = () => {
-          // Module là object global từ whisper.js
-          resolve(window.Module);
-        };
-        document.body.appendChild(script);
-      });
-
-      document.getElementById('status').innerText = 'Whisper WASM loaded. Ready to transcribe.';
+    async function initModel() {
+      document.getElementById('status').innerText = 'Đang tải model...';
+      // Bạn cần tải model nhỏ phù hợp sao cho người dùng tải được nhanh
+      model = await Vosk.createModel('models/vosk-model-small-en-us-0.15.tar.gz'); 
+      document.getElementById('status').innerText = 'Model sẵn sàng.';
     }
 
-    async function transcribeFile(file) {
-      const status = document.getElementById('status');
-      const transcriptBox = document.getElementById('transcript');
+    async function processAudioFile(file) {
+      const statusEl = document.getElementById('status');
+      const transcriptEl = document.getElementById('transcript');
+      statusEl.innerText = 'Đang đọc file...';
 
-      status.innerText = 'Reading file...';
       const arrayBuffer = await file.arrayBuffer();
-      const audioData = new Uint8Array(arrayBuffer);
+      const audioContext = new AudioContext();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      statusEl.innerText = 'Đang tạo recognizer...';
 
-      status.innerText = 'Transcribing... (this may take a while)';
+      recognizer = new model.KaldiRecognizer(audioBuffer.sampleRate);
+      // Gộp dữ liệu audio để kí nhận
+      recognizer.acceptWaveform(audioBuffer.getChannelData(0));
 
-      // Ghi file vào FS ảo Emscripten
-      const filename = '/input_audio.' + file.name.split('.').pop();
-      Module.FS_writeFile(filename, audioData);
-
-      // Gọi hàm Whisper (giả sử whisper.js expose function `whisper_transcribe`)
-      // Tùy Whisper WASM version, bạn sẽ gọi API hơi khác
-      // Đây là ví dụ chung:
-      try {
-        const result = Module.whisper_transcribe(filename, 'small', 'en');
-        transcriptBox.value = result;
-        status.innerText = 'Transcription complete!';
-      } catch (e) {
-        status.innerText = 'Error: ' + e.message;
-        console.error(e);
-      }
+      const result = recognizer.finalResult();
+      transcriptEl.value = result.text;
+      statusEl.innerText = 'Hoàn tất chuyển đổi.';
     }
 
-    document.getElementById('fileInput').addEventListener('change', (e) => {
+    document.getElementById('audio-upload').addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) return;
-      transcribeFile(file);
+      processAudioFile(file).catch(err => {
+        console.error(err);
+        document.getElementById('status').innerText = 'Lỗi: ' + err.message;
+      });
     });
 
-    loadWhisper();
+    window.onload = initModel;
   </script>
 </body>
 </html>
