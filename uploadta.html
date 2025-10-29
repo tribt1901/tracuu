@@ -1,164 +1,74 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8"/>
-  <title>Upload Dữ Liệu</title>
-  <meta content="width=device-width, initial-scale=1" name="viewport"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <style>
-    .mode-section { display: none; }
-    body { padding-top: 70px; }
-    #importHtmlResultContainer { max-height: 350px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 5px; padding: 12px;}
-    .img-preview, .img-preview-ans { max-width: 120px; max-height: 70px; display: inline-block; margin-top: 6px; vertical-align: middle;}
-    .img-preview-ans { max-width: 70px; max-height: 40px; }
-    .img-upload-btn { margin-top: 3px; }
-    .remove-img-btn { margin-left: 6px; color: red; border: none; background: none; }
-    .subject-scroll-select { max-height: 240px !important; overflow-y: auto !important; }
-    .security-section {max-width: 360px; margin-bottom: 16px;}
-    @media (max-width: 600px) {
-      #importHtmlResultContainer { max-height: 210px;}
-    }
-    .import-duplicate .import-question-title,
-    .import-duplicate .import-answer,
-    .import-duplicate .import-duplicate-message {
-      color: #c00!important;
-    }
-    .import-duplicate .import-answer-correct {
-      color: #c00!important;
-      font-weight: bold;
-    }
-    .import-question-title {
-      font-weight: 500;
-      color: #0d6efd;
-    }
-    .import-answer-correct {
-      color: #198754;
-      font-weight: bold;
-    }
-    .import-answer {
-      margin-left: 2em;
-    }
-    .import-duplicate-message {
-      color: #c00;
-      font-style: italic;
-    }
-    .image-warning-text { color: #d35400; font-weight: 500; }
-  </style>
-  <link rel="icon" href="data:,">
-  <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <meta charset="utf-8"/>
+  <title>Upload Dữ Liệu</title>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    /* CSS đã được đơn giản hóa */
+    body { padding-top: 70px; }
+    #importHtmlResultContainer { max-height: 350px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 5px; padding: 12px;}
+    .subject-scroll-select { max-height: 240px !important; overflow-y: auto !important; }
+    .security-section {max-width: 360px; margin-bottom: 16px;}
+    @media (max-width: 600px) {
+      #importHtmlResultContainer { max-height: 210px;}
+    }
+    .import-duplicate .import-question-title,
+    .import-duplicate .import-answer,
+    .import-duplicate .import-duplicate-message {
+      color: #c00!important;
+    }
+    .import-duplicate .import-answer-correct {
+      color: #c00!important;
+      font-weight: bold;
+    }
+    .import-question-title {
+      font-weight: 500;
+      color: #0d6efd;
+    }
+    .import-answer-correct {
+      color: #198754;
+      font-weight: bold;
+    }
+    .import-answer {
+      margin-left: 2em;
+    }
+    .import-duplicate-message {
+      color: #c00;
+      font-style: italic;
+    }
+    .image-warning-text { color: #d35400; font-weight: 500; }
+  </style>
+  <link rel="icon" href="data:,">
+  <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body class="bg-light">
 <header id="navbar-placeholder"></header>
 
 <div class="online-counter-box text-center" style="background-color: #e8f5e9; color: #2e7d32; border-left: 5px solid #4caf50; padding: 10px 16px; margin: 20px auto 10px; border-radius: 6px; max-width: 600px; font-weight: 500;">
-  🟢 Hiện có Bạn và <span id="online-counter">0</span> người nữa đang truy cập hệ thống.
+  🟢 Hiện có Bạn và <span id="online-counter">0</span> người nữa đang truy cập hệ thống.
 </div>
 
 <div class="container py-4">
-  <h3 class="mb-4">Chọn loại upload:</h3>
-  <select class="form-select mb-4 subject-scroll-select" id="uploadTypeSelect" style="max-width:360px;">
-    <option value="question">Upload Câu hỏi</option>
-  </select>
 
-  <div class="mode-section" id="uploadQuestionSection">
-    <div id="questionUploadChoice" style="max-width:360px;">
-      <button class="btn btn-primary me-2" id="questionImportHtmlBtn">Nhập từ file HTML Moodle</button>
-      <button class="btn btn-success" id="questionManualBtn">Thêm thủ công</button>
-    </div>
+    <div id="importHtmlSection">
+    <h5 class="mt-3">Nhập câu hỏi từ file HTML Moodle</h5>
+    <select class="form-select mb-2 subject-scroll-select" id="subjectDropdownImport" style="max-width:350px;">
+      <option value="">-- Chọn môn học để lưu --</option>
+    </select>
+    <input type="file" id="importHtmlInput" accept=".html,.htm" class="form-control mb-2" style="max-width:350px;" disabled>
+    <div id="importHtmlResultContainer">
+      <div id="importHtmlResult" class="mt-3"></div>
+    </div>
+    <div class="security-section" style="margin-top:10px;">
+      <input type="password" class="form-control mb-1" id="questionSecurityCodeImport" placeholder="Nhập mã bảo mật để lưu">
+      <div id="questionSecurityCodeStatusImport" style="font-size:0.95em;" class="mb-2"></div>
+    </div>
+    <button class="btn btn-success mt-2" id="saveImportBtn" style="display:none;" disabled>💾 Lưu vào CSDL</button>
+      </div>
 
-    <div id="importHtmlSection" style="display:none;">
-      <h5 class="mt-3">Nhập câu hỏi từ file HTML Moodle</h5>
-      <select class="form-select mb-2 subject-scroll-select" id="subjectDropdownImport" style="max-width:350px;">
-        <option value="">-- Chọn môn học để lưu --</option>
-      </select>
-      <input type="file" id="importHtmlInput" accept=".html,.htm" class="form-control mb-2" style="max-width:350px;" disabled>
-      <div id="importHtmlResultContainer">
-        <div id="importHtmlResult" class="mt-3"></div>
-      </div>
-      <div class="security-section" style="margin-top:10px;">
-        <input type="password" class="form-control mb-1" id="questionSecurityCodeImport" placeholder="Nhập mã bảo mật để lưu">
-        <div id="questionSecurityCodeStatusImport" style="font-size:0.95em;" class="mb-2"></div>
-      </div>
-      <button class="btn btn-success mt-2" id="saveImportBtn" style="display:none;" disabled>💾 Lưu vào CSDL</button>
-      <button class="btn btn-secondary mt-2" id="backToQuestionChoiceBtn">← Quay lại</button>
-    </div>
-
-    <div id="manualQuestionSection" style="display:none;">
-      <h5 class="mt-3">Thêm câu hỏi thủ công</h5>
-      <form id="manualQuestionForm" autocomplete="off">
-        <select class="form-select mb-2 subject-scroll-select" id="subjectDropdownManual" required></select>
-        <textarea class="form-control mb-2" id="manualQuestionText" placeholder="Nội dung câu hỏi (hỗ trợ MathJax)" required rows="3"></textarea>
-
-        <div>
-          <input type="file" accept="image/*" id="manualQuestionImageInput" class="form-control form-control-sm img-upload-btn" style="max-width:260px;">
-          <img id="manualQuestionImgPreview" class="img-preview" style="display:none"/>
-          <button type="button" class="remove-img-btn" id="manualRemoveQuestionImgBtn" style="display:none;">✖</button>
-        </div>
-
-        <div class="answer-input-group mb-2">
-          <label for="manualAnswerA" class="form-label mb-1">Đáp án a</label>
-          <input class="form-control" id="manualAnswerA" placeholder="Đáp án a" required type="text"/>
-          <input type="file" accept="image/*" id="manualAnswerAImgInput" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
-          <img id="manualAnswerAImgPreview" class="img-preview-ans" style="display:none"/>
-          <button type="button" class="remove-img-btn" id="manualRemoveAImgBtn" style="display:none;">✖</button>
-        </div>
-
-        <div class="answer-input-group mb-2">
-          <label for="manualAnswerB" class="form-label mb-1">Đáp án b</label>
-          <input class="form-control" id="manualAnswerB" placeholder="Đáp án b" required type="text"/>
-          <input type="file" accept="image/*" id="manualAnswerBImgInput" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
-          <img id="manualAnswerBImgPreview" class="img-preview-ans" style="display:none"/>
-          <button type="button" class="remove-img-btn" id="manualRemoveBImgBtn" style="display:none;">✖</button>
-        </div>
-
-        <div class="answer-input-group mb-2">
-          <label for="manualAnswerC" class="form-label mb-1">Đáp án c</label>
-          <input class="form-control" id="manualAnswerC" placeholder="Đáp án c" required type="text"/>
-          <input type="file" accept="image/*" id="manualAnswerCImgInput" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
-          <img id="manualAnswerCImgPreview" class="img-preview-ans" style="display:none"/>
-          <button type="button" class="remove-img-btn" id="manualRemoveCImgBtn" style="display:none;">✖</button>
-        </div>
-
-        <div class="answer-input-group mb-2">
-          <label for="manualAnswerD" class="form-label mb-1">Đáp án d</label>
-          <input class="form-control" id="manualAnswerD" placeholder="Đáp án d" required type="text"/>
-          <input type="file" accept="image/*" id="manualAnswerDImgInput" class="form-control form-control-sm img-upload-btn" style="max-width:220px;">
-          <img id="manualAnswerDImgPreview" class="img-preview-ans" style="display:none"/>
-          <button type="button" class="remove-img-btn" id="manualRemoveDImgBtn" style="display:none;">✖</button>
-        </div>
-
-        <select class="form-select mb-2" id="manualCorrectAnswerDropdown" required>
-          <option value="">Chọn đáp án đúng</option>
-          <option value="a">a</option>
-          <option value="b">b</option>
-          <option value="c">c</option>
-          <option value="d">d</option>
-        </select>
-
-        <div class="security-section" style="margin-top:10px;">
-          <input type="password" class="form-control mb-1" id="questionSecurityCodeManual" placeholder="Nhập mã bảo mật để lưu">
-          <div id="questionSecurityCodeStatusManual" style="font-size:0.95em;" class="mb-2"></div>
-        </div>
-
-        <button type="submit" class="btn btn-success" id="manualSubmitQuestionBtn" disabled>Thêm câu hỏi</button>
-        <button type="button" class="btn btn-secondary mt-2" id="backToQuestionChoiceBtn2">← Quay lại</button>
-      </form>
-    </div>
-  </div>
-
-  <div class="mode-section" id="uploadSyllabusSection">
-    <form id="syllabusForm" autocomplete="off">
-      <select class="form-select mb-2 subject-scroll-select" id="syllabusSubjectDropdown" required></select>
-      <input type="text" class="form-control mb-2" id="syllabusOwner" placeholder="Tài liệu này của ai? (Không bắt buộc)">
-      <input type="url" class="form-control mb-2" id="syllabusFileUrlInput" placeholder="Nhập đường link đề cương (Google Drive, OneDrive, v.v.)" required>
-      <div class="security-section" style="margin-top:10px;">
-        <input type="password" class="form-control mb-1" id="syllabusSecurityCode" placeholder="Nhập mã bảo mật để lưu">
-        <div id="syllabusSecurityCodeStatus" style="font-size:0.95em;" class="mb-2"></div>
-      </div>
-      <button type="submit" class="btn btn-success" id="syllabusSubmitBtn" disabled>Upload Đề cương</button>
-    </form>
-  </div>
-</div>
+    </div>
 
 <script type="module">
 import { getDatabase, ref, onValue, onDisconnect, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -192,36 +102,9 @@ document.addEventListener("DOMContentLoaded", () => {
     onlineCounterEl.textContent = count;
   });
 
-  // DOM elements used repeatedly
-  const manualQuestionImgPreview = document.getElementById("manualQuestionImgPreview");
-  const manualRemoveQuestionImgBtn = document.getElementById("manualRemoveQuestionImgBtn");
-  const manualAnswerAImgPreview = document.getElementById("manualAnswerAImgPreview");
-  const manualRemoveAImgBtn = document.getElementById("manualRemoveAImgBtn");
-  const manualAnswerBImgPreview = document.getElementById("manualAnswerBImgPreview");
-  const manualRemoveBImgBtn = document.getElementById("manualRemoveBImgBtn");
-  const manualAnswerCImgPreview = document.getElementById("manualAnswerCImgPreview");
-  const manualRemoveCImgBtn = document.getElementById("manualRemoveCImgBtn");
-  const manualAnswerDImgPreview = document.getElementById("manualAnswerDImgPreview");
-  const manualRemoveDImgBtn = document.getElementById("manualRemoveDImgBtn");
-  const manualQuestionImageInput = document.getElementById("manualQuestionImageInput");
-  const manualAnswerAImgInput = document.getElementById("manualAnswerAImgInput");
-  const manualAnswerBImgInput = document.getElementById("manualAnswerBImgInput");
-  const manualAnswerCImgInput = document.getElementById("manualAnswerCImgInput");
-  const manualAnswerDImgInput = document.getElementById("manualAnswerDImgInput");
-  const manualSubmitQuestionBtn = document.getElementById("manualSubmitQuestionBtn");
-  const uploadTypeSelect = document.getElementById("uploadTypeSelect");
-  const uploadQuestionSection = document.getElementById("uploadQuestionSection");
-  const uploadSyllabusSection = document.getElementById("uploadSyllabusSection");
+  // --- Đã xóa các biến DOM cho "Manual" và "Syllabus" ---
 
-  uploadTypeSelect.addEventListener("change", () => {
-    document.querySelectorAll(".mode-section").forEach(el => el.style.display = "none");
-    if (uploadTypeSelect.value === "question") {
-      uploadQuestionSection.style.display = "block";
-    } else if (uploadTypeSelect.value === "syllabus") {
-      uploadSyllabusSection.style.display = "block";
-    }
-  });
-  uploadTypeSelect.dispatchEvent(new Event("change"));
+  // --- Đã xóa EventListener cho "uploadTypeSelect" ---
 
   async function loadSubjectsToDropdown(dropdown, allowEmpty = false) {
     dropdown.innerHTML = allowEmpty ? `<option value="">-- Chọn môn học --</option>` : "";
@@ -238,47 +121,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
   loadSubjectsToDropdown(document.getElementById("subjectDropdownImport"), true);
-  loadSubjectsToDropdown(document.getElementById("subjectDropdownManual"));
-  loadSubjectsToDropdown(document.getElementById("syllabusSubjectDropdown"));
+  // --- Đã xóa loadSubjectsToDropdown cho "Manual" và "Syllabus" ---
 
-  async function uploadToDrive(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await fetch('https://tracuu-app.hugo.io.vn/api/upload', { method: 'POST', body: formData });
-    if (!response.ok) throw new Error('Upload ảnh/file thất bại!');
-    const result = await response.json();
-    return result.url;
-  }
+  // --- Đã xóa hàm "uploadToDrive" (chỉ dùng cho manual) ---
+  // --- Đã xóa "image handling" (chỉ dùng cho manual) ---
 
-  // image handling
-  let manualQImgFile = null, manualAImgFiles = [null, null, null, null];
-  let manualQImgUrl = "", manualAImgUrls = ["","","",""];
-  function handleImgInput(input, preview, removeBtn, setFile, setUrl) {
-    input.addEventListener("change", function() {
-      if(this.files && this.files[0]) {
-        setFile(this.files[0]);
-        preview.src = URL.createObjectURL(this.files[0]);
-        preview.style.display = "";
-        removeBtn.style.display = "";
-        setUrl("");
-      }
-    });
-    removeBtn.addEventListener("click", function() {
-      setFile(null);
-      preview.src = "";
-      preview.style.display = "none";
-      removeBtn.style.display = "none";
-      input.value = "";
-      setUrl("");
-    });
-  }
-  handleImgInput(manualQuestionImageInput, manualQuestionImgPreview, manualRemoveQuestionImgBtn, f=>manualQImgFile=f, url=>manualQImgUrl=url);
-  handleImgInput(manualAnswerAImgInput, manualAnswerAImgPreview, manualRemoveAImgBtn, f=>manualAImgFiles[0]=f, url=>manualAImgUrls[0]=url);
-  handleImgInput(manualAnswerBImgInput, manualAnswerBImgPreview, manualRemoveBImgBtn, f=>manualAImgFiles[1]=f, url=>manualAImgUrls[1]=url);
-  handleImgInput(manualAnswerCImgInput, manualAnswerCImgPreview, manualRemoveCImgBtn, f=>manualAImgFiles[2]=f, url=>manualAImgUrls[2]=url);
-  handleImgInput(manualAnswerDImgInput, manualAnswerDImgPreview, manualRemoveDImgBtn, f=>manualAImgFiles[3]=f, url=>manualAImgUrls[3]=url);
-
-  // duplication & normalization
+  // duplication & normalization (Giữ lại cho Moodle Import)
   let importedQuestions = [];
   let allQuestionsForSubject = [];
   let imagesFoundCount = 0;
@@ -316,34 +164,13 @@ document.addEventListener("DOMContentLoaded", () => {
     return qs;
   }
 
-  // UI controls
-  const backToQuestionChoiceBtn = document.getElementById("backToQuestionChoiceBtn");
-  const backToQuestionChoiceBtn2 = document.getElementById("backToQuestionChoiceBtn2");
-  const importHtmlSection = document.getElementById("importHtmlSection");
-  const manualQuestionSection = document.getElementById("manualQuestionSection");
+  // --- Đã xóa "UI controls" (các nút chuyển đổi giao diện) ---
   const importHtmlResult = document.getElementById("importHtmlResult");
   const importHtmlInput = document.getElementById("importHtmlInput");
   const saveImportBtn = document.getElementById("saveImportBtn");
   const subjectDropdownImport = document.getElementById("subjectDropdownImport");
-  const manualQuestionForm = document.getElementById("manualQuestionForm");
 
-  document.getElementById("questionImportHtmlBtn").onclick = () => {
-    document.getElementById("questionUploadChoice").style.display = "none";
-    importHtmlSection.style.display = "block";
-    manualQuestionSection.style.display = "none";
-  };
-  document.getElementById("questionManualBtn").onclick = () => {
-    document.getElementById("questionUploadChoice").style.display = "none";
-    importHtmlSection.style.display = "none";
-    manualQuestionSection.style.display = "block";
-  };
-  backToQuestionChoiceBtn.onclick = backToQuestionChoiceBtn2.onclick = () => {
-    document.getElementById("questionUploadChoice").style.display = "block";
-    importHtmlSection.style.display = "none";
-    manualQuestionSection.style.display = "none";
-  };
-
-  // security checks using getDoc (config/security_code)
+  // security checks (chỉ giữ lại của Import)
   let questionSecOKImport = false;
   document.getElementById("questionSecurityCodeImport").addEventListener("input", async function() {
     const val = this.value.trim();
@@ -368,51 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  let questionSecOKManual = false;
-  document.getElementById("questionSecurityCodeManual").addEventListener("input", async function() {
-    const val = this.value.trim();
-    const statusEl = document.getElementById("questionSecurityCodeStatusManual");
-    statusEl.textContent = val ? "Đang kiểm tra..." : "";
-    questionSecOKManual = false;
-    manualSubmitQuestionBtn.disabled = true;
-    if (!val) { statusEl.textContent = ""; return; }
-    try {
-      const docRef = doc(db, "config", "security_code");
-      const snap = await getDoc(docRef);
-      if (snap.exists() && snap.data().code === val) {
-        questionSecOKManual = true;
-        statusEl.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
-        manualSubmitQuestionBtn.disabled = false;
-      } else {
-        statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
-      }
-    } catch (err) {
-      console.error("Lỗi kiểm tra mã manual:", err);
-      statusEl.innerHTML = '<span class="text-danger">Lỗi kiểm tra mã!</span>';
-    }
-  });
-
-  const syllabusSubmitBtn = document.getElementById("syllabusSubmitBtn");
-  document.getElementById("syllabusSecurityCode").addEventListener("input", async function() {
-    const val = this.value.trim();
-    const statusEl = document.getElementById("syllabusSecurityCodeStatus");
-    statusEl.textContent = val ? "Đang kiểm tra..." : "";
-    syllabusSubmitBtn.disabled = true;
-    if (!val) { statusEl.textContent = ""; return; }
-    try {
-      const docRef = doc(db, "config", "security_code");
-      const snap = await getDoc(docRef);
-      if (snap.exists() && snap.data().code === val) {
-        statusEl.innerHTML = '<span class="text-success">Mã hợp lệ!</span>';
-        syllabusSubmitBtn.disabled = false;
-  S     } else {
-        statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
-      }
-    } catch (err) {
-      console.error("Lỗi kiểm tra mã syllabus:", err);
-      statusEl.innerHTML = '<span class="text-danger">Lỗi kiểm tra mã!</span>';
-    }
-  });
+  // --- Đã xóa security check cho "Manual" và "Syllabus" ---
 
   // import HTML handling
   subjectDropdownImport.addEventListener("change", async function() {
@@ -468,15 +251,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const answerNodes = Array.from(q.querySelectorAll('.answer > div'));
         const answers = answerNodes.map(ansNode => extractTextAndLaTeX(ansNode.querySelector('.flex-fill, div.ml-1, .specificfeedback') || ansNode));
         let correctIdx = -1;
-        
-        // =================================================================
-        // === SỬA ĐỔI TẠI ĐÂY ===
-        // Tìm kiếm ở cả '.rightanswer' (theme cũ) và '.outcome' (theme mới)
+        
         const rightAnswerNode = q.querySelector('.rightanswer') || q.querySelector('.outcome');
         const rightAnswerText = rightAnswerNode?.innerText || '';
-        // === KẾT THÚC SỬA ĐỔI ===
-        // =================================================================
-
         const match = rightAnswerText.match(/(?:The correct answer is:|Câu trả lời đúng là:)\s*(.+)$/);
 
         if (match) {
@@ -507,11 +284,11 @@ document.addEventListener("DOMContentLoaded", () => {
       let summaryMessage = `<div class="p-2 bg-light border rounded mb-2">
         <b>Tổng quan:</b><br/>
         - Trích xuất: <b>${importedQuestions.length}</b> câu hỏi.<br/>
-        - Phát hiện: <b>${imagesFoundCount}</b> hình ảnh (cần thêm thủ công).<br/>
+        - Phát hiện: <b>${imagesFoundCount}</b> hình ảnh (sẽ bị bỏ qua).<br/>
         - Trùng lặp: <b>${duplicateCount}</b> câu hỏi (sẽ được bỏ qua).
         </div>`;
       if (imagesFoundCount > 0) {
-        summaryMessage += `<div class="alert alert-warning small p-2"><b>Lưu ý:</b> Các câu hỏi chứa <span class="image-warning-text">[HÌNH ẢNH]</span> sẽ không được lưu kèm ảnh. Vui lòng chỉnh sửa và thêm ảnh thủ công sau.</div>`;
+        summaryMessage += `<div class="alert alert-warning small p-2"><b>Lưu ý:</b> Các câu hỏi chứa <span class="image-warning-text">[HÌNH ẢNH]</span> sẽ không được lưu kèm ảnh.</div>`;
       }
       let htmlResult = summaryMessage;
       importedQuestions.forEach((q) => {
@@ -524,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         if(q.duplicate)
           htmlResult += `<div class="import-duplicate-message">[Trùng] Câu hỏi này đã có trong CSDL và sẽ không được lưu.</div>`;
-        htmlResult += `</div>`;
+D       htmlResult += `</div>`;
       });
       importHtmlResult.innerHTML = htmlResult;
       if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
@@ -546,7 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
     saveImportBtn.disabled = true;
     saveImportBtn.textContent = "Đang lưu...";
     const securityCode = document.getElementById("questionSecurityCodeImport").value;
-    let success = 0, fail = 0;
+s   let success = 0, fail = 0;
     for (const q of questionsToSave) {
       try {
         await addDoc(collection(db, "cau_hoi"), {
@@ -568,105 +345,24 @@ document.addEventListener("DOMContentLoaded", () => {
     else {
       saveImportBtn.disabled = false;
       saveImportBtn.textContent = "💾 Lưu vào CSDL";
-    }
+G   }
   };
 
-  // manual add question (keep security_code saved as requested)
-  manualQuestionForm.addEventListener("submit", async function(e) {
-    e.preventDefault();
-    if (!questionSecOKManual) { alert("Chưa xác thực mã bảo mật!"); return; }
-    const subjectId = document.getElementById("subjectDropdownManual").value;
-    const qText = document.getElementById("manualQuestionText").value.trim();
-    const a = document.getElementById("manualAnswerA").value.trim();
-    const b = document.getElementById("manualAnswerB").value.trim();
-    const c = document.getElementById("manualAnswerC").value.trim();
-    const d = document.getElementById("manualAnswerD").value.trim();
-    const correct = document.getElementById("manualCorrectAnswerDropdown").value;
-    if (!subjectId || !qText || !a || !b || !c || !d || !correct) { alert("Vui lòng điền đầy đủ thông tin."); return; }
+  // --- Đã xóa "manual add question" ---
+  // --- Đã xóa "syllabus submit" ---
 
-    manualSubmitQuestionBtn.disabled = true;
-    manualSubmitQuestionBtn.textContent = "Đang xử lý...";
-
-    let noi_dung_img = '', lua_chon = {a, b, c, d};
-    try {
-        if (manualQImgFile) noi_dung_img = await uploadToDrive(manualQImgFile);
-        if (manualAImgFiles[0]) lua_chon.aImg = await uploadToDrive(manualAImgFiles[0]);
-        if (manualAImgFiles[1]) lua_chon.bImg = await uploadToDrive(manualAImgFiles[1]);
-        if (manualAImgFiles[2]) lua_chon.cImg = await uploadToDrive(manualAImgFiles[2]);
-        if (manualAImgFiles[3]) lua_chon.dImg = await uploadToDrive(manualAImgFiles[3]);
-    } catch (err) {
-        alert("Lỗi upload hình ảnh: " + err.message);
-        manualSubmitQuestionBtn.disabled = false;
-        manualSubmitQuestionBtn.textContent = "Thêm câu hỏi";
-        return;
-    }
-
-    const existSet = await loadQuestionsForSubject(subjectId);
-    if (isDuplicateInSet({noi_dung: qText, dap_an_dung: correct, lua_chon}, existSet)) {
-      alert("Câu hỏi này đã tồn tại trong môn học với đáp án đúng giống nhau!");
-      manualSubmitQuestionBtn.disabled = false;
-      manualSubmitQuestionBtn.textContent = "Thêm câu hỏi";
-      return;
-    }
-
-    const securityCode = document.getElementById("questionSecurityCodeManual").value;
-    try {
-      await addDoc(collection(db, "cau_hoi"), {
-        mon_hoc_id: subjectId,
-        noi_dung: qText,
-        noi_dung_img: noi_dung_img,
-G        lua_chon,
-        dap_an_dung: correct,
-        security_code: securityCode
-      });
-      alert("Đã thêm câu hỏi!");
-      window.location.reload();
-    } catch (e) {
-      console.error("Lỗi khi thêm câu hỏi:", e);
-      alert("Thêm câu hỏi thất bại: " + e.message + "\nVui lòng kiểm tra Console (F12).");
-      manualSubmitQuestionBtn.disabled = false;
-      manualSubmitQuestionBtn.textContent = "Thêm câu hỏi";
-    }
-  });
-
-  // syllabus submit (keep security_code saved as requested)
-  document.getElementById("syllabusForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
-    if (syllabusSubmitBtn.disabled) { alert("Chưa xác thực mã bảo mật!"); return; }
-    const subjectId = document.getElementById("syllabusSubjectDropdown").value;
-    const owner = document.getElementById("syllabusOwner").value.trim();
-    const fileUrl = document.getElementById("syllabusFileUrlInput").value.trim();
-    if (!subjectId || !fileUrl) { alert("Điền đầy đủ thông tin và nhập đường link!"); return; }
-    syllabusSubmitBtn.disabled = true;
-    const securityCode = document.getElementById("syllabusSecurityCode").value;
-    try {
-      await addDoc(collection(db, "syllabus"), {
-        mon_hoc_id: subjectId,
-        owner: owner,
-        file_url: fileUrl,
-        uploaded_at: (new Date()).toISOString(),
-        security_code: securityCode
-      });
-      alert("Đã lưu đề cương!");
-      window.location.reload();
-    } catch (e) {
-  D     console.error("Lỗi khi lưu đề cương:", e);
-      alert("Lưu thất bại: " + e.message + "\nVui lòng kiểm tra Console (F12).");
-      syllabusSubmitBtn.disabled = false;
-    }
-  });
 });
 </script>
-</script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-  // Tải nội dung của file nav.html
-  fetch('/menu.html') // Quan trọng: Đường dẫn này phải trỏ đúng file nav.html
-    .then(response => response.text())
-    .then(data => {
-      // Chèn nội dung menu vào thẻ "navbar-placeholder"
-      document.getElementById('navbar-placeholder').innerHTML = data;
-    });
-  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  // Tải nội dung của file nav.html
+  fetch('/menu.html') // Quan trọng: Đường dẫn này phải trỏ đúng file nav.html
+    .then(response => response.text())
+    .then(data => {
+      // Chèn nội dung menu vào thẻ "navbar-placeholder"
+      document.getElementById('navbar-placeholder').innerHTML = data;
+    });
+  </script>
 </body>
 </html>
