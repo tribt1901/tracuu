@@ -14,7 +14,17 @@
     .muted { color:#6b7280; font-size:0.9rem }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+
+<body class="bg-light">
+  <!-- Navbar sẽ load từ file menu.html -->
+  <header id="navbar-placeholder"></header>
+
+  <!-- Bộ đếm người online -->
+  <div class="online-counter-box">
+    🟢 Hiện có Bạn và <span id="online-counter">0</span> người nữa đang truy cập hệ thống.
+  </div>
+
+  <!-- Main app -->
   <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden my-6">
     <header class="bg-blue-600 p-6">
       <h1 class="text-2xl text-white font-bold">Công cụ Học tiếng Anh — Offline Transcription</h1>
@@ -22,7 +32,7 @@
     </header>
 
     <main class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Column 1: Upload + transcript -->
+      <!-- Cột 1: Upload + transcript -->
       <div class="space-y-6">
         <div class="rounded-lg border p-4">
           <label class="block font-medium mb-2">1. Chọn file âm thanh (MP3)</label>
@@ -40,7 +50,7 @@
         </div>
       </div>
 
-      <!-- Column 2: Question + Search -->
+      <!-- Cột 2: Nhập câu hỏi + tìm kiếm -->
       <div class="space-y-6">
         <div class="rounded-lg border p-4">
           <h3 class="font-semibold mb-3">2. Nhập câu hỏi</h3>
@@ -76,13 +86,11 @@
     </main>
   </div>
 
+  <!-- ---------- Script chính ---------- -->
   <script>
-    // ---------- Config ----------
-    // Đặt đường dẫn tới worker và model (local trong repo)
-    const WORKER_PATH = './whisper_worker.js'; // worker template (cần sửa để trỏ tới WASM engine)
-    // modelUrl: thư mục hoặc file model cần đặt trong repo, ví dụ '/models/ggml-base.en.bin' hoặc '/vosk/model'
-    const DEFAULT_MODEL_URL = './models/ggml-small.en.bin'; // ví dụ tên file model (bạn cần thay bằng file thật)
-    // ---------- UI elements ----------
+    const WORKER_PATH = '/whisper_worker.js';
+    const DEFAULT_MODEL_URL = '/whisper/ggml-small.en.bin';
+
     const audioUpload = document.getElementById('audio-upload');
     const audioPlayer = document.getElementById('audio-player');
     const transcriptDisplay = document.getElementById('transcript-display');
@@ -100,14 +108,12 @@
     let worker = null;
     let workerReady = false;
 
-    // Khởi tạo worker (tạo 1 lần)
     function initWorker() {
       if (worker) return;
       try {
         worker = new Worker(WORKER_PATH);
       } catch (e) {
         workerStatusEl.textContent = 'Không thể tạo worker: ' + e.message;
-        console.error(e);
         return;
       }
       worker.onmessage = (ev) => {
@@ -115,114 +121,63 @@
         if (!m) return;
         if (m.type === 'ready') {
           workerReady = true;
-          workerStatusEl.textContent = `Worker: sẵn sàng. Engine: ${m.engine || 'unknown'}.`;
-        } else if (m.type === 'log') {
-          workerStatusEl.textContent = m.message;
+          workerStatusEl.textContent = `Worker: sẵn sàng. Engine: ${m.engine || 'unknown'}`;
         } else if (m.type === 'progress') {
           transcriptionProgress.textContent = m.message;
         } else if (m.type === 'result') {
           transcriptContent = m.text || '';
-          transcriptDisplay.textContent = transcriptContent || 'Không có văn bản trả về.';
+          transcriptDisplay.textContent = transcriptContent;
           transcriptionProgress.textContent = '';
-          statusEl.textContent = 'Đã trích xuất thành công (offline).';
+          statusEl.textContent = 'Đã trích xuất thành công.';
         } else if (m.type === 'error') {
           transcriptionProgress.textContent = '';
-          statusEl.textContent = 'Lỗi worker: ' + (m.message || 'unknown');
-        } else {
-          console.log('Worker message', m);
+          statusEl.textContent = 'Lỗi: ' + m.message;
         }
       };
-      worker.onerror = (err) => {
-        console.error('Worker error', err);
-        workerStatusEl.textContent = 'Worker error: ' + err.message;
-      };
-      // yêu cầu worker load model (worker implement phải xử lý cmd: 'load-model')
       worker.postMessage({ cmd: 'init', modelUrl: DEFAULT_MODEL_URL });
     }
 
-    // Audio decode -> mono Float32Array (sampleRate from AudioContext)
     async function decodeAudioFileToFloat32(file) {
       const arrayBuffer = await file.arrayBuffer();
-      const audioCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 2, 16000);
-      // dùng AudioContext tạm để decode (bảo đảm browser support decodeAudioData)
-      const decodeCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const audioBuffer = await decodeCtx.decodeAudioData(arrayBuffer);
-      // Nếu audioBuffer.sampleRate !== targetRate chúng ta resample bằng OfflineAudioContext
-      const targetRate = 16000; // whisper/vosk thường chấp nhận 16000 hoặc 16000-48000 => chọn 16000 để giảm kích thước
-      if (audioBuffer.sampleRate === targetRate && audioBuffer.numberOfChannels === 1) {
-        // trả về copy để không giữ reference tới AudioBuffer
-        return { samples: audioBuffer.getChannelData(0), sampleRate: targetRate };
-      }
-      // resample
-      const lengthInSec = audioBuffer.duration;
-      const offlineCtx = new OfflineAudioContext(1, Math.ceil(lengthInSec * targetRate), targetRate);
-      // tạo buffer source
-      const src = offlineCtx.createBufferSource();
-      // mixdown to mono
-      const mixBuffer = offlineCtx.createBuffer(1, audioBuffer.length, audioBuffer.sampleRate);
-      const out = mixBuffer.getChannelData(0);
-      // mix channels
-      for (let c = 0; c < audioBuffer.numberOfChannels; c++) {
-        const ch = audioBuffer.getChannelData(c);
-        for (let i = 0; i < ch.length; i++) out[i] = (out[i] || 0) + ch[i] / audioBuffer.numberOfChannels;
-      }
-      src.buffer = mixBuffer;
-      src.connect(offlineCtx.destination);
-      src.start(0);
-      const rendered = await offlineCtx.startRendering();
-      return { samples: rendered.getChannelData(0), sampleRate: rendered.sampleRate };
+      const ctx = new AudioContext();
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      const channel = audioBuffer.numberOfChannels > 1
+        ? audioBuffer.getChannelData(0).map((v, i) =>
+            (v + audioBuffer.getChannelData(1)[i]) / 2
+          )
+        : audioBuffer.getChannelData(0);
+      return { samples: channel, sampleRate: audioBuffer.sampleRate };
     }
 
-    // Convert Float32 [-1,1] to Int16 (for many WASM engines)
     function floatTo16BitPCM(float32Array) {
-      const l = float32Array.length;
-      const buffer = new Int16Array(l);
-      for (let i = 0; i < l; i++) {
+      const buffer = new Int16Array(float32Array.length);
+      for (let i = 0; i < float32Array.length; i++) {
         let s = Math.max(-1, Math.min(1, float32Array[i]));
         buffer[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
       }
       return buffer;
     }
 
-    // Khi user chọn audio
     audioUpload.addEventListener('change', async (ev) => {
-      const file = ev.target.files && ev.target.files[0];
+      const file = ev.target.files[0];
       if (!file) return;
       initWorker();
-
       audioPlayer.src = URL.createObjectURL(file);
       audioPlayer.classList.remove('hidden');
-
-      statusEl.textContent = 'Đang giải mã audio và gửi vào engine offline...';
-      transcriptionProgress.textContent = 'Chuẩn bị...';
-      transcriptDisplay.textContent = 'Đang trích xuất... (cần model WASM + dữ liệu model trong repo).';
-
+      transcriptionProgress.textContent = 'Đang giải mã...';
       try {
         const { samples, sampleRate } = await decodeAudioFileToFloat32(file);
-        transcriptionProgress.textContent = 'Đã decode audio. sampleRate=' + sampleRate + ', length=' + samples.length;
-        // convert to Int16 (copy)
         const int16 = floatTo16BitPCM(samples);
-        transcriptionProgress.textContent = 'Chuẩn bị gửi dữ liệu đến worker...';
-
-        // Gửi chuyển nhượng mảng (transfer) để giảm copy
-        worker.postMessage({
-          cmd: 'transcribe',
-          audioBuffer: int16.buffer,
-          sampleRate: sampleRate
-        }, [int16.buffer]);
-
-        statusEl.textContent = 'Đã gửi audio vào worker, chờ kết quả...';
+        worker.postMessage({ cmd: 'transcribe', audioBuffer: int16.buffer, sampleRate }, [int16.buffer]);
+        statusEl.textContent = 'Đang xử lý audio...';
       } catch (err) {
-        console.error(err);
-        statusEl.textContent = 'Lỗi khi giải mã/chuẩn bị audio: ' + err.message;
-        transcriptionProgress.textContent = '';
+        statusEl.textContent = 'Lỗi: ' + err.message;
       }
     });
 
-    // Tab switching (giữ giống UI trước)
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
-        const t = tab.getAttribute('data-tab');
+        const t = tab.dataset.tab;
         tabs.forEach(x => x.classList.remove('active'));
         tabContents.forEach(c => c.classList.remove('active'));
         tab.classList.add('active');
@@ -230,55 +185,72 @@
       });
     });
 
-    // Search trong transcript
     searchBtn.addEventListener('click', () => {
-      const q = (textInput.value || '').trim().toLowerCase();
-      if (!q) { statusEl.textContent = 'Vui lòng nhập câu hỏi.'; return; }
-      if (!transcriptContent) { statusEl.textContent = 'Chưa có transcript. Hãy tải MP3 và chờ trích xuất.'; return; }
-      statusEl.textContent = 'Đang tìm...';
-      const low = transcriptContent.toLowerCase();
-      const idx = low.indexOf(q);
+      const q = textInput.value.trim().toLowerCase();
+      if (!q) { statusEl.textContent = 'Nhập câu hỏi.'; return; }
+      if (!transcriptContent) { statusEl.textContent = 'Chưa có transcript.'; return; }
+      const idx = transcriptContent.toLowerCase().indexOf(q);
       if (idx === -1) {
         statusEl.textContent = 'Không tìm thấy.';
-        answerDisplay.textContent = 'Không tìm thấy trong transcript.';
+        answerDisplay.textContent = 'Không tìm thấy.';
         return;
       }
       const before = Math.max(0, idx - 80);
-      const after = Math.min(transcriptContent.length, idx + q.length + 220);
+      const after = Math.min(transcriptContent.length, idx + 220);
       const snippet = transcriptContent.substring(before, after);
-      // highlight
-      const highlighted = snippet.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'ig'), (m) => `<mark style="background:yellow">${m}</mark>`);
-      answerDisplay.innerHTML = highlighted;
-      statusEl.textContent = 'Đã tìm thấy (đã hiển thị đoạn văn).';
+      answerDisplay.innerHTML = snippet.replace(new RegExp(q, 'gi'), m => `<mark style="background:yellow">${m}</mark>`);
+      statusEl.textContent = 'Đã tìm thấy.';
     });
 
-    // Voice recognition bằng Web Speech (vẫn client-side, không cần WASM model)
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recog = new SpeechRecognition();
-      recog.lang = 'en-US';
-      recog.interimResults = false;
-      voiceInputBtn.addEventListener('click', () => {
-        statusEl.textContent = 'Đang nghe qua microphone (Web Speech API).';
-        recog.start();
-      });
-      recog.onresult = (e) => {
-        textInput.value = e.results[0][0].transcript;
-        statusEl.textContent = 'Đã nhận thoại (Web Speech).';
-      };
-      recog.onerror = (e) => {
-        statusEl.textContent = 'Lỗi Web Speech: ' + e.error;
-      };
-    } else {
-      voiceInputBtn.disabled = true;
-      voiceInputBtn.textContent = 'Trình duyệt không hỗ trợ Web Speech API';
-    }
-
-    // Khởi tạo worker ngay khi load (để tải model sẵn)
     initWorker();
+  </script>
 
-    // Nhận lệnh từ worker: nếu cần bạn có thể expose hàm để worker gửi transcript về
-    // Worker template sẽ gửi { type: 'result', text: '...' } khi hoàn tất
+  <!-- ---------- Firebase & Online Counter ---------- -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getDatabase, ref, push, onValue, onDisconnect, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const firebaseConfig = {
+        apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
+        authDomain: "tracuu-d3ee9.firebaseapp.com",
+        databaseURL: "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "tracuu-d3ee9",
+        storageBucket: "tracuu-d3ee9.appspot.com",
+        messagingSenderId: "593568604435",
+        appId: "1:593568604435:web:9a5145457a8ee734143ae6"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const rtdb = getDatabase(app, firebaseConfig.databaseURL);
+
+      // Đếm số người online
+      (function initOnlineCounter() {
+        const onlineCounterEl = document.getElementById('online-counter');
+        const connectionsRef = ref(rtdb, 'connections');
+        const myRef = push(connectionsRef);
+        onDisconnect(myRef).remove().catch(()=>{});
+        set(myRef, true);
+        onValue(connectionsRef, snap => {
+          let count = 0;
+          if (snap.exists()) {
+            const val = snap.val();
+            count = typeof val === 'object' ? Object.keys(val).length : 1;
+          }
+          onlineCounterEl.textContent = count;
+        });
+      })();
+
+      // Load menu
+      fetch('/menu.html')
+        .then(r => r.text())
+        .then(html => {
+          document.getElementById('navbar-placeholder').innerHTML = html;
+        })
+        .catch(()=>{});
+    });
   </script>
 </body>
 </html>
