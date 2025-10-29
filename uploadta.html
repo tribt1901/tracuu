@@ -179,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if(importedQuestions.length > 0) saveImportBtn.disabled = false;
       } else {
         statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
-a     }
+      }
     } catch (err) {
       console.error("Lỗi kiểm tra mã import:", err);
       statusEl.innerHTML = '<span class="text-danger">Lỗi kiểm tra mã!</span>';
@@ -238,7 +238,14 @@ a     }
         let qtextNode = q.querySelector('.qtext');
         let questionText = qtextNode ? extractTextAndLaTeX(qtextNode) : '';
         const answerNodes = Array.from(q.querySelectorAll('.answer > div'));
-        const answers = answerNodes.map(ansNode => extractTextAndLaTeX(ansNode.querySelector('.flex-fill, div.ml-1, .specificfeedback') || ansNode));
+        
+        // =================================================================
+        // === SỬA ĐỔI TẠI ĐÂY ===
+        // Đọc text từ 'label' thay vì '.specificfeedback'
+        const answers = answerNodes.map(ansNode => extractTextAndLaTeX(ansNode.querySelector('.flex-fill, div.ml-1, label') || ansNode));
+        // === KẾT THÚC SỬA ĐỔI ===
+        // =================================================================
+
         let correctIdx = -1;
         
         const rightAnswerNode = q.querySelector('.rightanswer') || q.querySelector('.outcome');
@@ -248,7 +255,7 @@ a     }
         if (match) {
           const correctValue = match[1].trim();
           correctIdx = answers.findIndex(a => normalizeCompareString(a) === normalizeCompareString(correctValue));
-        }
+AN       }
         if (correctIdx === -1) {
           correctIdx = answerNodes.findIndex(node => node.classList.contains('correct'));
         }
@@ -257,7 +264,7 @@ a     }
         if (questionText && answers.length >= 2 && correctKey) {
           rawQuestions.push({
             questionText, answers, correctIdx, correctKey,
-s           lua_chon: { a: answers[0]||"", b: answers[1]||"", c: answers[2]||"", d: answers[3]||"" }
+            lua_chon: { a: answers[0]||"", b: answers[1]||"", c: answers[2]||"", d: answers[3]||"" }
           });
         }
       });
@@ -270,7 +277,7 @@ s           lua_chon: { a: answers[0]||"", b: answers[1]||"", c: answers[2]
       });
 
       const duplicateCount = importedQuestions.filter(q => q.duplicate).length;
-      let summaryMessage = `<div class="p-2 bg-light border rounded mb-2">
+i     let summaryMessage = `<div class="p-2 bg-light border rounded mb-2">
         <b>Tổng quan:</b><br/>
         - Trích xuất: <b>${importedQuestions.length}</b> câu hỏi.<br/>
         - Phát hiện: <b>${imagesFoundCount}</b> hình ảnh (sẽ bị bỏ qua).<br/>
@@ -285,7 +292,7 @@ s           lua_chon: { a: answers[0]||"", b: answers[1]||"", c: answers[2]
           <span class="import-question-title">${q.questionText}</span><br>`;
         q.answers.forEach((a,i) => {
           htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
-            ${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span class="small"> (Đáp án đúng)</span>':''}
+CSS           ${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span class="small"> (Đáp án đúng)</span>':''}
           </div>`;
         });
         if(q.duplicate)
@@ -302,7 +309,7 @@ s           lua_chon: { a: answers[0]||"", b: answers[1]||"", c: answers[2]
 
   // save imported questions (keep security_code saved as requested)
   saveImportBtn.onclick = async function() {
-S   if (!questionSecOKImport) { alert("Chưa xác thực mã bảo mật!"); return; }
+    if (!questionSecOKImport) { alert("Chưa xác thực mã bảo mật!"); return; }
     const mon_hoc_id = subjectDropdownImport.value;
     const questionsToSave = importedQuestions.filter(q => !q.duplicate);
     if(questionsToSave.length === 0) {
@@ -326,7 +333,7 @@ S   if (!questionSecOKImport) { alert("Chưa xác thực mã bảo mật!"); re
         success++;
       } catch(e) {
         fail++;
-      { console.error("Lỗi khi lưu câu hỏi:", e);
+        console.error("Lỗi khi lưu câu hỏi:", e);
 section   }
     }
     alert(`Đã lưu ${success} câu hỏi mới, bỏ qua ${importedQuestions.length - success} câu trùng.${fail > 0 ? ` Lỗi ${fail} câu. Vui lòng kiểm tra Console (F12) để xem chi tiết.` : ''}`);
