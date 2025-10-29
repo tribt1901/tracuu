@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ Hỗ trợ Học tiếng Anh</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tải Tesseract.js (Thư viện OCR) -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js' defer></script>
+    <style>
+        /* Sử dụng font Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Ẩn các tab input mặc định */
+        .input-tab-content {
+            display: none;
+        }
+        /* Hiển thị tab đang hoạt động */
+        .input-tab-content.active {
+            display: block;
+        }
+        /* Kiểu cho nút tab đang hoạt động */
+        .tab-btn.active {
+            border-bottom-color: #3B82F6; /* blue-500 */
+            color: #3B82F6;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+        <header class="bg-blue-600 p-6">
+            <h1 class="text-2xl md:text-3xl font-bold text-white">
+                Công cụ Hỗ trợ Học tiếng Anh
+            </h1>
+            <p class="text-blue-100 mt-1">
+                Tải lên tệp âm thanh và nội dung, sau đó đặt câu hỏi để tìm kiếm.
+            </p>
+        </header>
+
+        <main class="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Cột 1: Tải lên và Hiển thị -->
+            <div class="space-y-6">
+                <!-- Tải lên tệp âm thanh -->
+                <div class="rounded-lg border border-gray-200 p-4">
+                    <label for="audio-upload" class="block text-sm font-medium text-gray-700 mb-2">
+                        1. Tải lên tệp âm thanh (MP3)
+                    </label>
+                    <input type="file" id="audio-upload" accept="audio/mp3" class="w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-lg file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100 cursor-pointer">
+                    <audio id="audio-player" controls class="w-full mt-4 rounded-lg hidden"></audio>
+                </div>
+
+                <!-- Tải lên tệp nội dung -->
+                <div class="rounded-lg border border-gray-200 p-4">
+                    <label for="transcript-upload" class="block text-sm font-medium text-gray-700 mb-2">
+                        2. Tải lên tệp nội dung (.txt)
+                    </label>
+                    <input type="file" id="transcript-upload" accept=".txt" class="w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-lg file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-green-50 file:text-green-700
+                        hover:file:bg-green-100 cursor-pointer">
+                </div>
+                
+                <!-- Hiển thị nội dung -->
+                <div class="rounded-lg border border-gray-200 p-4">
+                     <h3 class="text-lg font-semibold text-gray-800 mb-2">Nội dung văn bản</h3>
+                     <div id="transcript-display" class="w-full h-48 bg-gray-50 rounded-lg p-3 overflow-y-auto text-gray-600 text-sm border border-gray-200">
+                        Vui lòng tải lên một tệp .txt để xem nội dung...
+                     </div>
+                </div>
+            </div>
+
+            <!-- Cột 2: Nhập câu hỏi và Kết quả -->
+            <div class="space-y-6">
+                <!-- Tab nhập câu hỏi -->
+                <div class="rounded-lg border border-gray-200 p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">3. Nhập câu hỏi</h3>
+                    <div class="border-b border-gray-200 mb-4">
+                        <nav class="flex space-x-4" aria-label="Tabs">
+                            <button class="tab-btn active" data-tab="text">
+                                <span class="material-icons-outlined text-sm mr-1">edit</span>Gõ tay
+                            </button>
+                            <button class="tab-btn" data-tab="image">
+                                <span class="material-icons-outlined text-sm mr-1">image</span>Quét ảnh
+                            </button>
+                            <button class="tab-btn" data-tab="voice">
+                                <span class="material-icons-outlined text-sm mr-1">mic</span>Giọng nói
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Nội dung các tab -->
+                    <div>
+                        <!-- Tab Gõ tay -->
+                        <div id="tab-text" class="input-tab-content active">
+                            <textarea id="text-input" class="w-full h-24 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Nhập câu hỏi của bạn ở đây..."></textarea>
+                        </div>
+                        <!-- Tab Quét ảnh (OCR) -->
+                        <div id="tab-image" class="input-tab-content">
+                            <input type="file" id="image-upload" accept="image/*" class="w-full text-sm text-gray-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-lg file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-indigo-50 file:text-indigo-700
+                                hover:file:bg-indigo-100 cursor-pointer">
+                        </div>
+                        <!-- Tab Giọng nói -->
+                        <div id="tab-voice" class="input-tab-content">
+                            <button id="voice-input-btn" class="w-full flex items-center justify-center py-3 px-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition duration-150">
+                                <span class="material-icons-outlined mr-2">mic</span>
+                                Nhấn để nói
+                            </button>
+                        </div>
+                    </div>
+                     <!-- Nút tìm kiếm -->
+                    <button id="search-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-150 mt-4">
+                        Tìm kiếm trong nội dung
+                    </button>
+                </div>
+
+                <!-- Kết quả -->
+                <div class="rounded-lg border border-gray-200 p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Kết quả tìm kiếm</h3>
+                    <div id="status" class="text-sm text-gray-500 mb-2 italic">Trạng thái: Sẵn sàng...</div>
+                    <div id="answer-display" class="w-full min-h-[5rem] bg-gray-50 rounded-lg p-3 text-gray-700 border border-gray-200">
+                        Kết quả sẽ xuất hiện ở đây...
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Tải biểu tượng Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const audioUpload = document.getElementById('audio-upload');
+            const audioPlayer = document.getElementById('audio-player');
+            const transcriptUpload = document.getElementById('transcript-upload');
+            const transcriptDisplay = document.getElementById('transcript-display');
+            const imageUpload = document.getElementById('image-upload');
+            const textInput = document.getElementById('text-input');
+            const voiceInputBtn = document.getElementById('voice-input-btn');
+            const searchBtn = document.getElementById('search-btn');
+            const answerDisplay = document.getElementById('answer-display');
+            const status = document.getElementById('status');
+            const tabs = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.input-tab-content');
+
+            let transcriptContent = ""; // Biến lưu trữ nội dung văn bản
+            let currentInputMode = 'text'; // 'text', 'image', 'voice'
+
+            // --- Xử lý Tải tệp ---
+
+            // 1. Tải tệp âm thanh
+            audioUpload.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const objectUrl = URL.createObjectURL(file);
+                    audioPlayer.src = objectUrl;
+                    audioPlayer.classList.remove('hidden');
+                    status.textContent = `Đã tải: ${file.name}`;
+                }
+            });
+
+            // 2. Tải tệp nội dung (.txt)
+            transcriptUpload.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        transcriptContent = e.target.result;
+                        // Hiển thị nội dung với ngắt dòng
+                        transcriptDisplay.innerHTML = transcriptContent.replace(/\n/g, '<br>'); 
+                        status.textContent = `Đã tải: ${file.name}`;
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // --- Xử lý Chuyển Tab ---
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetTab = tab.getAttribute('data-tab');
+
+                    // Bỏ active tất cả
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+
+                    // Active tab được chọn
+                    tab.classList.add('active');
+                    document.getElementById(`tab-${targetTab}`).classList.add('active');
+                    currentInputMode = targetTab;
+                    textInput.value = ""; // Xóa nội dung khi chuyển tab
+                    status.textContent = "Sẵn sàng...";
+                });
+            });
+
+            // --- Xử lý các phương thức nhập ---
+
+            // 3a. Quét ảnh (OCR)
+            imageUpload.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                status.textContent = "Đang nhận diện hình ảnh (OCR)... (Có thể mất một lúc)";
+                try {
+                    // 1. Tạo worker Tesseract
+                    const worker = await Tesseract.createWorker('eng', 1, {
+                        logger: m => console.log(m) // Xem log tiến trình trong console
+                    });
+                    
+                    // 2. Nhận diện văn bản
+                    const { data: { text } } = await worker.recognize(file);
+                    
+                    // 3. Hiển thị kết quả trong ô text-input
+                    textInput.value = text.trim();
+                    status.textContent = "Nhận diện ảnh thành công. Nhấn 'Tìm kiếm'.";
+                    
+                    // 4. Chuyển sang tab "Gõ tay" để xem kết quả OCR
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    document.querySelector('.tab-btn[data-tab="text"]').classList.add('active');
+                    document.getElementById('tab-text').classList.add('active');
+                    currentInputMode = 'text';
+
+                    // 5. Giải phóng worker
+                    await worker.terminate();
+
+                } catch (error) {
+                    console.error(error);
+                    status.textContent = "Lỗi khi nhận diện ảnh.";
+                }
+            });
+
+            // 3b. Nhận diện giọng nói
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'en-US'; // Nhận diện tiếng Anh
+                recognition.interimResults = false;
+
+                voiceInputBtn.addEventListener('click', () => {
+                    status.textContent = "Đang nghe... Vui lòng nói (tiếng Anh).";
+                    voiceInputBtn.classList.add('animate-pulse', 'bg-red-800');
+                    recognition.start();
+                });
+
+                recognition.onresult = (event) => {
+                    const speechResult = event.results[0][0].transcript;
+                    textInput.value = speechResult;
+                    status.textContent = "Đã nhận diện giọng nói. Nhấn 'Tìm kiếm'.";
+                    
+                    // Chuyển sang tab "Gõ tay" để xem kết quả
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    document.querySelector('.tab-btn[data-tab="text"]').classList.add('active');
+                    document.getElementById('tab-text').classList.add('active');
+                    currentInputMode = 'text';
+                };
+
+                recognition.onend = () => {
+                    voiceInputBtn.classList.remove('animate-pulse', 'bg-red-800');
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('Lỗi nhận diện giọng nói:', event.error);
+                    status.textContent = `Lỗi: ${event.error}`;
+                };
+
+            } else {
+                voiceInputBtn.disabled = true;
+                voiceInputBtn.textContent = "Trình duyệt không hỗ trợ nhận diện giọng nói";
+                voiceInputBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            }
+            
+            // --- Xử lý Tìm kiếm ---
+            searchBtn.addEventListener('click', () => {
+                const question = textInput.value.trim().toLowerCase();
+                const transcriptLower = transcriptContent.toLowerCase();
+                
+                if (!question) {
+                    status.textContent = "Vui lòng nhập câu hỏi.";
+                    return;
+                }
+                if (!transcriptContent) {
+                    status.textContent = "Vui lòng tải lên tệp nội dung (.txt).";
+                    return;
+                }
+
+                status.textContent = "Đang tìm kiếm...";
+                answerDisplay.innerHTML = "";
+                transcriptDisplay.innerHTML = transcriptContent.replace(/\n/g, '<br>'); // Reset highlight
+
+                const questionIndex = transcriptLower.indexOf(question);
+
+                if (questionIndex === -1) {
+                    status.textContent = "Không tìm thấy câu hỏi trong nội dung.";
+                    answerDisplay.textContent = "Không tìm thấy.";
+                } else {
+                    // Tìm thấy câu hỏi
+                    status.textContent = "Đã tìm thấy!";
+                    
+                    // Lấy câu hỏi gốc (đúng
+                    const originalQuestion = transcriptContent.substring(questionIndex, questionIndex + question.length);
+
+                    // Trích xuất "câu trả lời" (ví dụ: 150 ký tự tiếp theo)
+                    const answerLength = 150; 
+                    let answerSnippet = transcriptContent.substring(questionIndex + question.length, questionIndex + question.length + answerLength);
+                    
+                    // Cắt tại dấu chấm hoặc xuống dòng gần nhất
+                    const sentenceEnd = Math.min(
+                        answerSnippet.indexOf('.') > 0 ? answerSnippet.indexOf('.') : answerLength,
+                        answerSnippet.indexOf('\n') > 0 ? answerSnippet.indexOf('\n') : answerLength
+                    );
+                    
+                    answerSnippet = answerSnippet.substring(0, sentenceEnd + 1) + "...";
+
+                    // Hiển thị câu trả lời
+                    answerDisplay.innerHTML = `<mark class="bg-yellow-200 font-semibold">${originalQuestion}</mark> ${answerSnippet}`;
+
+                    // Đánh dấu trên màn hình nội dung
+                    const highlightedTranscript = transcriptContent.substring(0, questionIndex) +
+                        `<mark class="bg-yellow-200 font-semibold">${originalQuestion}</mark>` +
+                        `<mark class="bg-green-200">${answerSnippet.replace('...', '')}</mark>` +
+                        transcriptContent.substring(questionIndex + question.length + answerSnippet.length - 3);
+
+                    transcriptDisplay.innerHTML = highlightedTranscript.replace(/\n/g, '<br>');
+
+                    // Cuộn đến vị trí tìm thấy
+                    const markElement = transcriptDisplay.querySelector('mark');
+                    if (markElement) {
+                        markElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
