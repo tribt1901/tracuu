@@ -196,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // =================================================================
-  // === SỬA ĐỔI TẠI ĐÂY ===
+  // === SỬA ĐỔI TẠI ĐÂY (TỪ LẦN TRƯỚC) ===
   // Hàm này đã được cập nhật để bỏ qua các khối answer, outcome, và specificfeedback
   // khi trích xuất văn bản.
   function extractTextAndLaTeX(node) {
@@ -207,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
         result += child.textContent;
       } else if (child.nodeType === Node.ELEMENT_NODE) {
         
-        // Logic mới: Bỏ qua các khối div không mong muốn
+        // Logic mới: Bỏ qua các khối div không mong muốn
         if (child.classList && (
             child.classList.contains('answer') || 
             child.classList.contains('outcome') || 
@@ -230,7 +230,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     return result.replace(/\s+/g, ' ').trim();
   }
-  // === KẾT THÚC SỬA ĐỔI ===
   // =================================================================
 
   importHtmlInput.addEventListener("change", async function(e) {
@@ -251,14 +250,22 @@ document.addEventListener("DOMContentLoaded", () => {
       let rawQuestions = [];
 
       docx.querySelectorAll('.que').forEach(q => {
-        let qtextNode = q.querySelector('.qtext');
+        // =================================================================
+        // === SỬA ĐỔI TẠI ĐÂY ===
+        // Tìm trong .qtext, nếu không có thì tìm trong .formulation
+        let qtextNode = q.querySelector('.qtext') || q.querySelector('.formulation');
+        // =================================================================
+        
         // Hàm extractTextAndLaTeX mới sẽ chỉ lấy nội dung câu hỏi
         let questionText = qtextNode ? extractTextAndLaTeX(qtextNode) : '';
         
         const answerNodes = Array.from(q.querySelectorAll('.answer > div'));
         
-        // Logic này đã được sửa ở lần trước, tiếp tục dùng 'label'
-        const answers = answerNodes.map(ansNode => extractTextAndLaTeX(ansNode.querySelector('.flex-fill, div.ml-1, label') || ansNode));
+        // =================================================================
+        // === SỬA ĐỔI TẠI ĐÂY ===
+        // Chỉ trích xuất text từ bên trong 'label', nếu không có thì trả về rỗng.
+        const answers = answerNodes.map(ansNode => extractTextAndLaTeX(ansNode.querySelector('label')));
+        // =================================================================
 
         let correctIdx = -1;
         
@@ -268,10 +275,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (match) {
           const correctValue = match[1].trim();
-          // Việc extract 'answers' chính xác là mấu chốt ở đây
           correctIdx = answers.findIndex(a => normalizeCompareString(a) === normalizeCompareString(correctValue));
         }
         if (correctIdx === -1) {
+          // Fallback nếu không tìm thấy text "The correct answer is"
           correctIdx = answerNodes.findIndex(node => node.classList.contains('correct'));
         }
         const correctKey = correctIdx !== -1 ? ['a','b','c','d'][correctIdx] : '';
@@ -316,7 +323,13 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       importHtmlResult.innerHTML = htmlResult;
       if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
+t     
+      // =================================================================
+      // === SỬA ĐỔI TẠI ĐÂY ===
+      // Hiển thị nút "Lưu" nếu trích xuất được câu hỏi
       saveImportBtn.style.display = importedQuestions.length > 0 ? "inline-block" : "none";
+      // =================================================================
+      
       if (questionSecOKImport) saveImportBtn.disabled = false;
     };
     reader.readAsText(file);
@@ -348,7 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
         success++;
       } catch(e) {
         fail++;
-        console.error("Lỗi khi lưu câu hỏi:", e);
+  g       console.error("Lỗi khi lưu câu hỏi:", e);
       }
     }
     alert(`Đã lưu ${success} câu hỏi mới, bỏ qua ${importedQuestions.length - success} câu trùng.${fail > 0 ? ` Lỗi ${fail} câu. Vui lòng kiểm tra Console (F12) để xem chi tiết.` : ''}`);
@@ -357,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
       saveImportBtn.disabled = false;
       saveImportBtn.textContent = "💾 Lưu vào CSDL";
     }
-  };
+_   };
 });
 </script>
 
