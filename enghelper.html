@@ -27,17 +27,34 @@
             color: #3B82F6;
             font-weight: 600;
         }
+        /* Kiểu cho bộ đếm online */
+        .online-counter-box {
+            text-align: center;
+            padding: 8px;
+            background-color: #f0fdf4; /* green-50 */
+            color: #166534; /* green-800 */
+            font-weight: 500;
+            border-bottom: 1px solid #dcfce7; /* green-100 */
+        }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+<body class="bg-gray-100 min-h-screen"> <!-- Thay đổi class body -->
 
-    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+    <!-- Placeholder cho thanh điều hướng -->
+    <header id="navbar-placeholder"></header>
+
+    <!-- Bộ đếm người dùng online -->
+    <div class="online-counter-box">
+        🟢 Hiện có Bạn và <span id="online-counter">0</span> người nữa đang truy cập hệ thống.
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden my-4 md:my-8">
         <header class="bg-blue-600 p-6">
             <h1 class="text-2xl md:text-3xl font-bold text-white">
                 Công cụ Hỗ trợ Học tiếng Anh
             </h1>
             <p class="text-blue-100 mt-1">
-                Tải lên tệp âm thanh và nội dung, sau đó đặt câu hỏi để tìm kiếm.
+                Tải lên tệp âm thanh, sau đó đặt câu hỏi để tìm kiếm.
             </p>
         </header>
 
@@ -58,25 +75,12 @@
                         hover:file:bg-blue-100 cursor-pointer">
                     <audio id="audio-player" controls class="w-full mt-4 rounded-lg hidden"></audio>
                 </div>
-
-                <!-- Tải lên tệp nội dung -->
-                <div class="rounded-lg border border-gray-200 p-4">
-                    <label for="transcript-upload" class="block text-sm font-medium text-gray-700 mb-2">
-                        2. Tải lên tệp nội dung (.txt)
-                    </label>
-                    <input type="file" id="transcript-upload" accept=".txt" class="w-full text-sm text-gray-500
-                        file:mr-4 file:py-2 file:px-4
-                        file:rounded-lg file:border-0
-                        file:text-sm file:font-semibold
-                        file:bg-green-50 file:text-green-700
-                        hover:file:bg-green-100 cursor-pointer">
-                </div>
                 
                 <!-- Hiển thị nội dung -->
                 <div class="rounded-lg border border-gray-200 p-4">
-                     <h3 class="text-lg font-semibold text-gray-800 mb-2">Nội dung văn bản</h3>
+                     <h3 class="text-lg font-semibold text-gray-800 mb-2">Nội dung văn bản (Trích xuất từ MP3)</h3>
                      <div id="transcript-display" class="w-full h-48 bg-gray-50 rounded-lg p-3 overflow-y-auto text-gray-600 text-sm border border-gray-200">
-                        Vui lòng tải lên một tệp .txt để xem nội dung...
+                        Vui lòng tải lên một tệp MP3. Nội dung trích xuất sẽ xuất hiện ở đây...
                      </div>
                 </div>
             </div>
@@ -85,7 +89,8 @@
             <div class="space-y-6">
                 <!-- Tab nhập câu hỏi -->
                 <div class="rounded-lg border border-gray-200 p-4">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-3">3. Nhập câu hỏi</h3>
+                    <!-- Thay đổi thành Bước 2 -->
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">2. Nhập câu hỏi</h3>
                     <div class="border-b border-gray-200 mb-4">
                         <nav class="flex space-x-4" aria-label="Tabs">
                             <button class="tab-btn active" data-tab="text">
@@ -131,7 +136,8 @@
 
                 <!-- Kết quả -->
                 <div class="rounded-lg border border-gray-200 p-4">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Kết quả tìm kiếm</h3>
+                    <!-- Thay đổi thành Bước 3 -->
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">3. Kết quả tìm kiếm</h3>
                     <div id="status" class="text-sm text-gray-500 mb-2 italic">Trạng thái: Sẵn sàng...</div>
                     <div id="answer-display" class="w-full min-h-[5rem] bg-gray-50 rounded-lg p-3 text-gray-700 border border-gray-200">
                         Kết quả sẽ xuất hiện ở đây...
@@ -145,11 +151,84 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- Firebase (v10+) và logic bộ đếm -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        // Import Firestore nếu cần, nhưng mã bạn cung cấp chỉ dùng Realtime DB
+        // import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getDatabase, ref, push, onValue, onDisconnect, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Firebase config with databaseURL
+            const firebaseConfig = {
+                apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
+                authDomain: "tracuu-d3ee9.firebaseapp.com",
+                databaseURL: "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "tracuu-d3ee9",
+                storageBucket: "tracuu-d3ee9.appspot.com",
+                messagingSenderId: "593568604435",
+                appId: "1:593568604435:web:9a5145457a8ee734143ae6"
+            };
+
+            // Initialize app once
+            const app = initializeApp(firebaseConfig);
+            // const db = getFirestore(app); // Firestore (nếu cần)
+            const rtdb = getDatabase(app, firebaseConfig.databaseURL); // Realtime DB
+
+            // --- Online counter (Realtime DB modular) ---
+            (function initOnlineCounter() {
+                const onlineCounterEl = document.getElementById('online-counter');
+                if (!onlineCounterEl) return;
+                try {
+                    const connectionsRef = ref(rtdb, 'connections');
+                    const myConnectionRef = push(connectionsRef);
+                    onDisconnect(myConnectionRef).remove().catch(() => {});
+                    set(myConnectionRef, true).catch(() => {});
+                    
+                    onValue(connectionsRef, snapshot => {
+                        let count = 0;
+                        try {
+                            if (snapshot.exists()) {
+                                const v = snapshot.val();
+                                if (v && typeof v === 'object') {
+                                    count = Object.keys(v).length;
+                                } else {
+                                    count = 1; // Fallback nếu cấu trúc không như mong đợi
+                                }
+                            }
+                            // Trừ 1 để không tính chính mình ("...và X người nữa")
+                            onlineCounterEl.textContent = Math.max(0, count - 1); 
+                        } catch (e) {
+                            console.error("Lỗi đếm snapshot: ", e);
+                            count = 0;
+                            onlineCounterEl.textContent = count;
+                        }
+                    }, err => {
+                        console.error("Lỗi onValue connections: ", err);
+                    });
+                } catch (err) {
+                    console.error("Lỗi khởi tạo bộ đếm Realtime: ", err);
+                }
+            })();
+
+            // Optional: load menu.html into header
+            fetch('menu.html').then(r => {
+                if(r.ok) return r.text();
+                throw new Error('Không tìm thấy menu.html');
+            }).then(html => {
+                document.getElementById('navbar-placeholder').innerHTML = html;
+            }).catch((err) => {
+                console.warn(err.message);
+            });
+        });
+    </script>
+
+    <!-- Script logic chính của trang -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const audioUpload = document.getElementById('audio-upload');
             const audioPlayer = document.getElementById('audio-player');
-            const transcriptUpload = document.getElementById('transcript-upload');
+            // Đã loại bỏ transcriptUpload
             const transcriptDisplay = document.getElementById('transcript-display');
             const imageUpload = document.getElementById('image-upload');
             const textInput = document.getElementById('text-input');
@@ -172,24 +251,15 @@
                     const objectUrl = URL.createObjectURL(file);
                     audioPlayer.src = objectUrl;
                     audioPlayer.classList.remove('hidden');
-                    status.textContent = `Đã tải: ${file.name}`;
+                    
+                    // Thông báo cho người dùng rằng tính năng trích xuất tự động chưa được hỗ trợ
+                    transcriptContent = ""; // Đặt lại nội dung
+                    status.textContent = `Đã tải: ${file.name}. (Lưu ý: Tự động trích xuất nội dung CHƯA được hỗ trợ.)`;
+                    transcriptDisplay.textContent = "Tính năng tự động trích xuất nội dung từ MP3 chưa được hỗ trợ trong phiên bản này.";
                 }
             });
 
-            // 2. Tải tệp nội dung (.txt)
-            transcriptUpload.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        transcriptContent = e.target.result;
-                        // Hiển thị nội dung với ngắt dòng
-                        transcriptDisplay.innerHTML = transcriptContent.replace(/\n/g, '<br>'); 
-                        status.textContent = `Đã tải: ${file.name}`;
-                    };
-                    reader.readAsText(file);
-                }
-            });
+            // Đã loại bỏ EventListener của transcriptUpload
 
             // --- Xử lý Chuyển Tab ---
             tabs.forEach(tab => {
@@ -283,28 +353,30 @@
 
             } else {
                 voiceInputBtn.disabled = true;
-                voiceInputBtn.textContent = "Trình duyệt không hỗ trợ nhận diện giọng nói";
+                voiceInputBtn.textContent = "Trình duyệt không hỗGtrợ nhận diện giọng nói";
                 voiceInputBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
             }
             
             // --- Xử lý Tìm kiếm ---
             searchBtn.addEventListener('click', () => {
                 const question = textInput.value.trim().toLowerCase();
-                const transcriptLower = transcriptContent.toLowerCase();
                 
                 if (!question) {
                     status.textContent = "Vui lòng nhập câu hỏi.";
                     return;
                 }
+                // Thay đổi điều kiện kiểm tra
                 if (!transcriptContent) {
-                    status.textContent = "Vui lòng tải lên tệp nội dung (.txt).";
+                    status.textContent = "Lỗi: Chưa có nội dung (transcript) để tìm kiếm. Tính năng tự động trích xuất MP3 chưa được hỗ trợ.";
                     return;
                 }
 
                 status.textContent = "Đang tìm kiếm...";
                 answerDisplay.innerHTML = "";
-                transcriptDisplay.innerHTML = transcriptContent.replace(/\n/g, '<br>'); // Reset highlight
+                // Đảm bảo transcriptDisplay được reset đúng cách
+                transcriptDisplay.innerHTML = transcriptContent.replace(/\n/g, '<br>'); 
 
+                const transcriptLower = transcriptContent.toLowerCase();
                 const questionIndex = transcriptLower.indexOf(question);
 
                 if (questionIndex === -1) {
@@ -323,8 +395,8 @@
                     
                     // Cắt tại dấu chấm hoặc xuống dòng gần nhất
                     const sentenceEnd = Math.min(
-                        answerSnippet.indexOf('.') > 0 ? answerSnippet.indexOf('.') : answerLength,
-                        answerSnippet.indexOf('\n') > 0 ? answerSnippet.indexOf('\n') : answerLength
+                        (answerSnippet.indexOf('.') > 0 ? answerSnippet.indexOf('.') : answerLength),
+                        (answerSnippet.indexOf('\n') > 0 ? answerSnippet.indexOf('\n') : answerLength)
                     );
                     
                     answerSnippet = answerSnippet.substring(0, sentenceEnd + 1) + "...";
@@ -336,7 +408,7 @@
                     const highlightedTranscript = transcriptContent.substring(0, questionIndex) +
                         `<mark class="bg-yellow-200 font-semibold">${originalQuestion}</mark>` +
                         `<mark class="bg-green-200">${answerSnippet.replace('...', '')}</mark>` +
-                        transcriptContent.substring(questionIndex + question.length + answerSnippet.length - 3);
+                        transcriptContent.substring(questionIndex + question.length + (answerSnippet.length - 3));
 
                     transcriptDisplay.innerHTML = highlightedTranscript.replace(/\n/g, '<br>');
 
@@ -349,5 +421,9 @@
             });
         });
     </script>
+    
+    <!-- Tải Bootstrap JS (theo yêu cầu) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
