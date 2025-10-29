@@ -195,10 +195,6 @@ document.addEventListener("DOMContentLoaded", () => {
     allQuestionsForSubject = this.value ? await loadQuestionsForSubject(this.value) : [];
   });
 
-  // =================================================================
-  // === SỬA ĐỔI TẠI ĐÂY (TỪ LẦN TRƯỚC) ===
-  // Hàm này đã được cập nhật để bỏ qua các khối answer, outcome, và specificfeedback
-  // khi trích xuất văn bản.
   function extractTextAndLaTeX(node) {
     let result = "";
     if (!node) return result;
@@ -206,16 +202,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (child.nodeType === Node.TEXT_NODE) {
         result += child.textContent;
       } else if (child.nodeType === Node.ELEMENT_NODE) {
-        
-        // Logic mới: Bỏ qua các khối div không mong muốn
         if (child.classList && (
             child.classList.contains('answer') || 
             child.classList.contains('outcome') || 
             child.classList.contains('specificfeedback')
         )) {
-          return; // Bỏ qua node này và không duyệt sâu hơn
+          return; 
         }
-
         if (child.tagName === 'SCRIPT' && child.type && child.type.startsWith('math/tex')) {
           result += `\\(${child.textContent.trim()}\\)`;
         } else if (child.tagName === 'SPAN' && (child.classList.contains('MathJax_Preview') || child.classList.contains('MathJax'))) {
@@ -224,13 +217,12 @@ document.addEventListener("DOMContentLoaded", () => {
           imagesFoundCount++;
           result += `<span class="image-warning-text">[HÌNH ẢNH]</span>`;
         } else {
-          result += extractTextAndLaTeX(child); // Duyệt sâu hơn
+          result += extractTextAndLaTeX(child); 
         }
       }
     });
     return result.replace(/\s+/g, ' ').trim();
   }
-  // =================================================================
 
   importHtmlInput.addEventListener("change", async function(e) {
     const file = e.target.files[0];
@@ -250,22 +242,11 @@ document.addEventListener("DOMContentLoaded", () => {
       let rawQuestions = [];
 
       docx.querySelectorAll('.que').forEach(q => {
-        // =================================================================
-        // === SỬA ĐỔI TẠI ĐÂY ===
-        // Tìm trong .qtext, nếu không có thì tìm trong .formulation
         let qtextNode = q.querySelector('.qtext') || q.querySelector('.formulation');
-        // =================================================================
-        
-        // Hàm extractTextAndLaTeX mới sẽ chỉ lấy nội dung câu hỏi
         let questionText = qtextNode ? extractTextAndLaTeX(qtextNode) : '';
         
         const answerNodes = Array.from(q.querySelectorAll('.answer > div'));
-        
-        // =================================================================
-        // === SỬA ĐỔI TẠI ĐÂY ===
-        // Chỉ trích xuất text từ bên trong 'label', nếu không có thì trả về rỗng.
         const answers = answerNodes.map(ansNode => extractTextAndLaTeX(ansNode.querySelector('label')));
-        // =================================================================
 
         let correctIdx = -1;
         
@@ -278,12 +259,12 @@ document.addEventListener("DOMContentLoaded", () => {
           correctIdx = answers.findIndex(a => normalizeCompareString(a) === normalizeCompareString(correctValue));
         }
         if (correctIdx === -1) {
-          // Fallback nếu không tìm thấy text "The correct answer is"
           correctIdx = answerNodes.findIndex(node => node.classList.contains('correct'));
         }
         const correctKey = correctIdx !== -1 ? ['a','b','c','d'][correctIdx] : '';
 
-        if (questionText && answers.length >= 2 && correctKey) {
+        // Kiểm tra xem câu hỏi có text không và có ít nhất 2 lựa chọn + đáp án đúng
+        if (questionText && answers.filter(a => a).length >= 2 && correctKey) {
           rawQuestions.push({
             questionText, answers, correctIdx, correctKey,
             lua_chon: { a: answers[0]||"", b: answers[1]||"", c: answers[2]||"", d: answers[3]||"" }
@@ -312,10 +293,13 @@ document.addEventListener("DOMContentLoaded", () => {
       importedQuestions.forEach((q) => {
         htmlResult += `<div class="import-question${q.duplicate ? ' import-duplicate' : ''} border-bottom pb-2 mb-2">
           <span class="import-question-title">${q.questionText}</span><br>`;
+        // Chỉ hiển thị các lựa chọn có nội dung
         q.answers.forEach((a,i) => {
-          htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
-            ${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span class="small"> (Đáp án đúng)</span>':''}
-          </div>`;
+          if (a) { // Chỉ hiển thị nếu lựa chọn 'a' có text
+            htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
+              ${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span class="small"> (Đáp án đúng)</span>':''}
+            </div>`;
+          }
         });
         if(q.duplicate)
           htmlResult += `<div class="import-duplicate-message">[Trùng] Câu hỏi này đã có trong CSDL và sẽ không được lưu.</div>`;
@@ -323,12 +307,8 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       importHtmlResult.innerHTML = htmlResult;
       if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
-t     
-      // =================================================================
-      // === SỬA ĐỔI TẠI ĐÂY ===
-      // Hiển thị nút "Lưu" nếu trích xuất được câu hỏi
+      
       saveImportBtn.style.display = importedQuestions.length > 0 ? "inline-block" : "none";
-      // =================================================================
       
       if (questionSecOKImport) saveImportBtn.disabled = false;
     };
@@ -361,7 +341,7 @@ t    
         success++;
       } catch(e) {
         fail++;
-  g       console.error("Lỗi khi lưu câu hỏi:", e);
+        console.error("Lỗi khi lưu câu hỏi:", e); // Chữ 'g' thừa đã bị xóa
       }
     }
     alert(`Đã lưu ${success} câu hỏi mới, bỏ qua ${importedQuestions.length - success} câu trùng.${fail > 0 ? ` Lỗi ${fail} câu. Vui lòng kiểm tra Console (F12) để xem chi tiết.` : ''}`);
@@ -370,7 +350,7 @@ t    
       saveImportBtn.disabled = false;
       saveImportBtn.textContent = "💾 Lưu vào CSDL";
     }
-_   };
+  };
 });
 </script>
 
