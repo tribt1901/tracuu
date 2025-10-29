@@ -1,12 +1,10 @@
 {
   "version": 2,
   "builds": [
-    { "src": "index.html", "use": "@vercel/static" },
-    { "src": "whisper_worker.js", "use": "@vercel/static" },
-    { "src": "whisper/**", "use": "@vercel/static" },
-    { "src": "models/**", "use": "@vercel/static" }
+    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "enghelper.html", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/", "dest": "/enghelper.html" }
   ]
 }
