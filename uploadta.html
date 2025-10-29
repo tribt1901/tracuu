@@ -66,9 +66,9 @@
       <div id="questionSecurityCodeStatusImport" style="font-size:0.95em;" class="mb-2"></div>
     </div>
     <button class="btn btn-success mt-2" id="saveImportBtn" style="display:none;" disabled>💾 Lưu vào CSDL</button>
-      </div>
+  </div>
 
-    </div>
+</div>
 
 <script type="module">
 import { getDatabase, ref, onValue, onDisconnect, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -102,10 +102,6 @@ document.addEventListener("DOMContentLoaded", () => {
     onlineCounterEl.textContent = count;
   });
 
-  // --- Đã xóa các biến DOM cho "Manual" và "Syllabus" ---
-
-  // --- Đã xóa EventListener cho "uploadTypeSelect" ---
-
   async function loadSubjectsToDropdown(dropdown, allowEmpty = false) {
     dropdown.innerHTML = allowEmpty ? `<option value="">-- Chọn môn học --</option>` : "";
     try {
@@ -121,10 +117,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
   loadSubjectsToDropdown(document.getElementById("subjectDropdownImport"), true);
-  // --- Đã xóa loadSubjectsToDropdown cho "Manual" và "Syllabus" ---
-
-  // --- Đã xóa hàm "uploadToDrive" (chỉ dùng cho manual) ---
-  // --- Đã xóa "image handling" (chỉ dùng cho manual) ---
 
   // duplication & normalization (Giữ lại cho Moodle Import)
   let importedQuestions = [];
@@ -164,7 +156,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return qs;
   }
 
-  // --- Đã xóa "UI controls" (các nút chuyển đổi giao diện) ---
   const importHtmlResult = document.getElementById("importHtmlResult");
   const importHtmlInput = document.getElementById("importHtmlInput");
   const saveImportBtn = document.getElementById("saveImportBtn");
@@ -188,14 +179,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if(importedQuestions.length > 0) saveImportBtn.disabled = false;
       } else {
         statusEl.innerHTML = '<span class="text-danger">Mã không hợp lệ!</span>';
-      }
+a     }
     } catch (err) {
       console.error("Lỗi kiểm tra mã import:", err);
       statusEl.innerHTML = '<span class="text-danger">Lỗi kiểm tra mã!</span>';
     }
   });
-
-  // --- Đã xóa security check cho "Manual" và "Syllabus" ---
 
   // import HTML handling
   subjectDropdownImport.addEventListener("change", async function() {
@@ -268,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (questionText && answers.length >= 2 && correctKey) {
           rawQuestions.push({
             questionText, answers, correctIdx, correctKey,
-            lua_chon: { a: answers[0]||"", b: answers[1]||"", c: answers[2]||"", d: answers[3]||"" }
+s           lua_chon: { a: answers[0]||"", b: answers[1]||"", c: answers[2]||"", d: answers[3]||"" }
           });
         }
       });
@@ -301,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         if(q.duplicate)
           htmlResult += `<div class="import-duplicate-message">[Trùng] Câu hỏi này đã có trong CSDL và sẽ không được lưu.</div>`;
-D       htmlResult += `</div>`;
+        htmlResult += `</div>`;
       });
       importHtmlResult.innerHTML = htmlResult;
       if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise();
@@ -313,7 +302,7 @@ D       htmlResult += `</div>`;
 
   // save imported questions (keep security_code saved as requested)
   saveImportBtn.onclick = async function() {
-    if (!questionSecOKImport) { alert("Chưa xác thực mã bảo mật!"); return; }
+S   if (!questionSecOKImport) { alert("Chưa xác thực mã bảo mật!"); return; }
     const mon_hoc_id = subjectDropdownImport.value;
     const questionsToSave = importedQuestions.filter(q => !q.duplicate);
     if(questionsToSave.length === 0) {
@@ -323,7 +312,7 @@ D       htmlResult += `</div>`;
     saveImportBtn.disabled = true;
     saveImportBtn.textContent = "Đang lưu...";
     const securityCode = document.getElementById("questionSecurityCodeImport").value;
-s   let success = 0, fail = 0;
+    let success = 0, fail = 0;
     for (const q of questionsToSave) {
       try {
         await addDoc(collection(db, "cau_hoi"), {
@@ -337,20 +326,16 @@ s   let success = 0, fail = 0;
         success++;
       } catch(e) {
         fail++;
-        console.error("Lỗi khi lưu câu hỏi:", e);
-      }
+      { console.error("Lỗi khi lưu câu hỏi:", e);
+section   }
     }
     alert(`Đã lưu ${success} câu hỏi mới, bỏ qua ${importedQuestions.length - success} câu trùng.${fail > 0 ? ` Lỗi ${fail} câu. Vui lòng kiểm tra Console (F12) để xem chi tiết.` : ''}`);
     if (fail === 0) window.location.reload();
     else {
       saveImportBtn.disabled = false;
       saveImportBtn.textContent = "💾 Lưu vào CSDL";
-G   }
+    }
   };
-
-  // --- Đã xóa "manual add question" ---
-  // --- Đã xóa "syllabus submit" ---
-
 });
 </script>
 
