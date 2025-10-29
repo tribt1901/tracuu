@@ -240,10 +240,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const answerNodes = Array.from(q.querySelectorAll('.answer > div'));
         
         // =================================================================
-        // === SỬA ĐỔI TẠI ĐÂY ===
+        // === SỬA ĐỔI TẠI ĐÂY (ĐÃ SỬA TỪ LẦN TRƯỚC) ===
         // Đọc text từ 'label' thay vì '.specificfeedback'
         const answers = answerNodes.map(ansNode => extractTextAndLaTeX(ansNode.querySelector('.flex-fill, div.ml-1, label') || ansNode));
-        // === KẾT THÚC SỬA ĐỔI ===
         // =================================================================
 
         let correctIdx = -1;
@@ -255,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (match) {
           const correctValue = match[1].trim();
           correctIdx = answers.findIndex(a => normalizeCompareString(a) === normalizeCompareString(correctValue));
-AN       }
+        }
         if (correctIdx === -1) {
           correctIdx = answerNodes.findIndex(node => node.classList.contains('correct'));
         }
@@ -277,7 +276,7 @@ AN       }
       });
 
       const duplicateCount = importedQuestions.filter(q => q.duplicate).length;
-i     let summaryMessage = `<div class="p-2 bg-light border rounded mb-2">
+      let summaryMessage = `<div class="p-2 bg-light border rounded mb-2">
         <b>Tổng quan:</b><br/>
         - Trích xuất: <b>${importedQuestions.length}</b> câu hỏi.<br/>
         - Phát hiện: <b>${imagesFoundCount}</b> hình ảnh (sẽ bị bỏ qua).<br/>
@@ -292,7 +291,7 @@ i     let summaryMessage = `<div class="p-2 bg-light border rounded mb-2">
           <span class="import-question-title">${q.questionText}</span><br>`;
         q.answers.forEach((a,i) => {
           htmlResult += `<div class="import-answer${i===q.correctIdx?' import-answer-correct':''}">
-CSS           ${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span class="small"> (Đáp án đúng)</span>':''}
+            ${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span class="small"> (Đáp án đúng)</span>':''}
           </div>`;
         });
         if(q.duplicate)
@@ -334,7 +333,7 @@ CSS           ${String.fromCharCode(97+i)}. ${a} ${i===q.correctIdx?'<span 
       } catch(e) {
         fail++;
         console.error("Lỗi khi lưu câu hỏi:", e);
-section   }
+      }
     }
     alert(`Đã lưu ${success} câu hỏi mới, bỏ qua ${importedQuestions.length - success} câu trùng.${fail > 0 ? ` Lỗi ${fail} câu. Vui lòng kiểm tra Console (F12) để xem chi tiết.` : ''}`);
     if (fail === 0) window.location.reload();
