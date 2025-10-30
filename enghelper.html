@@ -54,7 +54,7 @@
                     <button id="generate-transcript-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition duration-150">
                         Tạo Transcript từ MP3
                     </button>
-                    <p class="text-xs text-gray-500 mt-2 italic">Hệ thống sẽ gửi file MP3 đến Vercel backend (`/api/process-audio`) để xử lý.</p>
+                    <!-- ĐÃ XÓA DÒNG TEXT Ở ĐÂY -->
                 </div>
 
                 <!-- Hiển thị nội dung Transcript -->
@@ -162,7 +162,7 @@
                     return;
                 }
 
-                status.textContent = "Đang gửi file MP3 đến Vercel backend...";
+                status.textContent = "Đang xử lý file MP3..."; // <-- ĐÃ SỬA ĐỔI DÒNG NÀY
                 transcriptDisplay.innerHTML = `<div class="flex justify-center items-center h-full"><div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div></div>`;
                 transcriptDisplay.classList.add('loading-pulse');
 
@@ -190,6 +190,7 @@
 
                 } catch (error) {
                     console.error("Lỗi khi gọi /api/process-audio:", error);
+                    transcriptDisplay.classList.remove('loading-pulse'); // <-- SỬA LỖI QUAN TRỌNG: Dừng animation khi có lỗi
                     status.textContent = `Lỗi: ${error.message}`;
                     transcriptDisplay.textContent = "Đã xảy ra lỗi khi tạo transcript. Vui lòng kiểm tra console log (F12) và Vercel logs.";
                 }
@@ -382,4 +383,5 @@ KHÔNG được bịa đặt thông tin.`;
     </script>
 </body>
 </html>
+
 
