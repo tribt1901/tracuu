@@ -1,112 +1,128 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Công cụ Hỗ trợ Học tiếng Anh (với Transcription MP3)</title>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ Hỗ trợ Học tiếng Anh</title>
+    <!-- Tải Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
-
+    <!-- Tải Tesseract.js (Thư viện OCR) -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js' defer></script>
+    <!-- Tải Bootstrap CSS (Cần thiết cho Menu) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .input-tab-content { display: none; }
-        .input-tab-content.active { display: block; }
+        /* Sử dụng font Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Ẩn các tab input mặc định */
+        .input-tab-content {
+            display: none;
+        }
+        /* Hiển thị tab đang hoạt động */
+        .input-tab-content.active {
+            display: block;
+        }
+        /* Kiểu cho nút tab đang hoạt động */
         .tab-btn.active {
-            border-bottom-color: #3B82F6;
+            border-bottom-color: #3B82F6; /* blue-500 */
             color: #3B82F6;
             font-weight: 600;
         }
-        /* [ĐÃ GIỮ LẠI] CSS cho bộ đếm online */
+        /* Kiểu cho bộ đếm online */
         .online-counter-box {
             text-align: center;
             padding: 8px;
-            background-color: #f0fdf4;
-            color: #166534;
+            background-color: #f0fdf4; /* green-50 */
+            color: #166534; /* green-800 */
             font-weight: 500;
-            border-bottom: 1px solid #dcfce7;
+            border-bottom: 1px solid #dcfce7; /* green-100 */
         }
-        /* small helper styles */
-        .small-muted { font-size: 0.85rem; color: #6b7280; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-100 min-h-screen"> <!-- Thay đổi class body -->
 
+    <!-- Placeholder cho thanh điều hướng -->
     <header id="navbar-placeholder"></header>
 
+    <!-- Bộ đếm người dùng online -->
     <div class="online-counter-box">
         🟢 Hiện có Bạn và <span id="online-counter">0</span> người nữa đang truy cập hệ thống.
     </div>
 
     <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden my-4 md:my-8">
         <header class="bg-blue-600 p-6">
-            <h1 class="text-2xl md:text-3xl font-bold text-white">Công cụ Hỗ trợ Học tiếng Anh</h1>
-            <p class="text-blue-100 mt-1">Tải lên tệp âm thanh (MP3) — trang sẽ tự động chuyển sang văn bản để tìm kiếm.</p>
+            <h1 class="text-2xl md:text-3xl font-bold text-white">
+                Công cụ Hỗ trợ Học tiếng Anh
+            </h1>
+            <p class="text-blue-100 mt-1">
+                Tải lên tệp âm thanh, sau đó đặt câu hỏi để tìm kiếm.
+            </p>
         </header>
 
         <main class="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
+            <!-- Cột 1: Tải lên và Hiển thị -->
             <div class="space-y-6">
+                <!-- Tải lên tệp âm thanh -->
                 <div class="rounded-lg border border-gray-200 p-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">API Key cho transcription (OpenAI Whisper hoặc endpoint STT khác)</label>
-                    <div class="flex gap-2">
-                        <input id="api-key-input" type="password" placeholder="Nhập OpenAI API key..." class="w-full p-2 border rounded-lg" />
-                        <button id="save-api-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg">Lưu</button>
-                    </div>
-                    <div class="mt-2 small-muted">Lưu ý: Đưa API key vào client có rủi ro bảo mật. Nếu cần bảo mật, đổi thành gọi API từ server của bạn.</div>
-                    <div class="mt-2">
-                        <button id="clear-api-btn" class="mt-2 text-sm text-red-600">Xóa API key đã lưu</button>
-                    </div>
-                </div>
-
-                <div class="rounded-lg border border-gray-200 p-4">
-                    <label for="audio-upload" class="block text-sm font-medium text-gray-700 mb-2">1. Tải lên tệp âm thanh (MP3)</label>
-                    <input type="file" id="audio-upload" accept="audio/*" class="w-full text-sm text-gray-500
+                    <label for="audio-upload" class="block text-sm font-medium text-gray-700 mb-2">
+                        1. Tải lên tệp âm thanh (MP3)
+                    </label>
+                    <input type="file" id="audio-upload" accept="audio/mp3" class="w-full text-sm text-gray-500
                         file:mr-4 file:py-2 file:px-4
                         file:rounded-lg file:border-0
                         file:text-sm file:font-semibold
                         file:bg-blue-50 file:text-blue-700
-                        hover:file:bg-blue-100 cursor-pointer" />
+                        hover:file:bg-blue-100 cursor-pointer">
                     <audio id="audio-player" controls class="w-full mt-4 rounded-lg hidden"></audio>
-                    <div id="transcription-progress" class="mt-2 text-sm text-gray-600"></div>
                 </div>
-
+                
+                <!-- Hiển thị nội dung -->
                 <div class="rounded-lg border border-gray-200 p-4">
                      <h3 class="text-lg font-semibold text-gray-800 mb-2">Nội dung văn bản (Trích xuất từ MP3)</h3>
                      <div id="transcript-display" class="w-full h-48 bg-gray-50 rounded-lg p-3 overflow-y-auto text-gray-600 text-sm border border-gray-200">
-                         Vui lòng tải lên một tệp MP3. Nội dung trích xuất sẽ xuất hiện ở đây...
+                        Vui lòng tải lên một tệp MP3. Nội dung trích xuất sẽ xuất hiện ở đây...
                      </div>
                 </div>
             </div>
 
+            <!-- Cột 2: Nhập câu hỏi và Kết quả -->
             <div class="space-y-6">
+                <!-- Tab nhập câu hỏi -->
                 <div class="rounded-lg border border-gray-200 p-4">
+                    <!-- Thay đổi thành Bước 2 -->
                     <h3 class="text-lg font-semibold text-gray-800 mb-3">2. Nhập câu hỏi</h3>
                     <div class="border-b border-gray-200 mb-4">
                         <nav class="flex space-x-4" aria-label="Tabs">
-                            <button class="tab-btn active" data-tab="text"><span class="material-icons-outlined text-sm mr-1">edit</span>Gõ tay</button>
-                            <button class="tab-btn" data-tab="image"><span class="material-icons-outlined text-sm mr-1">image</span>Quét ảnh</button>
-                            <button class="tab-btn" data-tab="voice"><span class="material-icons-outlined text-sm mr-1">mic</span>Giọng nói</button>
+                            <button class="tab-btn active" data-tab="text">
+                                <span class="material-icons-outlined text-sm mr-1">edit</span>Gõ tay
+                            </button>
+                            <button class="tab-btn" data-tab="image">
+                                <span class="material-icons-outlined text-sm mr-1">image</span>Quét ảnh
+                            </button>
+                            <button class="tab-btn" data-tab="voice">
+                                <span class="material-icons-outlined text-sm mr-1">mic</span>Giọng nói
+                            </button>
                         </nav>
                     </div>
 
+                    <!-- Nội dung các tab -->
                     <div>
+                        <!-- Tab Gõ tay -->
                         <div id="tab-text" class="input-tab-content active">
                             <textarea id="text-input" class="w-full h-24 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Nhập câu hỏi của bạn ở đây..."></textarea>
                         </div>
-
+                        <!-- Tab Quét ảnh (OCR) -->
                         <div id="tab-image" class="input-tab-content">
                             <input type="file" id="image-upload" accept="image/*" class="w-full text-sm text-gray-500
                                 file:mr-4 file:py-2 file:px-4
                                 file:rounded-lg file:border-0
                                 file:text-sm file:font-semibold
                                 file:bg-indigo-50 file:text-indigo-700
-                                hover:file:bg-indigo-100 cursor-pointer" />
+                                hover:file:bg-indigo-100 cursor-pointer">
                         </div>
-
+                        <!-- Tab Giọng nói -->
                         <div id="tab-voice" class="input-tab-content">
                             <button id="voice-input-btn" class="w-full flex items-center justify-center py-3 px-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition duration-150">
                                 <span class="material-icons-outlined mr-2">mic</span>
@@ -114,11 +130,15 @@
                             </button>
                         </div>
                     </div>
-
-                    <button id="search-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-150 mt-4">Tìm kiếm trong nội dung</button>
+                     <!-- Nút tìm kiếm -->
+                    <button id="search-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-150 mt-4">
+                        Tìm kiếm trong nội dung
+                    </button>
                 </div>
 
+                <!-- Kết quả -->
                 <div class="rounded-lg border border-gray-200 p-4">
+                    <!-- Thay đổi thành Bước 3 -->
                     <h3 class="text-lg font-semibold text-gray-800 mb-2">3. Kết quả tìm kiếm</h3>
                     <div id="status" class="text-sm text-gray-500 mb-2 italic">Trạng thái: Sẵn sàng...</div>
                     <div id="answer-display" class="w-full min-h-[5rem] bg-gray-50 rounded-lg p-3 text-gray-700 border border-gray-200">
@@ -126,18 +146,22 @@
                     </div>
                 </div>
             </div>
-
         </main>
     </div>
 
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Tải biểu tượng Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- Firebase (v10+) và logic bộ đếm -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        // Import Firestore nếu cần, nhưng mã bạn cung cấp chỉ dùng Realtime DB
+        // import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getDatabase, ref, push, onValue, onDisconnect, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Firebase config with databaseURL
             const firebaseConfig = {
                 apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
                 authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -147,9 +171,13 @@
                 messagingSenderId: "593568604435",
                 appId: "1:593568604435:web:9a5145457a8ee734143ae6"
             };
-            const app = initializeApp(firebaseConfig);
-            const rtdb = getDatabase(app, firebaseConfig.databaseURL);
 
+            // Initialize app once
+            const app = initializeApp(firebaseConfig);
+            // const db = getFirestore(app); // Firestore (nếu cần)
+            const rtdb = getDatabase(app, firebaseConfig.databaseURL); // Realtime DB
+
+            // --- Online counter (Realtime DB modular) ---
             (function initOnlineCounter() {
                 const onlineCounterEl = document.getElementById('online-counter');
                 if (!onlineCounterEl) return;
@@ -158,50 +186,67 @@
                     const myConnectionRef = push(connectionsRef);
                     onDisconnect(myConnectionRef).remove().catch(() => {});
                     set(myConnectionRef, true).catch(() => {});
+                    
                     onValue(connectionsRef, snapshot => {
                         let count = 0;
                         try {
                             if (snapshot.exists()) {
                                 const v = snapshot.val();
-                                if (v && typeof v === 'object') count = Object.keys(v).length;
-                                else count = 1;
+                                if (v && typeof v === 'object') {
+                                    count = Object.keys(v).length;
+                                } else {
+                                    count = 1; // Fallback nếu cấu trúc không như mong đợi
+                                }
                             }
-                            onlineCounterEl.textContent = Math.max(0, count - 1);
+                            // Trừ 1 để không tính chính mình ("...và X người nữa")
+                            onlineCounterEl.textContent = Math.max(0, count - 1); 
                         } catch (e) {
                             console.error("Lỗi đếm snapshot: ", e);
-                            onlineCounterEl.textContent = 0;
+                            count = 0;
+                            onlineCounterEl.textContent = count;
                         }
-                    }, err => console.error("Lỗi onValue connections: ", err));
+                    }, err => {
+                        console.error("Lỗi onValue connections: ", err);
+                    });
                 } catch (err) {
                     console.error("Lỗi khởi tạo bộ đếm Realtime: ", err);
                 }
             })();
 
+            // Optional: load menu.html into header
             fetch('menu.html').then(r => {
-                if (r.ok) return r.text();
-                throw new Error(`Lỗi tải menu: ${r.statusText}`);
+                if(r.ok) return r.text();
+                // Ném lỗi rõ ràng hơn
+                throw new Error(`Lỗi tải menu: ${r.statusText} (Kiểm tra xem 'menu.html' có tồn tại)`);
             }).then(html => {
                 document.getElementById('navbar-placeholder').innerHTML = html;
             }).catch((err) => {
+                // Xử lý lỗi fetch (ví dụ: file not found)
                 console.warn(err.message);
                 const navPlaceholder = document.getElementById('navbar-placeholder');
                 if (navPlaceholder) {
+                    // Fallback an toàn nếu menu.html không tải được
                     navPlaceholder.innerHTML = `
                     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
                         <div class="container-fluid">
                             <a class="navbar-brand" href="#">Menu Lỗi</a>
-                            <span class="navbar-text text-light">Không thể tải 'menu.html'.</span>
+                            <span class="navbar-text text-light">
+                                Không thể tải 'menu.html'.
+                            </span>
                         </div>
-                    </nav>`;
+                    </nav>
+                    `;
                 }
             });
         });
     </script>
 
+    <!-- Script logic chính của trang -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const audioUpload = document.getElementById('audio-upload');
             const audioPlayer = document.getElementById('audio-player');
+            // Đã loại bỏ transcriptUpload
             const transcriptDisplay = document.getElementById('transcript-display');
             const imageUpload = document.getElementById('image-upload');
             const textInput = document.getElementById('text-input');
@@ -211,253 +256,143 @@
             const status = document.getElementById('status');
             const tabs = document.querySelectorAll('.tab-btn');
             const tabContents = document.querySelectorAll('.input-tab-content');
-            const transcriptionProgress = document.getElementById('transcription-progress');
 
-            const apiKeyInput = document.getElementById('api-key-input');
-            const saveApiBtn = document.getElementById('save-api-btn');
-            const clearApiBtn = document.getElementById('clear-api-btn');
+            let transcriptContent = ""; // Biến lưu trữ nội dung văn bản
+            let currentInputMode = 'text'; // 'text', 'image', 'voice'
 
-            // Load saved API key if có
-            const savedKey = localStorage.getItem('OPENAI_API_KEY');
-            if (savedKey) {
-                apiKeyInput.value = savedKey;
-            }
+            // --- Xử lý Tải tệp ---
 
-            saveApiBtn.addEventListener('click', () => {
-                const key = apiKeyInput.value.trim();
-                if (!key) {
-                    alert('Vui lòng nhập API key hợp lệ.');
-                    return;
+            // 1. Tải tệp âm thanh
+            audioUpload.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const objectUrl = URL.createObjectURL(file);
+                    audioPlayer.src = objectUrl;
+                    audioPlayer.classList.remove('hidden');
+                    
+                    // Thông báo cho người dùng rằng tính năng trích xuất tự động chưa được hỗ trợ
+                    transcriptContent = ""; // Đặt lại nội dung
+                    status.textContent = `Đã tải: ${file.name}. (Lưu ý: Tự động trích xuất nội dung CHƯA được hỗ trợ.)`;
+                    transcriptDisplay.textContent = "Tính năng tự động trích xuất nội dung từ MP3 chưa được hỗ trợ trong phiên bản này.";
                 }
-                localStorage.setItem('OPENAI_API_KEY', key);
-                alert('Đã lưu API key vào localStorage (client).');
             });
 
-            clearApiBtn.addEventListener('click', () => {
-                localStorage.removeItem('OPENAI_API_KEY');
-                apiKeyInput.value = '';
-                alert('Đã xóa API key đã lưu.');
-            });
+            // Đã loại bỏ EventListener của transcriptUpload
 
-            let transcriptContent = ""; // nội dung text trích xuất
-            let currentInputMode = 'text';
-
-            // Tab switching
+            // --- Xử lý Chuyển Tab ---
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
                     const targetTab = tab.getAttribute('data-tab');
+
+                    // Bỏ active tất cả
                     tabs.forEach(t => t.classList.remove('active'));
                     tabContents.forEach(c => c.classList.remove('active'));
+
+                    // Active tab được chọn
                     tab.classList.add('active');
                     document.getElementById(`tab-${targetTab}`).classList.add('active');
                     currentInputMode = targetTab;
-                    textInput.value = "";
+                    textInput.value = ""; // Xóa nội dung khi chuyển tab
                     status.textContent = "Sẵn sàng...";
                 });
             });
 
-            // OCR - image
+            // --- Xử lý các phương thức nhập ---
+
+            // 3a. Quét ảnh (OCR)
             imageUpload.addEventListener('change', async (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
 
-                // Kiểm tra Tesseract (có thể đã được cache)
-                if (typeof Tesseract === 'undefined') {
-                    status.textContent = "Lỗi: Thư viện Tesseract.js chưa được tải.";
-                    return;
-                }
-
-                status.textContent = "Đang nhận diện ảnh (OCR)...";
+                status.textContent = "Đang nhận diện hình ảnh (OCR)... (Có thể mất một lúc)";
                 try {
-                    const worker = await Tesseract.createWorker({
-                        logger: m => {
-                            // console.log(m);
-                        }
+                    // 1. Tạo worker Tesseract
+                    const worker = await Tesseract.createWorker('eng', 1, {
+                        logger: m => console.log(m) // Xem log tiến trình trong console
                     });
-                    await worker.load();
-                    await worker.loadLanguage('eng');
-                    await worker.initialize('eng');
+                    
+                    // 2. Nhận diện văn bản
                     const { data: { text } } = await worker.recognize(file);
-                    await worker.terminate();
+                    
+                    // 3. Hiển thị kết quả trong ô text-input
                     textInput.value = text.trim();
-                    status.textContent = "Nhận diện ảnh thành công.";
-                    // chuyển sang tab text
+                    status.textContent = "Nhận diện ảnh thành công. Nhấn 'Tìm kiếm'.";
+                    
+                    // 4. Chuyển sang tab "Gõ tay" để xem kết quả OCR
                     tabs.forEach(t => t.classList.remove('active'));
                     tabContents.forEach(c => c.classList.remove('active'));
                     document.querySelector('.tab-btn[data-tab="text"]').classList.add('active');
                     document.getElementById('tab-text').classList.add('active');
                     currentInputMode = 'text';
-                } catch (err) {
-                    console.error(err);
-                    status.textContent = "Lỗi khi nhận diện ảnh (OCR).";
+
+                    // 5. Giải phóng worker
+                    await worker.terminate();
+
+                } catch (error) {
+                    console.error(error);
+                    status.textContent = "Lỗi khi nhận diện ảnh.";
                 }
             });
 
-            // Voice recognition (microphone)
+            // 3b. Nhận diện giọng nói
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (SpeechRecognition) {
                 const recognition = new SpeechRecognition();
-                recognition.lang = 'en-US';
+                recognition.lang = 'en-US'; // Nhận diện tiếng Anh
                 recognition.interimResults = false;
+
                 voiceInputBtn.addEventListener('click', () => {
                     status.textContent = "Đang nghe... Vui lòng nói (tiếng Anh).";
                     voiceInputBtn.classList.add('animate-pulse', 'bg-red-800');
                     recognition.start();
                 });
+
                 recognition.onresult = (event) => {
                     const speechResult = event.results[0][0].transcript;
                     textInput.value = speechResult;
                     status.textContent = "Đã nhận diện giọng nói. Nhấn 'Tìm kiếm'.";
+                    
+                    // Chuyển sang tab "Gõ tay" để xem kết quả
                     tabs.forEach(t => t.classList.remove('active'));
                     tabContents.forEach(c => c.classList.remove('active'));
                     document.querySelector('.tab-btn[data-tab="text"]').classList.add('active');
                     document.getElementById('tab-text').classList.add('active');
                     currentInputMode = 'text';
                 };
+
                 recognition.onend = () => {
                     voiceInputBtn.classList.remove('animate-pulse', 'bg-red-800');
                 };
+
                 recognition.onerror = (event) => {
                     console.error('Lỗi nhận diện giọng nói:', event.error);
                     status.textContent = `Lỗi: ${event.error}`;
                 };
+
             } else {
                 voiceInputBtn.disabled = true;
-                voiceInputBtn.textContent = "Trình duyệt không hỗ trợ nhận diện giọng nói";
+                voiceInputBtn.textContent = "Trình duyệt không hỗGtrợ nhận diện giọng nói";
                 voiceInputBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
             }
-
-            // Transcription bằng OpenAI Whisper API (ví dụ)
-            async function transcribeWithOpenAI(file, onProgress) {
-                // LƯU Ý: gọi OpenAI API trực tiếp từ client sẽ lộ API key -> rủi ro bảo mật.
-                const apiKey = localStorage.getItem('OPENAI_API_KEY') || apiKeyInput.value.trim();
-                
-                // Thêm kiểm tra internet
-                if (!navigator.onLine) {
-                    throw new Error('Không có kết nối Internet. Tính năng này yêu cầu online.');
-                }
-                
-                if (!apiKey) throw new Error('Không có API key. Vui lòng điền API key để dùng tính năng chuyển âm thanh sang văn bản.');
-
-                const url = 'https://api.openai.com/v1/audio/transcriptions';
-                const form = new FormData();
-                form.append('file', file, file.name || 'audio.mp3');
-                // model 'whisper-1' là ví dụ; thay bằng model endpoint tương ứng nếu cần
-                form.append('model', 'whisper-1');
-
-                // Fetch với progress là không chuẩn hỗ trợ cho request body; có thể giám sát upload bằng XHR
-                return new Promise((resolve, reject) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', url, true);
-                    xhr.setRequestHeader('Authorization', `Bearer ${apiKey}`);
-                    xhr.onreadystatechange = function () {
-                        if (xhr.readyState === 4) {
-                            if (xhr.status >= 200 && xhr.status < 300) {
-                                try {
-                                    const json = JSON.parse(xhr.responseText);
-                                    if (json && (json.text || json.transcription)) {
-                                        // OpenAI trả 'text'
-                                        resolve(json.text || json.transcription);
-                                    } else {
-                                        reject(new Error('Không nhận được văn bản từ API.'));
-                                    }
-                                } catch (e) {
-                                    reject(e);
-                                }
-                            } else {
-                                // lấy message nếu có
-                                let msg = `Transcription failed: ${xhr.status} ${xhr.statusText}`;
-                                try {
-                                    const resp = JSON.parse(xhr.responseText);
-                                    if (resp?.error?.message) msg += ` — ${resp.error.message}`;
-                                } catch (err) {}
-                                reject(new Error(msg));
-                            }
-                        }
-                    };
-                    // upload progress
-                    xhr.upload.onprogress = function (evt) {
-                        if (evt.lengthComputable && typeof onProgress === 'function') {
-                            const percent = Math.round((evt.loaded / evt.total) * 100);
-                            onProgress(percent);
-                        }
-                    };
-                    xhr.onerror = function (e) {
-                        reject(new Error('Network error during transcription upload.'));
-                    };
-                    xhr.send(form);
-                });
-            }
-
-            audioUpload.addEventListener('change', async (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-                // Show audio player
-                const objectUrl = URL.createObjectURL(file);
-                audioPlayer.src = objectUrl;
-                audioPlayer.classList.remove('hidden');
-
-                // Reset UI
-                transcriptContent = "";
-                transcriptDisplay.textContent = "Đang chờ trích xuất...";
-                transcriptionProgress.textContent = "";
-                status.textContent = "Đã tải: " + file.name;
-
-                // Thử tự động transcribe (bằng OpenAI Whisper). Nếu không có API key, hiển thị thông báo
-                const apiKey = localStorage.getItem('OPENAI_API_KEY') || apiKeyInput.value.trim();
-                
-                // Kiểm tra cả API Key và kết nối mạng
-                if (!apiKey || !navigator.onLine) {
-                    let errorMsg = "Không thể tự động trích xuất. ";
-                    if (!apiKey) errorMsg += "Vì thiếu API key. ";
-                    if (!navigator.onLine) errorMsg += "Vì bạn đang offline. ";
-                    
-                    status.textContent = errorMsg;
-                    transcriptDisplay.textContent = errorMsg;
-                    return;
-                }
-
-                try {
-                    status.textContent = "Đang gửi tệp lên dịch vụ transcription...";
-                    transcriptionProgress.textContent = "0%";
-                    const text = await transcribeWithOpenAI(file, p => {
-                        transcriptionProgress.textContent = `${p}% (upload)`;
-                    });
-                    transcriptContent = (text || "").trim();
-                    if (!transcriptContent) {
-                        status.textContent = "Transcription trả về rỗng.";
-                        transcriptDisplay.textContent = "Không có nội dung trả về.";
-                        return;
-                    }
-                    status.textContent = "Đã trích xuất văn bản thành công.";
-                    transcriptionProgress.textContent = "";
-                    // hiển thị
-                    transcriptDisplay.textContent = transcriptContent;
-                } catch (err) {
-                    console.error(err);
-                    status.textContent = "Lỗi khi trích xuất âm thanh: " + (err.message || err.toString());
-                    transcriptionProgress.textContent = "";
-                    transcriptDisplay.textContent = "Lỗi khi trích xuất. Kiểm tra API key, kết nối mạng và console.";
-                }
-            });
-
-            // Search logic (giống như trước, nhưng dùng transcriptContent)
+            
+            // --- Xử lý Tìm kiếm ---
             searchBtn.addEventListener('click', () => {
-                const questionRaw = textInput.value.trim();
-                const question = questionRaw.toLowerCase();
-
+                const question = textInput.value.trim().toLowerCase();
+                
                 if (!question) {
                     status.textContent = "Vui lòng nhập câu hỏi.";
                     return;
                 }
+                // Thay đổi điều kiện kiểm tra
                 if (!transcriptContent) {
-                    status.textContent = "Lỗi: Chưa có nội dung (transcript) để tìm kiếm. Vui lòng tải MP3 và chờ trích xuất.";
+                    status.textContent = "Lỗi: Chưa có nội dung (transcript) để tìm kiếm. Tính năng tự động trích xuất MP3 chưa được hỗ trợ.";
                     return;
                 }
 
                 status.textContent = "Đang tìm kiếm...";
                 answerDisplay.innerHTML = "";
-                transcriptDisplay.innerHTML = transcriptContent.replace(/\n/g, '<br>');
+                // Đảm bảo transcriptDisplay được reset đúng cách
+                transcriptDisplay.innerHTML = transcriptContent.replace(/\n/g, '<br>'); 
 
                 const transcriptLower = transcriptContent.toLowerCase();
                 const questionIndex = transcriptLower.indexOf(question);
@@ -466,34 +401,47 @@
                     status.textContent = "Không tìm thấy câu hỏi trong nội dung.";
                     answerDisplay.textContent = "Không tìm thấy.";
                 } else {
+                    // Tìm thấy câu hỏi
                     status.textContent = "Đã tìm thấy!";
+                    
+                    // Lấy câu hỏi gốc (đúng
                     const originalQuestion = transcriptContent.substring(questionIndex, questionIndex + question.length);
-                    const answerLength = 150;
+
+                    // Trích xuất "câu trả lời" (ví dụ: 150 ký tự tiếp theo)
+                    const answerLength = 150; 
                     let answerSnippet = transcriptContent.substring(questionIndex + question.length, questionIndex + question.length + answerLength);
+                    
+                    // Cắt tại dấu chấm hoặc xuống dòng gần nhất
+                    const sentenceEnd = Math.min(
+                        (answerSnippet.indexOf('.') > 0 ? answerSnippet.indexOf('.') : answerLength),
+                        (answerSnippet.indexOf('\n') > 0 ? answerSnippet.indexOf('\n') : answerLength)
+                    );
+                    
+                    answerSnippet = answerSnippet.substring(0, sentenceEnd + 1) + "...";
 
-                    // tìm dấu chấm hoặc xuống dòng
-                    let sentenceEnd = answerSnippet.indexOf('.');
-                    if (sentenceEnd === -1) sentenceEnd = answerSnippet.indexOf('\n');
-                    if (sentenceEnd === -1) sentenceEnd = Math.min(answerLength, answerSnippet.length);
-                    answerSnippet = answerSnippet.substring(0, sentenceEnd + 1).trim();
-                    if (!answerSnippet) answerSnippet = transcriptContent.substring(questionIndex + question.length, questionIndex + question.length + answerLength).trim();
+                    // Hiển thị câu trả lời
+                    answerDisplay.innerHTML = `<mark class="bg-yellow-200 font-semibold">${originalQuestion}</mark> ${answerSnippet}`;
 
-                    answerDisplay.innerHTML = `<mark class="bg-yellow-200 font-semibold">${originalQuestion}</mark> ${answerSnippet}...`;
-
+                    // Đánh dấu trên màn hình nội dung
                     const highlightedTranscript = transcriptContent.substring(0, questionIndex) +
                         `<mark class="bg-yellow-200 font-semibold">${originalQuestion}</mark>` +
-                        `<mark class="bg-green-200">${answerSnippet}</mark>` +
-                        transcriptContent.substring(questionIndex + question.length + answerSnippet.length);
+                        `<mark class="bg-green-200">${answerSnippet.replace('...', '')}</mark>` +
+                        transcriptContent.substring(questionIndex + question.length + (answerSnippet.length - 3));
 
                     transcriptDisplay.innerHTML = highlightedTranscript.replace(/\n/g, '<br>');
 
+                    // Cuộn đến vị trí tìm thấy
                     const markElement = transcriptDisplay.querySelector('mark');
-                    if (markElement) markElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (markElement) {
+                        markElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                 }
             });
         });
     </script>
-
+    
+    <!-- Tải Bootstrap JS (theo yêu cầu) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
