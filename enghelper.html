@@ -175,7 +175,7 @@
         // --- Lớp quản lý mô hình AI (Whisper) ---
         class SpeechRecognitionPipeline {
             static task = 'automatic-speech-recognition';
-            // ĐÃ NÂNG CẤP TỐI ĐA: Dùng mô hình 'small' (lớn, chính xác) thay vì 'base'
+            // ĐÃ NÂNG CẤP TỐI ĐA: Dùng mô hình 'small' (lớn, chính xác)
             static model = 'Xenova/whisper-small.en'; 
             static instance = null;
 
@@ -187,9 +187,8 @@
                         env.allowLocalModels = false;
                         env.allowRemoteModels = true;
                         this.instance = await pipeline(this.task, this.model, { 
-                            progress_callback,
-                            chunk_length_s: 30,
-                            stride_length_s: 5
+                            progress_callback
+                            // ĐÃ XÓA: chunk_length_s và stride_length_s khỏi đây.
                         });
                     } catch (error) {
                         console.error("Không thể tải mô hình AI:", error);
@@ -274,6 +273,9 @@
                     
                     // Chạy xử lý
                     const output = await transcriber(audioFileUrl, {
+                        // ĐÃ THÊM: Các tham số xử lý file dài vào đúng vị trí này.
+                        chunk_length_s: 30,
+                        stride_length_s: 5,
                         progress_callback: (progress) => {
                             if (progress.status === 'transcribing') {
                                 const percentage = (progress.total_chunks > 0) ? (progress.processed_chunks / progress.total_chunks) * 100 : 0;
