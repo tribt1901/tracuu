@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trợ lý học tiếng Anh</title>
     <!-- Tải Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -183,6 +183,7 @@
                 if (this.instance === null) {
                     try {
                         const { env, pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
+                        // Ép thư viện tải mô hình từ xa (Hugging Face CDN)
                         env.allowLocalModels = false;
                         env.allowRemoteModels = true;
                         this.instance = await pipeline(this.task, this.model, { 
@@ -235,7 +236,7 @@
                     }
                     audioFileUrl = URL.createObjectURL(file);
                     audioPlayer.src = audioFileUrl;
-                    audioPlayer.style.display = 'block';
+                    audioPlayer.style.display = 'block'; // Sửa lỗi hiển thị
                     transcriptDisplay.textContent = "Sẵn sàng tạo transcript...";
                     transcriptStatus.textContent = `Đã tải: ${file.name}.`;
                 }
@@ -256,9 +257,11 @@
                 generateTranscriptBtn.textContent = "Đang xử lý...";
 
                 try {
+                    // Tải mô hình
                     const transcriber = await SpeechRecognitionPipeline.getInstance((progress) => {
                         if (progress.status === 'download' || progress.status === 'progress') {
-                            const percentage = progress.total > 0 ? (progress.loaded / progress.total) * 100 : 0;
+                            // Sửa lỗi thanh tiến trình
+                            const percentage = (progress.total > 0) ? (progress.loaded / progress.total) * 100 : 0;
                             transcriptStatus.textContent = `Đang tải mô hình: ${progress.file} (${percentage.toFixed(0)}%)`;
                             transcriptProgress.value = percentage;
                         } else {
@@ -269,10 +272,11 @@
                     transcriptStatus.textContent = "Đang xử lý âm thanh... (Việc này có thể mất vài phút)";
                     transcriptProgress.value = 0;
                     
+                    // Chạy xử lý
                     const output = await transcriber(audioFileUrl, {
                         progress_callback: (progress) => {
                             if (progress.status === 'transcribing') {
-                                const percentage = progress.total_chunks > 0 ? (progress.processed_chunks / progress.total_chunks) * 100 : 0;
+                                const percentage = (progress.total_chunks > 0) ? (progress.processed_chunks / progress.total_chunks) * 100 : 0;
                                 transcriptProgress.value = percentage;
                                 transcriptStatus.textContent = `Đang xử lý... (${percentage.toFixed(0)}%)`;
                             }
@@ -464,6 +468,4 @@
     </script>
 </body>
 </html>
-
-
 
