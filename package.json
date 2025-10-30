@@ -1,14 +1,14 @@
 {
-  "name": "tracuu",
+  "name": "aip",
   "version": "1.0.0",
-  "description": "API xử lý âm thanh và tra cứu thông tin bằng Google Gemini (Vercel Serverless Function).",
+  "description": "Serverless API chạy trên Vercel — xử lý âm thanh (Gemini Pro) và tra cứu thông tin.",
   "type": "module",
   "engines": {
     "node": "22.x"
   },
   "scripts": {
     "dev": "vercel dev",
-    "start": "node ./api/tracuu.js"
+    "start": "node ./api/process-audio.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
@@ -17,12 +17,13 @@
     "katex": "^0.16.9"
   },
   "keywords": [
-    "google-gemini",
     "vercel",
     "api",
+    "google-gemini",
     "speech-to-text",
-    "transcript",
-    "ai"
+    "transcription",
+    "process-audio",
+    "tracuu"
   ],
   "author": "Your Name",
   "license": "MIT"
