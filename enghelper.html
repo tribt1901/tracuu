@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trợ lý học tiếng Anh</title>
+    <!-- Tải Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tải Tesseract.js (OCR) -->
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
+        /* Thêm một chút hiệu ứng cho đẹp mắt */
         @keyframes pulse-bg {
             0%, 100% { background-color: theme('colors.blue.50'); }
             50% { background-color: theme('colors.blue.100'); }
@@ -17,110 +20,366 @@
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
-<div class="container mx-auto p-4 md:p-8 max-w-7xl">
-    <header class="mb-8">
-        <h1 class="text-4xl font-bold text-gray-800 text-center">Trợ lý học tiếng Anh</h1>
-        <p class="text-center text-gray-600 mt-2">Tải lên file MP3, tạo transcript và hỏi đáp AI dựa trên nội dung.</p>
-    </header>
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 text-center">Trợ lý học tiếng Anh</h1>
+            <p class="text-center text-gray-600 mt-2">Tải lên file MP3, tạo transcript và hỏi đáp AI dựa trên nội dung.</p>
+        </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-1 space-y-6">
-            <div class="rounded-lg border border-gray-200 p-4 bg-white shadow-sm">
-                <label for="audio-upload" class="block text-sm font-medium text-gray-700 mb-2">1. Tải lên tệp âm thanh (MP3)</label>
-                <input type="file" id="audio-upload" accept="audio/mp3, audio/mpeg"
-                       class="w-full text-sm text-gray-500
-                       file:mr-4 file:py-2 file:px-4
-                       file:rounded-lg file:border-0
-                       file:text-sm file:font-semibold
-                       file:bg-blue-50 file:text-blue-700
-                       hover:file:bg-blue-100 cursor-pointer">
-                <audio id="audio-player" controls class="w-full mt-4 rounded-lg hidden"></audio>
-            </div>
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            <div class="rounded-lg border border-gray-200 p-4 bg-white shadow-sm">
-                <label class="block text-sm font-medium text-gray-700 mb-2">2. Tạo Transcript (Dùng Backend)</label>
-                <button id="generate-transcript-btn"
-                        class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition duration-150">
-                    Tạo Transcript từ MP3
-                </button>
-                //<p class="text-xs text-gray-500 mt-2 italic">Hệ thống sẽ gửi file MP3 đến Vercel backend (`/api/process-audio`) để xử lý.</p>
-            </div>
+            <!-- Cột 1: Tải file & Tạo Transcript (Backend Pro) -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Tải lên tệp âm thanh -->
+                <div class="rounded-lg border border-gray-200 p-4 bg-white shadow-sm">
+                    <label for="audio-upload" class="block text-sm font-medium text-gray-700 mb-2">
+                        1. Tải lên tệp âm thanh (MP3)
+                    </label>
+                    <input type="file" id="audio-upload" accept="audio/mp3, audio/mpeg" class="w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-lg file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100 cursor-pointer">
+                    <audio id="audio-player" controls class="w-full mt-4 rounded-lg hidden"></audio>
+                </div>
 
-            <div class="rounded-lg border border-gray-200 p-4 bg-white shadow-sm">
-                <h3 class="text-lg font-semibold text-gray-800 mb-2">Nội dung Transcript (Từ MP3)</h3>
-                <div id="transcript-display" class="w-full h-48 bg-gray-50 rounded-lg p-3 overflow-y-auto text-gray-600 text-sm border border-gray-200">
-                    Vui lòng nhấn nút "Tạo Transcript từ MP3" sau khi tải file...
+                <!-- Nút Tạo Transcript -->
+                <div class="rounded-lg border border-gray-200 p-4 bg-white shadow-sm">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        2. Tạo Transcript (Dùng Backend)
+                    </label>
+                    <button id="generate-transcript-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition duration-150">
+                        Tạo Transcript từ MP3
+                    </button>
+                    <p class="text-xs text-gray-500 mt-2 italic">Hệ thống sẽ gửi file MP3 đến Vercel backend (`/api/process-audio`) để xử lý.</p>
+                </div>
+
+                <!-- Hiển thị nội dung Transcript -->
+                <div class="rounded-lg border border-gray-200 p-4 bg-white shadow-sm">
+                     <h3 class="text-lg font-semibold text-gray-800 mb-2">Nội dung Transcript (Từ MP3)</h3>
+                     <div id="transcript-display" class="w-full h-48 bg-gray-50 rounded-lg p-3 overflow-y-auto text-gray-600 text-sm border border-gray-200">
+                        Vui lòng nhấn nút "Tạo Transcript từ MP3" sau khi tải file...
+                     </div>
                 </div>
             </div>
+
+            <!-- Cột 2: Nhập câu hỏi (Hỏi-đáp) -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="rounded-lg border border-gray-200 p-4 bg-white shadow-sm">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">3. Nhập câu hỏi</h3>
+                    
+                    <!-- Tabs -->
+                    <div class="border-b border-gray-200 mb-4">
+                        <nav class="flex space-x-4" aria-label="Tabs">
+                            <button id="tab-text" class="tab-btn px-3 py-2 font-medium text-sm rounded-t-lg border-b-2 border-blue-600 text-blue-600">Gõ tay</button>
+                            <button id="tab-image" class="tab-btn px-3 py-2 font-medium text-sm rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700">Tải ảnh (OCR)</button>
+                            <button id="tab-voice" class="tab-btn px-3 py-2 font-medium text-sm rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700">Giọng nói</button>
+                        </nav>
+                    </div>
+
+                    <!-- Tab Panels -->
+                    <div id="panel-text" class="tab-panel">
+                        <textarea id="text-input" class="w-full h-32 p-2 border border-gray-300 rounded-lg" placeholder="Nhập câu hỏi của bạn ở đây..."></textarea>
+                    </div>
+                    <div id="panel-image" class="tab-panel hidden">
+                        <input type="file" id="image-upload" accept="image/*" class="w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-lg file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-indigo-50 file:text-indigo-700
+                            hover:file:bg-indigo-100 cursor-pointer">
+                        <button id="ocr-btn" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-150 mt-3">Quét ảnh (OCR)</button>
+                    </div>
+                    <div id="panel-voice" class="tab-panel hidden">
+                        <button id="voice-input-btn" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition duration-150">
+                            Nhấn để nói...
+                        </button>
+                    </div>
+
+                     <!-- Nút tìm kiếm (Hỏi-đáp) -->
+                    <button id="search-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-150 mt-4">
+                        Hỏi Gemini (Dựa trên Transcript)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cột 3: Kết quả -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="rounded-lg border border-gray-200 p-4 bg-white shadow-sm">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">4. Kết quả từ Gemini</h3>
+                    <div id="status" class="text-sm text-gray-500 mb-2 italic">Trạng thái: Sẵn sàng...</div>
+                    <div id="answer-display" class="w-full min-h-[10rem] bg-gray-50 rounded-lg p-3 text-gray-700 border border-gray-200">
+                        Câu trả lời của Gemini sẽ xuất hiện ở đây...
+                    </div>
+                </div>
+            </div>
+
         </div>
-
-        <!-- Các cột khác giữ nguyên, không thay đổi -->
-
     </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    let transcriptContent = "";
-    let audioFile = null;
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Biến toàn cục
+            let transcriptContent = ""; // Lưu nội dung transcript từ backend
+            let audioFile = null; // Lưu file MP3 đã chọn
 
-    const audioUpload = document.getElementById('audio-upload');
-    const audioPlayer = document.getElementById('audio-player');
-    const generateTranscriptBtn = document.getElementById('generate-transcript-btn');
-    const transcriptDisplay = document.getElementById('transcript-display');
-    const status = document.getElementById('status');
+            // Cột 1: Tải file & Tạo Transcript
+            const audioUpload = document.getElementById('audio-upload');
+            const audioPlayer = document.getElementById('audio-player');
+            const generateTranscriptBtn = document.getElementById('generate-transcript-btn');
+            const transcriptDisplay = document.getElementById('transcript-display');
 
-    audioUpload.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            audioFile = file;
-            audioPlayer.src = URL.createObjectURL(file);
-            audioPlayer.classList.remove('hidden');
-            status.textContent = `Đã tải: ${file.name}. Sẵn sàng tạo transcript.`;
-        }
-    });
+            // Cột 2: Nhập câu hỏi
+            const textInput = document.getElementById('text-input');
+            const imageUpload = document.getElementById('image-upload');
+            const ocrBtn = document.getElementById('ocr-btn');
+            const voiceInputBtn = document.getElementById('voice-input-btn');
+            const searchBtn = document.getElementById('search-btn');
 
-    generateTranscriptBtn.addEventListener('click', async () => {
-        if (!audioFile) {
-            status.textContent = "Lỗi: Vui lòng chọn một tệp MP3 trước.";
-            return;
-        }
+            // Cột 3: Kết quả
+            const status = document.getElementById('status');
+            const answerDisplay = document.getElementById('answer-display');
 
-        status.textContent = "Đang gửi file MP3 đến backend...";
-        transcriptDisplay.innerHTML = `<div class="flex justify-center items-center h-full">
-            <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
-        </div>`;
-        transcriptDisplay.classList.add('loading-pulse');
+            // --- Xử lý Cột 1: Tải MP3 và gọi Backend ---
 
-        const formData = new FormData();
-        formData.append('audio', audioFile);
-
-        try {
-            const response = await fetch('/api/process-audio', {
-                method: 'POST',
-                body: formData
+            audioUpload.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    audioFile = file; // Lưu file vào biến toàn cục
+                    const objectUrl = URL.createObjectURL(file);
+                    audioPlayer.src = objectUrl;
+                    audioPlayer.classList.remove('hidden');
+                    status.textContent = `Đã tải: ${file.name}. Sẵn sàng tạo transcript.`;
+                }
             });
 
-            transcriptDisplay.classList.remove('loading-pulse');
+            generateTranscriptBtn.addEventListener('click', async () => {
+                if (!audioFile) {
+                    status.textContent = "Lỗi: Vui lòng chọn một tệp MP3 trước.";
+                    return;
+                }
 
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.details || response.statusText || "Lỗi không xác định từ backend");
+                status.textContent = "Đang gửi file MP3 đến Vercel backend...";
+                transcriptDisplay.innerHTML = `<div class="flex justify-center items-center h-full"><div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div></div>`;
+                transcriptDisplay.classList.add('loading-pulse');
+
+                const formData = new FormData();
+                formData.append('audio', audioFile); // Backend 'formidable' sẽ tìm key 'audio'
+
+                try {
+                    // Gọi đến Vercel Serverless Function của bạn
+                    const response = await fetch('/api/process-audio', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    transcriptDisplay.classList.remove('loading-pulse');
+
+                    if (!response.ok) {
+                        const errData = await response.json();
+                        throw new Error(`Lỗi từ backend: ${errData.details || response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    transcriptContent = data.transcript; // Lưu transcript vào biến toàn cục
+                    transcriptDisplay.textContent = transcriptContent;
+                    status.textContent = "Tạo transcript thành công. Sẵn sàng hỏi-đáp.";
+
+                } catch (error) {
+                    console.error("Lỗi khi gọi /api/process-audio:", error);
+                    status.textContent = `Lỗi: ${error.message}`;
+                    transcriptDisplay.textContent = "Đã xảy ra lỗi khi tạo transcript. Vui lòng kiểm tra console log (F12) và Vercel logs.";
+                }
+            });
+
+            // --- Xử lý Cột 2: Chuyển Tab ---
+            const tabs = document.querySelectorAll('.tab-btn');
+            const panels = document.querySelectorAll('.tab-panel');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => {
+                        t.classList.remove('border-blue-600', 'text-blue-600');
+                        t.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    tab.classList.add('border-blue-600', 'text-blue-600');
+                    tab.classList.remove('border-transparent', 'text-gray-500');
+
+                    const targetPanel = document.getElementById(tab.id.replace('tab', 'panel'));
+                    panels.forEach(p => p.classList.add('hidden'));
+                    targetPanel.classList.remove('hidden');
+                });
+            });
+
+            // --- Xử lý Cột 2: OCR ---
+            ocrBtn.addEventListener('click', async () => {
+                const file = imageUpload.files[0];
+                if (!file) {
+                    status.textContent = "Vui lòng chọn một tệp ảnh.";
+                    return;
+                }
+
+                status.textContent = "Đang quét ảnh (OCR)...";
+                try {
+                    const { data: { text } } = await Tesseract.recognize(file, 'eng');
+                    textInput.value = text;
+                    status.textContent = "Quét ảnh thành công. Đã điền vào ô gõ tay.";
+                    // Tự động chuyển về tab gõ tay
+                    document.getElementById('tab-text').click();
+                } catch (error) {
+                    console.error("Lỗi OCR:", error);
+                    status.textContent = "Lỗi khi quét ảnh.";
+                }
+            });
+
+            // --- Xử lý Cột 2: Giọng nói ---
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.lang = 'en-US';
+
+                voiceInputBtn.addEventListener('click', () => {
+                    status.textContent = "Đang lắng nghe...";
+                    voiceInputBtn.textContent = "Đang lắng nghe...";
+                    voiceInputBtn.disabled = true;
+                    recognition.start();
+                });
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    textInput.value = transcript;
+                    status.textContent = "Đã nhận diện giọng nói. Đã điền vào ô gõ tay.";
+                    document.getElementById('tab-text').click();
+                };
+
+                recognition.onend = () => {
+                    voiceInputBtn.textContent = "Nhấn để nói...";
+                    voiceInputBtn.disabled = false;
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('Lỗi nhận diện giọng nói:', event.error);
+                    status.textContent = `Lỗi: ${event.error}`;
+                    voiceInputBtn.textContent = "Nhấn để nói...";
+                    voiceInputBtn.disabled = false;
+                };
+
+            } else {
+                voiceInputBtn.disabled = true;
+                voiceInputBtn.textContent = "Trình duyệt không hỗ trợ";
+                voiceInputBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
             }
+            
+            // --- Xử lý Cột 2: Nút Hỏi Gemini (Dùng API Flash client-side) ---
+            searchBtn.addEventListener('click', async () => {
+                const question = textInput.value.trim();
+                
+                if (!question) {
+                    status.textContent = "Vui lòng nhập câu hỏi.";
+                    return;
+                }
+                
+                if (!transcriptContent) {
+                    status.textContent = "Lỗi: Vui lòng tạo transcript (Bước 1 & 2) trước.";
+                    return;
+                }
 
-            const data = await response.json();
-            transcriptContent = data.transcript || "";
-            if (!transcriptContent) throw new Error("Backend trả về transcript trống.");
-            transcriptDisplay.textContent = transcriptContent;
-            status.textContent = "Tạo transcript thành công. Sẵn sàng hỏi-đáp.";
+                status.textContent = "Đang hỏi Gemini (Flash)... Vui lòng chờ...";
+                answerDisplay.innerHTML = `<div class="flex justify-center items-center h-full"><div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div></div>`;
 
-        } catch (error) {
-            console.error("Lỗi khi gọi /api/process-audio:", error);
-            status.textContent = `Lỗi: ${error.message}`;
-            transcriptDisplay.textContent = "Đã xảy ra lỗi khi tạo transcript.";
-        }
-    });
-});
-</script>
+                try {
+                    // Gọi hàm API Flash (client-side)
+                    const result = await callGeminiApi_Flash(transcriptContent, question);
+                    answerDisplay.textContent = result.text;
+                    status.textContent = "Đã nhận kết quả từ Gemini (Flash).";
+
+                } catch (error) {
+                    console.error("Lỗi khi gọi Gemini API (Flash):", error);
+                    status.textContent = "Lỗi khi kết nối với Gemini (Flash).";
+                    answerDisplay.textContent = `Đã xảy ra lỗi: ${error.message}`;
+                }
+            });
+
+            // --- Hàm gọi Gemini API (Flash client-side cho Bước 2: Hỏi-đáp) ---
+            async function callGeminiApi_Flash(transcript, userQuestion) {
+                const systemPrompt = `Bạn là một trợ lý học tiếng Anh. Nhiệm vụ của bạn là trả lời câu hỏi của người dùng CHỈ dựa trên nội dung (transcript) được cung cấp.
+Hãy phân tích kỹ nội dung transcript và câu hỏi.
+Trả lời một cách ngắn gọn, súc tích, và đi thẳng vào vấn đề.
+Nếu câu trả lời không có trong transcript, HÃY nói rõ: 'Thông tin này không có trong nội dung được cung cấp.'
+KHÔNG được bịa đặt thông tin.`;
+                
+                const userQuery = `NỘI DUNG TRANSCRIPT:\n---\n${transcript}\n---\nCÂU HỎI CỦA NGƯỜI DÙNG:\n${userQuestion}\n---\nCÂU TRẢ LỜI CỦA BẠN:`;
+
+                const apiKey = ""; // Canvas sẽ tự động cung cấp
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                };
+
+                // Logic Retry (Exponential Backoff)
+                let response;
+                let delay = 1000;
+                for (let i = 0; i < 3; i++) {
+                    try {
+                        response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.ok) break;
+                        
+                        if (response.status === 429 || response.status >= 500) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2;
+                        } else {
+                            throw new Error(`Lỗi API: ${response.status} ${response.statusText}`);
+                        }
+                    } catch (fetchError) {
+                        if (i === 2) throw fetchError;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                    }
+                }
+
+                if (!response || !response.ok) {
+                    throw new Error(`Lỗi API sau khi thử lại: ${response ? response.statusText : 'Không có phản hồi'}`);
+                }
+                
+                let result;
+                try {
+                    result = await response.json();
+                } catch (jsonError) {
+                    console.error("Lỗi khi parsing JSON:", jsonError);
+                    throw new Error("Phản hồi từ API không phải là JSON hợp lệ.");
+                }
+
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const text = candidate.content.parts[0].text;
+                    return { text: text, sources: [] };
+                } else {
+                    console.warn("Cấu trúc phản hồi Gemini không hợp lệ:", result);
+                    if (candidate && candidate.finishReason && candidate.finishReason !== 'STOP') {
+                         throw new Error(`Nội dung bị chặn. Lý do: ${candidate.finishReason}`);
+                    }
+                    if (result.promptFeedback && result.promptFeedback.blockReason) {
+                        throw new Error(`Yêu cầu bị chặn. Lý do: ${result.promptFeedback.blockReason}`);
+                    }
+                    throw new Error("Không nhận được nội dung từ Gemini.");
+                }
+            }
+        });
+    </script>
 </body>
 </html>
+
