@@ -145,7 +145,8 @@
 
     <script type="module">
         // Import thư viện Transformers
-        const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
+        // ĐÃ XÓA: const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
+        // Chúng ta sẽ import nó bên trong getInstance() để tránh lỗi chặn tải trang
 
         // --- Lớp quản lý mô hình AI (Whisper) ---
         // Đảm bảo chúng ta chỉ tải mô hình một lần duy nhất
@@ -156,6 +157,10 @@
 
             static async getInstance(progress_callback = null) {
                 if (this.instance === null) {
+                    // SỬA LỖI: Import thư viện Transformers CHỈ KHI CẦN
+                    // Điều này ngăn lỗi import (nếu có) làm hỏng toàn bộ UI
+                    const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
+
                     this.instance = await pipeline(this.task, this.model, { 
                         progress_callback,
                         // Cấu hình để xử lý file MP3 dài
@@ -457,4 +462,5 @@ KHÔNG được bịa đặt thông tin.`;
     </script>
 </body>
 </html>
+
 
