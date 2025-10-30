@@ -175,7 +175,8 @@
         // --- Lớp quản lý mô hình AI (Whisper) ---
         class SpeechRecognitionPipeline {
             static task = 'automatic-speech-recognition';
-            static model = 'Xenova/whisper-tiny.en'; // Model nhỏ cho tiếng Anh (khoảng 70MB)
+            // ĐÃ NÂNG CẤP TỐI ĐA: Dùng mô hình 'small' (lớn, chính xác) thay vì 'base'
+            static model = 'Xenova/whisper-small.en'; 
             static instance = null;
 
             static async getInstance(progress_callback = null) {
@@ -463,4 +464,6 @@
     </script>
 </body>
 </html>
+
+
 
