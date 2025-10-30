@@ -8,8 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Tải Tesseract.js (OCR) -->
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
-    <!-- Tải Transformers.js (Xenova) - Dùng cho xử lý MP3 phía client -->
-    <!-- ĐÃ XÓA DÒNG GÂY LỖI: <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1"></script> -->
     
     <style>
         /* Thêm một chút hiệu ứng cho đẹp mắt */
@@ -66,7 +64,7 @@
                         file:text-sm file:font-semibold
                         file:bg-blue-50 file:text-blue-700
                         hover:file:bg-blue-100 cursor-pointer">
-                    <audio id="audio-player" controls class="w-full mt-4 rounded-lg hidden"></audio>
+                    <audio id="audio-player" controls class="w-full mt-4 rounded-lg" style="display: none;"></audio>
                 </div>
 
                 <!-- Nút Tạo Transcript (Client-side) -->
@@ -205,7 +203,7 @@
                     }
                     audioFileUrl = URL.createObjectURL(file); // Tạo URL mới
                     audioPlayer.src = audioFileUrl;
-                    audioPlayer.classList.remove('hidden');
+                    audioPlayer.style.display = 'block'; // SỬA LỖI: Hiển thị audio player
                     status.textContent = `Đã tải: ${file.name}. Sẵn sàng tạo transcript.`;
                     transcriptDisplay.textContent = "Sẵn sàng tạo transcript...";
                 }
@@ -459,5 +457,4 @@ KHÔNG được bịa đặt thông tin.`;
     </script>
 </body>
 </html>
-
 
