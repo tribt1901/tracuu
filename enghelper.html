@@ -418,25 +418,47 @@
 
                 status.textContent = "Đang so sánh...";
                 
-                // Hàm lấy từ khóa (đơn giản)
+                // --- BẮT ĐẦU CẬP NHẬT ---
+                
+                // Hàm lấy từ khóa (đã sửa)
                 const getKeywords = (text) => {
                     const commonWords = new Set(['the', 'a', 'an', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'to', 'for', 'of', 'what', 'where', 'when', 'who', 'why', 'how']);
                     return text.toLowerCase()
-                               .replace(/[^a-z0-9\s]/g, '') // Xóa dấu câu
-                               .split(/\s+/) // Tách từ
-                               .filter(word => word.length > 2 && !commonWords.has(word));
+                               .replace(/[^a-z0-9\s:]/g, '') // Giữ lại dấu hai chấm (:)
+                               .split(/\s+/) 
+                               .filter(word => (word.length > 2 || /^\d+:\d+$/.test(word)) && !commonWords.has(word)); // Giữ lại chuỗi giờ (vd: 9:00)
                 };
                 
                 const questionKeywords = getKeywords(questionText);
-                const answerKeywords = getKeywords(answerText);
+                let answerKeywords = getKeywords(answerText);
                 
+                // Thêm logic "chuẩn hóa" thời gian cho từ khóa đáp án
+                const normalizedAnswerKeywords = [];
+                answerKeywords.forEach(keyword => {
+                    normalizedAnswerKeywords.push(keyword); // Thêm từ gốc
+                    if (keyword === '9:00' || keyword === 'nine') {
+                        normalizedAnswerKeywords.push("9 o'clock");
+                    }
+                    if (keyword === '8:30' || keyword === 'eight-thirty') {
+                        normalizedAnswerKeywords.push("8.30"); // Khớp với "8.30" trong transcript
+                    }
+                    if (keyword === '6:00' || keyword === 'six') {
+                        normalizedAnswerKeywords.push("6 o'clock");
+                    }
+                });
+                // Lọc trùng lặp
+                const uniqueAnswerKeywords = [...new Set(normalizedAnswerKeywords)];
+                // --- KẾT THÚC CẬP NHẬT ---
+
                 let highlightedTranscript = transcriptContent;
                 let qFound = 0;
                 let aFound = 0;
 
                 // Tô sáng từ khóa đáp án (màu xanh)
-                answerKeywords.forEach(keyword => {
-                    const regex = new RegExp(`\\b(${keyword})\\b`, 'gi'); // \b = word boundary
+                uniqueAnswerKeywords.forEach(keyword => { // Dùng mảng đã chuẩn hóa
+                    // Thoát các ký tự đặc biệt (như dấu chấm trong "8.30")
+                    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(`\\b(${escapedKeyword})\\b`, 'gi'); 
                     if (regex.test(highlightedTranscript)) {
                         aFound++;
                         highlightedTranscript = highlightedTranscript.replace(regex, '<mark class="highlight-answer">$1</mark>');
@@ -444,9 +466,9 @@
                 });
                 
                 // Tô sáng từ khóa câu hỏi (màu vàng)
-                // Làm sau để ưu tiên màu xanh (nếu trùng)
                 questionKeywords.forEach(keyword => {
-                    const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
+                    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(`\\b(${escapedKeyword})\\b`, 'gi');
                     if (regex.test(highlightedTranscript)) {
                         qFound++;
                         // Chỉ thay thế nếu nó chưa được tô sáng
@@ -459,7 +481,7 @@
 
                 compareResult.innerHTML = `
                     <p class="text-sm mb-2">Đã tìm thấy <strong>${qFound} / ${questionKeywords.length}</strong> từ khóa câu hỏi (màu vàng).</p>
-                    <p class="text-sm mb-4">Đã tìm thấy <strong>${aFound} / ${answerKeywords.length}</strong> từ khóa đáp án (màu xanh).</p>
+                    <p class="text-sm mb-4">Đã tìm thấy <strong>${aFound} / ${uniqueAnswerKeywords.length}</strong> từ khóa đáp án (màu xanh).</p>
                     <hr class="mb-4">
                     ${highlightedTranscript.replace(/\n/g, '<br>')}
                 `;
