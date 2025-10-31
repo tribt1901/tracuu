@@ -20,15 +20,15 @@
         @keyframes fadeIn {
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Đã cập nhật: Giữ nguyên trạng thái rút gọn */
         .content-wrapper {
-            transition: max-height 0.5s ease-in-out;
             max-height: 100px; /* Chiều cao ban đầu bị giới hạn */
             overflow: hidden;
             position: relative;
         }
-        .content-wrapper.expanded {
-            max-height: 1000px; /* Chiều cao đủ lớn để chứa nội dung */
-        }
+        
+        /* Lớp giả ::after để tạo hiệu ứng mờ dần */
          .content-wrapper::after {
             content: '';
             position: absolute;
@@ -38,8 +38,25 @@
             height: 30px;
             background: linear-gradient(to top, white, rgba(255,255,255,0));
         }
-        .content-wrapper.expanded::after {
-            display: none;
+        
+        /* CSS cho Modal */
+        #announcement-modal {
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            pointer-events: none; /* Bắt đầu bị vô hiệu hóa */
+        }
+        #announcement-modal.is-open {
+            opacity: 1;
+            pointer-events: auto; /* Kích hoạt khi mở */
+        }
+        #modal-content-box {
+            transform: scale(0.95);
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+        }
+        #announcement-modal.is-open #modal-content-box {
+            transform: scale(1);
+            opacity: 1;
         }
     </style>
 </head>
@@ -76,6 +93,29 @@
         </div>
     </footer>
 
+    <!-- Cấu trúc HTML của Modal (mới) -->
+    <div id="announcement-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center p-4">
+        <div id="modal-content-box" class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <!-- Header Modal -->
+            <div class="flex justify-between items-start p-5 border-b">
+                <div class="flex flex-col">
+                    <h3 id="modal-title" class="text-2xl font-bold text-gray-900"></h3>
+                    <div class="flex items-center gap-4 mt-2">
+                        <span id="modal-category" class="text-sm font-semibold px-3 py-1 rounded-full"></span>
+                        <time id="modal-date" class="text-sm text-gray-500"></time>
+                    </div>
+                </div>
+                <button id="modal-close-btn" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <!-- Body Modal (có thể cuộn) -->
+            <div id="modal-body" class="p-6 overflow-y-auto whitespace-pre-wrap leading-relaxed text-gray-700">
+                <!-- Nội dung đầy đủ sẽ được chèn vào đây -->
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         // Import các mô-đun Firebase (chuẩn hóa phiên bản 11.6.1)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -95,12 +135,21 @@
 
         // Khởi tạo Firebase
         const app = initializeApp(firebaseConfig);
-        // Khởi tạo Firestore (cho bảng tin)
         const db = getFirestore(app);
-        // Khởi tạo Realtime Database (cho bộ đếm)
         const rtdb = getDatabase(app, firebaseConfig.databaseURL);
 
-        // --- Logic cho Bảng Tin (từ mã gốc) ---
+        // --- Lấy các phần tử Modal (mới) ---
+        const modal = document.getElementById('announcement-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalCategory = document.getElementById('modal-category');
+        const modalDate = document.getElementById('modal-date');
+        const modalBody = document.getElementById('modal-body');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // --- Kho lưu trữ dữ liệu thông báo (mới) ---
+        const announcementsData = new Map();
+
+        // --- Logic cho Bảng Tin ---
         const announcementsCol = collection(db, 'announcements');
         const grid = document.getElementById('announcements-grid');
 
@@ -117,18 +166,21 @@
 
         onSnapshot(q, (querySnapshot) => {
             grid.innerHTML = ''; // Xóa thông báo cũ
+            announcementsData.clear(); // Xóa dữ liệu cũ khỏi map
+
             if (querySnapshot.empty) {
                 grid.innerHTML = '<p class="text-gray-500 col-span-full text-center">Chưa có thông báo nào.</p>';
                 return;
             }
             querySnapshot.forEach((doc) => {
                 const announcement = doc.data();
+                announcementsData.set(doc.id, announcement); // Lưu dữ liệu đầy đủ
+                
                 const styles = getCategoryStyles(announcement.category);
                 const date = announcement.createdAt?.toDate().toLocaleDateString('vi-VN', {
                     day: '2-digit', month: '2-digit', year: 'numeric'
                 }) || 'Không có ngày';
 
-                // Kiểm tra nội dung có cần rút gọn không
                 const needsTruncation = announcement.content.length > 200;
 
                 const article = document.createElement('article');
@@ -143,7 +195,8 @@
                         <div class="content-wrapper">
                              <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${announcement.content}</p>
                         </div>
-                        ${needsTruncation ? `<button class="toggle-content-btn text-indigo-600 hover:underline text-sm mt-2 font-semibold">Xem thêm</button>` : ''}
+                        <!-- Cập nhật: Thêm data-id để biết mở thông báo nào -->
+                        ${needsTruncation ? `<button data-id="${doc.id}" class="toggle-content-btn text-indigo-600 hover:underline text-sm mt-2 font-semibold">Xem thêm</button>` : ''}
                     </div>
                 `;
                 grid.appendChild(article);
@@ -153,25 +206,63 @@
             grid.innerHTML = '<p class="text-red-500 col-span-full text-center">Không thể tải thông báo.</p>';
         });
 
-        // Sự kiện click để mở rộng/thu gọn nội dung
+        // --- Các hàm xử lý Modal (mới) ---
+        function openModal(docId) {
+            const data = announcementsData.get(docId);
+            if (!data) return; // Không tìm thấy dữ liệu
+
+            // Định dạng lại ngày (để chắc chắn)
+            const date = data.createdAt?.toDate().toLocaleDateString('vi-VN', {
+                day: '2-digit', month: '2-digit', year: 'numeric'
+            }) || 'Không có ngày';
+            
+            const styles = getCategoryStyles(data.category);
+
+            // Đổ dữ liệu vào modal
+            modalTitle.textContent = data.title;
+            modalBody.textContent = data.content;
+            modalDate.textContent = date;
+            modalCategory.textContent = data.category;
+            modalCategory.className = `${styles.bg} ${styles.text} text-sm font-semibold px-3 py-1 rounded-full`;
+
+            // Hiển thị modal
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => modal.classList.add('is-open'), 10); // Thêm class để kích hoạt transition
+        }
+
+        function closeModal() {
+            modal.classList.remove('is-open'); // Bắt đầu transition đóng
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                // Xóa nội dung cũ để tránh bị "flash" khi mở lần sau
+                modalTitle.textContent = '';
+                modalBody.textContent = '';
+                modalDate.textContent = '';
+                modalCategory.textContent = '';
+            }, 300); // Chờ transition 0.3s hoàn tất
+        }
+
+        // --- Sự kiện click (đã cập nhật) ---
+        // Sự kiện click để mở modal
         grid.addEventListener('click', function(e) {
             if (e.target.classList.contains('toggle-content-btn')) {
-                const button = e.target;
-                const wrapper = button.previousElementSibling; // The .content-wrapper
-                
-                wrapper.classList.toggle('expanded');
-                
-                if (wrapper.classList.contains('expanded')) {
-                    button.textContent = 'Thu gọn';
-                     wrapper.style.maxHeight = wrapper.scrollHeight + "px";
-                } else {
-                    button.textContent = 'Xem thêm';
-                    wrapper.style.maxHeight = '100px';
-                }
+                const docId = e.target.dataset.id;
+                openModal(docId);
             }
         });
 
-        // --- Logic cho Bộ Đếm Trực Tuyến (từ mã mới) ---
+        // Sự kiện click để đóng modal
+        modalCloseBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            // Chỉ đóng khi click vào nền mờ (chính là #announcement-modal)
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // --- Logic cho Bộ Đếm Trực Tuyến (giữ nguyên) ---
         (function initOnlineCounter() {
             const onlineCounterEl = document.getElementById('online-counter');
             if (!onlineCounterEl) return;
@@ -188,10 +279,9 @@
                         if (val && typeof val === 'object') {
                             count = Object.keys(val).length;
                         } else {
-                            count = 1; // Xử lý trường hợp chỉ có 1 kết nối
+                            count = 1;
                         }
                     }
-                    // Trừ 1 để không tính chính mình ("Bạn và X người nữa")
                     onlineCounterEl.textContent = Math.max(0, count - 1); 
                 }, err => {
                     console.error("Lỗi khi lấy giá trị connections: ", err);
@@ -201,7 +291,7 @@
             }
         })();
 
-        // --- Logic tải Navbar (từ mã mới) ---
+        // --- Logic tải Navbar (giữ nguyên) ---
         fetch('/menu.html')
             .then(r => r.text())
             .then(html => {
@@ -217,3 +307,4 @@
     </script>
 </body>
 </html>
+
