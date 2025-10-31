@@ -66,7 +66,8 @@
     <header id="navbar-placeholder"></header>
 
     <!-- Bộ đếm trực tuyến mới -->
-    <div class="online-counter-box container mx-auto px-6 pt-4">
+    <!-- SỬA LỖI: Thêm pt-24 (padding-top: 6rem) để chừa không gian cho menu fixed -->
+    <div class="online-counter-box container mx-auto px-6 pt-24">
         <div class="bg-white shadow rounded-lg p-3 text-center text-gray-700 text-sm">
             🟢 Hiện có Bạn và <span id="online-counter" class="font-bold">0</span> người nữa đang truy cập hệ thống.
         </div>
@@ -110,7 +111,8 @@
                 </button>
             </div>
             <!-- Body Modal (có thể cuộn) -->
-            <div id="modal-body" class="p-6 overflow-y-auto whitespace-pre-wrap leading-relaxed text-gray-700">
+            <!-- SỬA LỖI (Link): Dùng lớp 'prose' của Tailwind để định dạng link tự động -->
+            <div id="modal-body" class="p-6 overflow-y-auto prose max-w-none">
                 <!-- Nội dung đầy đủ sẽ được chèn vào đây -->
             </div>
         </div>
@@ -181,7 +183,13 @@
                     day: '2-digit', month: '2-digit', year: 'numeric'
                 }) || 'Không có ngày';
 
-                const needsTruncation = announcement.content.length > 200;
+                // Kiểm tra xem nội dung có thực sự dài hơn giới hạn hay không
+                // (Sử dụng textContent để đếm ký tự, không phải HTML)
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = announcement.content;
+                const plainText = tempDiv.textContent || tempDiv.innerText || "";
+                const needsTruncation = plainText.length > 200;
+
 
                 const article = document.createElement('article');
                 article.className = `announcement-card bg-white rounded-lg shadow-lg overflow-hidden border-l-4 ${styles.border}`;
@@ -193,7 +201,8 @@
                         </div>
                         <h2 class="text-2xl font-bold mb-2 text-gray-900">${announcement.title}</h2>
                         <div class="content-wrapper">
-                             <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${announcement.content}</p>
+                             <!-- SỬA LỖI (Link): Sử dụng innerHTML để render HTML từ Quill -->
+                             <div class="text-gray-700 leading-relaxed">${announcement.content}</div>
                         </div>
                         <!-- Cập nhật: Thêm data-id để biết mở thông báo nào -->
                         ${needsTruncation ? `<button data-id="${doc.id}" class="toggle-content-btn text-indigo-600 hover:underline text-sm mt-2 font-semibold">Xem thêm</button>` : ''}
@@ -220,7 +229,8 @@
 
             // Đổ dữ liệu vào modal
             modalTitle.textContent = data.title;
-            modalBody.textContent = data.content;
+            // SỬA LỖI (Link): Sử dụng innerHTML để render HTML từ Quill
+            modalBody.innerHTML = data.content; 
             modalDate.textContent = date;
             modalCategory.textContent = data.category;
             modalCategory.className = `${styles.bg} ${styles.text} text-sm font-semibold px-3 py-1 rounded-full`;
@@ -238,7 +248,7 @@
                 modal.classList.remove('flex');
                 // Xóa nội dung cũ để tránh bị "flash" khi mở lần sau
                 modalTitle.textContent = '';
-                modalBody.textContent = '';
+                modalBody.innerHTML = ''; // SỬA LỖI: Dùng innerHTML
                 modalDate.textContent = '';
                 modalCategory.textContent = '';
             }, 300); // Chờ transition 0.3s hoàn tất
@@ -247,11 +257,14 @@
         // --- Sự kiện click (đã cập nhật) ---
         // Sự kiện click để mở modal
         grid.addEventListener('click', function(e) {
-            if (e.target.classList.contains('toggle-content-btn')) {
-                const docId = e.target.dataset.id;
+            // Cho phép click vào thẻ P, SPAN, v.v. bên trong nút
+            const button = e.target.closest('.toggle-content-btn');
+            if (button) {
+                const docId = button.dataset.id;
                 openModal(docId);
             }
         });
+
 
         // Sự kiện click để đóng modal
         modalCloseBtn.addEventListener('click', closeModal);
@@ -282,7 +295,8 @@
                             count = 1;
                         }
                     }
-                    onlineCounterEl.textContent = Math.max(0, count - 1); 
+                    // SỬA LỖI: Hiển thị tổng số lượng (không trừ 1)
+                    onlineCounterEl.textContent = count; 
                 }, err => {
                     console.error("Lỗi khi lấy giá trị connections: ", err);
                 });
@@ -291,8 +305,8 @@
             }
         })();
 
-        // --- Logic tải Navbar (giữ nguyên) ---
-        fetch('/menu.html')
+        // --- Logic tải Navbar (SỬA LỖI: Tải menu_tailwind.html) ---
+        fetch('./menu_tailwind.html') // Tải phiên bản Tailwind của menu
             .then(r => r.text())
             .then(html => {
                 const placeholder = document.getElementById('navbar-placeholder');
@@ -301,7 +315,7 @@
                 }
             })
             .catch(err => {
-                console.warn("Không thể tải menu.html: ", err);
+                console.warn("Không thể tải menu_tailwind.html: ", err);
             });
 
     </script>
