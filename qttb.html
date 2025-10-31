@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quản Trị Thông Báo</title>
 
-  <!-- Tailwind -->
+  <!-- Tailwind & Font -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -66,10 +66,31 @@
       🟢 Bạn và <span id="online-counter">0</span> người khác đang truy cập hệ thống.
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <!-- FORM THÊM / SỬA -->
-      <div class="lg:col-span-1">
-        <div class="bg-white p-6 rounded-lg shadow-lg sticky top-8">
+    <!-- === BỐ CỤC TAB MỚI === -->
+    <div class="mb-6">
+        <div class="border-b border-gray-300">
+            <nav class="flex space-x-4" aria-label="Tabs">
+                <button id="tab-list" class="text-indigo-600 border-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Quản trị thông báo
+                </button>
+                <button id="tab-add" class="text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Thêm mới thông báo
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- VÙNG CHỨA DANH SÁCH (MẶC ĐỊNH HIỂN THỊ) -->
+    <div id="list-container">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+          <h2 class="text-xl font-bold mb-6 text-gray-700">Danh Sách Thông Báo</h2>
+          <div id="announcements-list" class="space-y-4"></div>
+        </div>
+    </div>
+    
+    <!-- VÙNG CHỨA BIỂU MẪU (MẶC ĐỊNH ẨN) -->
+    <div id="form-container" class="hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-3xl mx-auto">
           <h2 id="form-title" class="text-xl font-bold mb-6 text-gray-700">Thêm Thông Báo Mới</h2>
           <form id="announcement-form">
             <div class="mb-4">
@@ -101,16 +122,9 @@
             </div>
           </form>
         </div>
-      </div>
-
-      <!-- DANH SÁCH -->
-      <div class="lg:col-span-2">
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-          <h2 class="text-xl font-bold mb-6 text-gray-700">Danh Sách Thông Báo</h2>
-          <div id="announcements-list" class="space-y-4"></div>
-        </div>
-      </div>
     </div>
+    <!-- === KẾT THÚC BỐ CỤC MỚI === -->
+
   </div>
 
   <!-- SCRIPT -->
@@ -136,12 +150,18 @@
     const auth = getAuth(app);
     const rtdb = getDatabase(app, firebaseConfig.databaseURL);
 
+    Quill.register('modules/emoji', QuillEmoji);
+
     let editingId = null;
+    let quill;
     const stripHtml = (html) => {
       const tmp = document.createElement("DIV");
       tmp.innerHTML = html;
       return tmp.textContent || tmp.innerText || "";
     };
+
+    let unsubscribeAnnouncements = null;
+    let unsubscribeOnline = null;
 
     document.addEventListener("DOMContentLoaded", () => {
       const loginContainer = document.getElementById("login-container");
@@ -153,6 +173,12 @@
       const formTitle = document.getElementById("form-title");
       const submitBtn = document.getElementById("submit-btn");
       const cancelEditBtn = document.getElementById("cancel-edit-btn");
+      
+      // === CÁC THÀNH PHẦN TAB MỚI ===
+      const tabList = document.getElementById("tab-list");
+      const tabAdd = document.getElementById("tab-add");
+      const listContainer = document.getElementById("list-container");
+      const formContainer = document.getElementById("form-container");
 
       const toolbarOptions = [
         [{ 'font': [] }, { 'size': [] }],
@@ -164,9 +190,46 @@
         ['emoji'],
         ['clean']
       ];
-      const quill = new Quill('#editor', {
+      
+      quill = new Quill('#editor', {
         theme: 'snow',
         modules: { toolbar: toolbarOptions, 'emoji-toolbar': true, 'emoji-textarea': false, 'emoji-shortname': true }
+      });
+
+      // === HÀM CHUYỂN TAB ===
+      function showView(viewName) {
+        if (viewName === 'list') {
+            listContainer.classList.remove("hidden");
+            formContainer.classList.add("hidden");
+            
+            tabList.classList.add("text-indigo-600", "border-indigo-600");
+            tabList.classList.remove("text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
+            
+            tabAdd.classList.add("text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
+            tabAdd.classList.remove("text-indigo-600", "border-indigo-600");
+
+        } else if (viewName === 'form') {
+            listContainer.classList.add("hidden");
+            formContainer.classList.remove("hidden");
+
+            tabAdd.classList.add("text-indigo-600", "border-indigo-600");
+            tabAdd.classList.remove("text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
+
+            tabList.classList.add("text-gray-500", "hover:text-gray-700", "hover:border-gray-300");
+            tabList.classList.remove("text-indigo-600", "border-indigo-600");
+        }
+      }
+
+      // === SỰ KIỆN CLICK TAB ===
+      tabList.addEventListener("click", () => {
+        editingId = null;
+        resetForm();
+        showView('list');
+      });
+      tabAdd.addEventListener("click", () => {
+        editingId = null; 
+        resetForm();
+        showView('form');
       });
 
       // LOGIN
@@ -194,21 +257,101 @@
           loginContainer.classList.add("hidden");
           adminContainer.classList.remove("hidden");
           if (logoutBtn) logoutBtn.classList.remove("hidden");
+          showView('list'); // Hiển thị tab danh sách khi đăng nhập
           loadDashboard();
         } else {
           loginContainer.classList.remove("hidden");
           adminContainer.classList.add("hidden");
           if (logoutBtn) logoutBtn.classList.add("hidden");
           window.dashboardLoaded = false;
+          
+          if (unsubscribeAnnouncements) {
+            unsubscribeAnnouncements();
+            unsubscribeAnnouncements = null;
+          }
+          if (unsubscribeOnline) {
+            unsubscribeOnline();
+            unsubscribeOnline = null;
+          }
+          resetForm();
+        }
+      });
+      
+      // THÊM / CẬP NHẬT
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const title = form.title.value.trim();
+        const content = quill.root.innerHTML;
+        const category = form.category.value;
+        if (!title || stripHtml(content) === "") return;
+
+        try {
+          if (editingId) {
+            await updateDoc(doc(db, "announcements", editingId), { title, content, category });
+          } else {
+            await addDoc(collection(db, "announcements"), { title, content, category, createdAt: serverTimestamp() });
+          }
+          resetForm();
+          showView('list'); // Chuyển về danh sách sau khi lưu
+        } catch (error) {
+            console.error("Lỗi khi lưu:", error);
         }
       });
 
+      // XOÁ + SỬA
+      list.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (!id) return;
+
+        if (btn.classList.contains("delete-btn")) {
+          if (confirm("Bạn có chắc muốn xóa thông báo này?")) {
+            try {
+                await deleteDoc(doc(db, "announcements", id));
+            } catch (error) {
+                console.error("Lỗi khi xóa:", error);
+            }
+          }
+        }
+
+        if (btn.classList.contains("edit-btn")) {
+          try {
+            const docSnap = await getDoc(doc(db, "announcements", id));
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              form.title.value = data.title;
+              form.category.value = data.category;
+              quill.root.innerHTML = data.content;
+              editingId = id;
+              formTitle.textContent = "Chỉnh Sửa Thông Báo";
+              submitBtn.querySelector("span").textContent = "Cập Nhật";
+              cancelEditBtn.classList.remove("hidden");
+              submitBtn.classList.replace("bg-indigo-600", "bg-green-600");
+              submitBtn.classList.replace("hover:bg-indigo-700", "hover:bg-green-700");
+              
+              showView('form'); // Chuyển sang tab biểu mẫu
+            }
+          } catch (error) {
+              console.error("Lỗi khi tải để sửa:", error);
+          }
+        }
+      });
+
+      // NÚT HỦY SỬA
+      cancelEditBtn.addEventListener("click", () => {
+          resetForm();
+          showView('list'); // Chuyển về danh sách
+      });
+
+      // HÀM TẢI DASHBOARD
       async function loadDashboard() {
         if (window.dashboardLoaded) return;
         window.dashboardLoaded = true;
 
         const announcementsCol = collection(db, "announcements");
-        onSnapshot(query(announcementsCol, orderBy("createdAt", "desc")), (snap) => {
+        
+        unsubscribeAnnouncements = onSnapshot(query(announcementsCol, orderBy("createdAt", "desc")), (snap) => {
           list.innerHTML = "";
           if (snap.empty) {
             list.innerHTML = "<p class='text-gray-500'>Chưa có thông báo nào.</p>";
@@ -232,59 +375,13 @@
           });
         });
 
-        // THÊM / CẬP NHẬT
-        form.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const title = form.title.value.trim();
-          const content = quill.root.innerHTML;
-          const category = form.category.value;
-          if (!title || stripHtml(content) === "") return;
-
-          if (editingId) {
-            await updateDoc(doc(db, "announcements", editingId), { title, content, category });
-            resetForm();
-          } else {
-            await addDoc(collection(db, "announcements"), { title, content, category, createdAt: serverTimestamp() });
-            form.reset();
-            quill.setText("");
-          }
-        });
-
-        // XOÁ + SỬA
-        list.addEventListener("click", async (e) => {
-          const btn = e.target.closest("button");
-          if (!btn) return;
-          const id = btn.dataset.id;
-
-          if (btn.classList.contains("delete-btn")) {
-            if (confirm("Bạn có chắc muốn xóa thông báo này?")) await deleteDoc(doc(db, "announcements", id));
-          }
-
-          if (btn.classList.contains("edit-btn")) {
-            const docSnap = await getDoc(doc(db, "announcements", id));
-            if (docSnap.exists()) {
-              const data = docSnap.data();
-              form.title.value = data.title;
-              form.category.value = data.category;
-              quill.root.innerHTML = data.content;
-              editingId = id;
-              formTitle.textContent = "Chỉnh Sửa Thông Báo";
-              submitBtn.querySelector("span").textContent = "Cập Nhật";
-              cancelEditBtn.classList.remove("hidden");
-              submitBtn.classList.replace("bg-indigo-600", "bg-green-600");
-              submitBtn.classList.replace("hover:bg-indigo-700", "hover:bg-green-700");
-            }
-          }
-        });
-
-        cancelEditBtn.addEventListener("click", () => resetForm());
-
         // ĐẾM ONLINE
         const onlineRef = ref(rtdb, "connections");
         const myRef = push(onlineRef);
         onDisconnect(myRef).remove();
         await set(myRef, true);
-        onValue(onlineRef, (snap) => {
+        
+        unsubscribeOnline = onValue(onlineRef, (snap) => {
           document.getElementById("online-counter").textContent = Object.keys(snap.val() || {}).length;
         });
       }
@@ -292,7 +389,9 @@
       function resetForm() {
         form.reset();
         editingId = null;
-        document.querySelector("#editor .ql-editor").innerHTML = "";
+        
+        quill.setText('');
+
         formTitle.textContent = "Thêm Thông Báo Mới";
         submitBtn.querySelector("span").textContent = "Đăng Thông Báo";
         cancelEditBtn.classList.add("hidden");
@@ -303,3 +402,4 @@
   </script>
 </body>
 </html>
+
