@@ -5,18 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quản Trị Thông Báo</title>
 
-  <!-- === SỬA LỖI: Thêm Bootstrap CSS === -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  
-  <!-- === SỬA LỖI: Cấu hình Tailwind để tắt Preflight (tránh xung đột Bootstrap) === -->
-  <script>
-    tailwind.config = {
-      corePlugins: {
-        preflight: false,
-      }
-    }
-  </script>
-  <!-- Tailwind & Font -->
+  <!-- Tailwind & Font (KHÔNG CÒN BOOTSTRAP) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -27,15 +16,14 @@
   <script src="https://cdn.jsdelivr.net/npm/quill-emoji@0.2.0/dist/quill-emoji.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/quill-emoji@0.2.0/dist/quill-emoji.css" rel="stylesheet">
 
-  <!-- === SỬA LỖI: Di chuyển Bootstrap JS lên <head> để đảm bảo menu được nạp đúng === -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
   <style>
+    /* Chúng ta không cần padding-top cho body nữa,
+      thay vào đó sẽ thêm padding-top cho #login-container và #admin-container
+      để chừa không gian cho menu 'fixed'
+    */
     body { 
       font-family: 'Inter', sans-serif; 
       background: #f9fafb; 
-      /* === SỬA LỖI: Thêm khoảng đệm cho menu cố định === */
-      padding-top: 80px; 
     }
     .ql-editor { min-height: 350px; max-height: 600px; overflow-y: auto; }
     .online-counter-box {
@@ -58,16 +46,13 @@
 </head>
 
 <body class="bg-gray-100">
-  <!-- === SỬA LỖI: Tách biệt Menu và Nút Đăng xuất === -->
-  <header id="navbar-placeholder" class="relative">
-      <!-- menu.html sẽ được nạp vào đây -->
+  <header id="navbar-placeholder">
+      <!-- menu_tailwind.html sẽ được nạp vào đây -->
   </header>
-  <!-- === KẾT THÚC SỬA LỖI === -->
-
 
   <!-- LOGIN -->
-  <div id="login-container" class="min-h-screen flex items-center justify-center p-4">
-    <!-- ... (Nội dung đăng nhập không đổi) ... -->
+  <!-- Thêm pt-24 (padding-top: 6rem) để chừa không gian cho menu fixed -->
+  <div id="login-container" class="min-h-screen flex items-center justify-center p-4 pt-24">
     <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
       <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Đăng Nhập Quản Trị</h2>
       <form id="login-form">
@@ -86,14 +71,14 @@
   </div>
 
   <!-- ADMIN DASHBOARD -->
-  <div id="admin-container" class="hidden container mx-auto px-6 py-8">
+  <!-- Thêm pt-28 (padding-top: 7rem) và pb-8 (padding-bottom) -->
+  <div id="admin-container" class="hidden container mx-auto px-6 pt-28 pb-8">
     <div class="online-counter-box">
       🟢 Bạn và <span id="online-counter">0</span> người khác đang truy cập hệ thống.
     </div>
 
-    <!-- === BỐ CỤC TAB MỚI === -->
+    <!-- BỐ CỤC TAB -->
     <div class="mb-6">
-        <!-- === SỬA LỖI: Thêm flex, justify-between, items-center để căn chỉnh nút === -->
         <div class="border-b border-gray-300 flex justify-between items-center">
             <nav class="flex space-x-4" aria-label="Tabs">
                 <button id="tab-list" class="text-indigo-600 border-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
@@ -104,14 +89,14 @@
                 </button>
             </nav>
             
-            <!-- === SỬA LỖI: Nút Đăng xuất đã được di chuyển vào đây === -->
+            <!-- Nút Đăng xuất tĩnh, nằm ngoài menu được fetch -->
             <button id="admin-logout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg z-50 mb-2">
                 <i class="fas fa-sign-out-alt mr-2"></i>Đăng Xuất
             </button>
         </div>
     </div>
 
-    <!-- VÙNG CHỨA DANH SÁCH (MẶC ĐỊNH HIỂN THỊ) -->
+    <!-- VÙNG CHỨA DANH SÁCH -->
     <div id="list-container">
         <div class="bg-white p-6 rounded-lg shadow-lg">
           <h2 class="text-xl font-bold mb-6 text-gray-700">Danh Sách Thông Báo</h2>
@@ -119,7 +104,7 @@
         </div>
     </div>
     
-    <!-- VÙNG CHỨA BIỂU MẪU (MẶC ĐỊNH ẨN) -->
+    <!-- VÙNG CHỨA BIỂU MẪU -->
     <div id="form-container" class="hidden">
         <div class="bg-white p-6 rounded-lg shadow-lg max-w-3xl mx-auto">
           <h2 id="form-title" class="text-xl font-bold mb-6 text-gray-700">Thêm Thông Báo Mới</h2>
@@ -144,7 +129,7 @@
               </select>
             </div>
             <div class="flex gap-3">
-              <button id="submit-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">
+              <button id="submit-btn" type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">
                 <i class="fa fa-paper-plane mr-2"></i><span>Đăng Thông Báo</span>
               </button>
               <button id="cancel-edit-btn" type="button" class="hidden flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded-lg">
@@ -154,12 +139,8 @@
           </form>
         </div>
     </div>
-    <!-- === KẾT THÚC BỐ CỤC MỚI === -->
 
   </div>
-
-  <!-- === SỬA LỖI: Xóa Bootstrap JS (đã chuyển lên <head>) === -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script> -->
 
   <!-- SCRIPT -->
   <script type="module">
@@ -212,6 +193,9 @@
       const tabAdd = document.getElementById("tab-add");
       const listContainer = document.getElementById("list-container");
       const formContainer = document.getElementById("form-container");
+
+      // Nút đăng xuất tĩnh (luôn tồn tại trong DOM của trang này)
+      const staticLogoutBtn = document.getElementById("admin-logout-btn");
 
       const toolbarOptions = [
         [{ 'font': [] }, { 'size': [] }],
@@ -276,15 +260,15 @@
         }
       });
 
-      // Tải menu.html bất kể trạng thái đăng nhập
-      fetch("./menu.html")
+      // Tải menu_tailwind.html (thay vì menu.html)
+      fetch("./menu_tailwind.html")
           .then(r => r.text())
           .then(html => {
               document.getElementById("navbar-placeholder").innerHTML = html;
           })
           .catch(err => console.error("Lỗi nạp menu:", err));
       
-      const staticLogoutBtn = document.getElementById("admin-logout-btn");
+      // Gắn sự kiện cho nút đăng xuất tĩnh
       staticLogoutBtn.addEventListener("click", () => signOut(auth));
 
 
@@ -293,19 +277,16 @@
         if (user) {
           loginContainer.classList.add("hidden");
           adminContainer.classList.remove("hidden");
-          
           staticLogoutBtn.classList.remove("hidden"); 
 
           if (!window.dashboardLoaded) {
             loadDashboard();
           }
-          
           showView('list'); 
           
         } else {
           loginContainer.classList.remove("hidden");
           adminContainer.classList.add("hidden");
-          
           staticLogoutBtn.classList.add("hidden"); 
           
           window.dashboardLoaded = false;
@@ -447,5 +428,4 @@
   </script>
 </body>
 </html>
-
 
