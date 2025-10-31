@@ -7,7 +7,6 @@
 
   <!-- Tailwind & Font -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- === LỖI 1: Đã xóa bootstrap.bundle.min.js (không cần thiết) === -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -40,10 +39,20 @@
 </head>
 
 <body class="bg-gray-100">
-  <header id="navbar-placeholder"></header>
+  <!-- === SỬA LỖI: Tách biệt Menu và Nút Đăng xuất === -->
+  <header id="navbar-placeholder" class="relative">
+      <!-- Nút Đăng xuất Tĩnh -->
+      <!-- Nút này là một phần của admin.html và được kiểm soát bởi auth -->
+      <!-- === NÚT ĐĂNG XUẤT ĐÃ BỊ XÓA KHỎI ĐÂY === -->
+      
+      <!-- menu.html sẽ được nạp vào đây, nhưng không còn chứa logic đăng xuất -->
+  </header>
+  <!-- === KẾT THÚC SỬA LỖI === -->
+
 
   <!-- LOGIN -->
   <div id="login-container" class="min-h-screen flex items-center justify-center p-4">
+    <!-- ... (Nội dung đăng nhập không đổi) ... -->
     <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
       <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Đăng Nhập Quản Trị</h2>
       <form id="login-form">
@@ -69,7 +78,8 @@
 
     <!-- === BỐ CỤC TAB MỚI === -->
     <div class="mb-6">
-        <div class="border-b border-gray-300">
+        <!-- === SỬA LỖI: Thêm flex, justify-between, items-center để căn chỉnh nút === -->
+        <div class="border-b border-gray-300 flex justify-between items-center">
             <nav class="flex space-x-4" aria-label="Tabs">
                 <button id="tab-list" class="text-indigo-600 border-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                     Quản trị thông báo
@@ -78,6 +88,11 @@
                     Thêm mới thông báo
                 </button>
             </nav>
+            
+            <!-- === SỬA LỖI: Nút Đăng xuất đã được di chuyển vào đây === -->
+            <button id="admin-logout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg z-50 mb-2">
+                <i class="fas fa-sign-out-alt mr-2"></i>Đăng Xuất
+            </button>
         </div>
     </div>
 
@@ -177,7 +192,7 @@
       
       const tabList = document.getElementById("tab-list");
       const tabAdd = document.getElementById("tab-add");
-      const listContainer = document.getElementById("list-container");
+      <const listContainer = document.getElementById("list-container");
       const formContainer = document.getElementById("form-container");
 
       const toolbarOptions = [
@@ -243,27 +258,32 @@
         }
       });
 
-      // === LỖI 2: ĐÃ SỬA LỖI RACE CONDITION ===
-      // MENU SẼ CHỈ ĐƯỢC TẢI SAU KHI ĐĂNG NHẬP THÀNH CÔNG
+      // === SỬA LỖI: Tải menu ngay lập tức ===
+      // Tải menu.html bất kể trạng thái đăng nhập
+      fetch("./menu.html")
+          .then(r => r.text())
+          .then(html => {
+              // Chèn menu, nhưng không gắn listener đăng xuất ở đây
+              document.getElementById("navbar-placeholder").innerHTML = html;
+          })
+          .catch(err => console.error("Lỗi nạp menu:", err));
+      
+      // === SỬA LỖI: Gắn listener vào nút đăng xuất TĨNH ===
+      const staticLogoutBtn = document.getElementById("admin-logout-btn");
+      staticLogoutBtn.addEventListener("click", () => signOut(auth));
+
 
       // AUTH
       onAuthStateChanged(auth, (user) => {
+        // const logoutBtn = document.getElementById("logoutBtn"); // KHÔNG CẦN NỮA
         if (user) {
           loginContainer.classList.add("hidden");
           adminContainer.classList.remove("hidden");
           
-          // Chỉ tải menu và dashboard nếu chưa tải
+          staticLogoutBtn.classList.remove("hidden"); // Hiển thị nút đăng xuất tĩnh
+
+          // Chỉ tải dashboard nếu chưa tải
           if (!window.dashboardLoaded) {
-            // Tải menu
-            fetch("./menu.html").then(r => r.text()).then(html => {
-              document.getElementById("navbar-placeholder").innerHTML = html;
-              const logoutBtn = document.getElementById("logoutBtn");
-              if (logoutBtn) {
-                logoutBtn.addEventListener("click", () => signOut(auth));
-                logoutBtn.classList.remove("hidden"); // Hiển thị nút
-              }
-            }).catch(err => console.error("Lỗi nạp menu:", err));
-            
             // Tải dashboard (listeners)
             loadDashboard();
           }
@@ -274,8 +294,9 @@
           loginContainer.classList.remove("hidden");
           adminContainer.classList.add("hidden");
           
-          // Dọn dẹp menu và listeners khi đăng xuất
-          document.getElementById("navbar-placeholder").innerHTML = ""; 
+          staticLogoutBtn.classList.add("hidden"); // Ẩn nút đăng xuất tĩnh
+          
+          // Dọn dẹp listeners khi đăng xuất
           window.dashboardLoaded = false;
           
           if (unsubscribeAnnouncements) {
@@ -415,4 +436,3 @@
   </script>
 </body>
 </html>
-
