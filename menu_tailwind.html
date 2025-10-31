@@ -1,0 +1,93 @@
+<!-- 
+  Menu này được viết lại bằng Tailwind CSS để tương thích với trang admin.html
+  Nó KHÔNG cần tệp CSS hoặc JS của Bootstrap để chạy.
+-->
+<nav class="fixed top-0 left-0 right-0 z-50 shadow-sm" style="background-color:#3B5C94">
+  <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+    
+    <!-- Brand -->
+    <a class="text-white text-lg font-bold" href="/">📘 Hệ thống tra cứu TVU & Tiện ích</a>
+
+    <!-- Nút Mobile (chỉ JS đơn giản để bật/tắt) -->
+    <button id="mobile-menu-button" class="lg:hidden text-white" type="button" aria-controls="mobile-menu" aria-expanded="false">
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+      </svg>
+    </button>
+
+    <!-- Menu Lớn (Desktop) -->
+    <div class="hidden lg:flex lg:items-center lg:space-x-4">
+      <a class="text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="/">Trang chủ</a>
+      <a class="text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="/upload">Upload</a>
+      <a class="text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="/export">Đề Cương</a>
+      
+      <!-- Dropdown Tiện ích -->
+      <div class="relative group">
+        <button class="text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900 flex items-center">
+          <span>Tiện ích</span>
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <!-- Menu con (dropdown) -->
+        <div class="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block z-50">
+          <a class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" href="/ocr">Tra cứu OCR</a>
+          <a class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" href="https://microsoftedge.microsoft.com/addons/detail/tr%E1%BB%A3-l%C3%BD-h%E1%BB%8Dc-t%E1%BA%ADp-hg/ighppgieadhjnhinnodngbnbidgflajc" target="_blank">Trợ lý học tập HG</a>
+          <a class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" href="/wifi-qrcode">Tạo QR Wifi</a>
+          <a class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" href="/privacy_policy">Chính sách bảo mật</a>
+          <a class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" href="/outlineOK">Đề cương đóng góp</a>
+        </div>
+      </div>
+      
+      <a class="text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="https://hugo.io.vn" target="_blank">Đếm ngày đến Tết</a>
+    </div>
+
+    <!-- Menu Mobile (Dropdown) -->
+    <div id="mobile-menu" class="hidden lg:hidden absolute top-full left-0 right-0 shadow-md" style="background-color:#3B5C94">
+      <div class="px-5 pt-2 pb-3 space-y-1">
+        <a class="block text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="/">Trang chủ</a>
+        <a class="block text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="/upload">Upload</a>
+        <a class="block text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="/export">Đề Cương</a>
+        
+        <!-- Dropdown Tiện ích (Mobile) -->
+        <div>
+          <button id="mobile-dropdown-button" class="w-full text-left text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900 flex justify-between items-center">
+            <span>Tiện ích</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+          <div id="mobile-dropdown-menu" class="hidden pl-4 pt-1 space-y-1">
+            <a class="block text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="/ocr">Tra cứu OCR</a>
+            <a class="block text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="https://microsoftedge.microsoft.com/addons/detail/tr%E1%BB%A3-l%C3%BD-h%E1%BB%8Dc-t%E1%BA%ADp-hg/ighppgieadhjnhinnodngbnbidgflajc" target="_blank">Trợ lý học tập HG</a>
+            <a class="block text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="/wifi-qrcode">Tạo QR Wifi</a>
+            <a class="block text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="/privacy_policy">Chính sách bảo mật</a>
+            <a class="block text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="/outlineOK">Đề cương đóng góp</a>
+          </div>
+        </div>
+        
+        <a class="block text-white px-3 py-2 rounded-md hover:bg-white hover:text-gray-900" href="https://hugo.io.vn" target="_blank">Đếm ngày đến Tết</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script cho menu mobile (Không phụ thuộc Bootstrap) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const menuButton = document.getElementById('mobile-menu-button');
+      const mobileMenu = document.getElementById('mobile-menu');
+      
+      if (menuButton) {
+        menuButton.addEventListener('click', () => {
+          mobileMenu.classList.toggle('hidden');
+        });
+      }
+
+      const dropdownButton = document.getElementById('mobile-dropdown-button');
+      const dropdownMenu = document.getElementById('mobile-dropdown-menu');
+
+      if (dropdownButton) {
+        dropdownButton.addEventListener('click', () => {
+          dropdownMenu.classList.toggle('hidden');
+        });
+      }
+    });
+  </script>
+</nav>
+
