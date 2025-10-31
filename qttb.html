@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Trị Thông Báo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Thư viện icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        #edit-modal { transition: opacity 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">Bảng Điều Khiển Quản Trị</h1>
+            <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center">
+                Đăng xuất
+                <i class="fas fa-sign-out-alt ml-2"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Cột thêm mới thông báo -->
+        <div class="lg:col-span-1">
+            <div class="bg-white p-6 rounded-lg shadow-lg sticky top-8">
+                <h2 class="text-xl font-bold mb-6 text-gray-700">Thêm Thông Báo Mới</h2>
+                <form id="add-announcement-form">
+                    <div class="mb-4">
+                        <label for="title" class="block text-gray-700 font-medium mb-2">Tiêu đề</label>
+                        <input type="text" id="title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="content" class="block text-gray-700 font-medium mb-2">Nội dung</label>
+                        <textarea id="content" rows="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
+                    </div>
+                    <div class="mb-6">
+                        <label for="category" class="block text-gray-700 font-medium mb-2">Danh mục</label>
+                        <select id="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option>Thông Tin Chung</option>
+                            <option>Quan Trọng</option>
+                            <option>Lịch Học</option>
+                            <option>Sự Kiện</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-300">Đăng Thông Báo</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Cột quản lý thông báo đã đăng -->
+        <div class="lg:col-span-2">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-bold mb-6 text-gray-700">Danh Sách Thông Báo</h2>
+                <div id="announcements-list" class="space-y-4">
+                    <!-- Danh sách thông báo sẽ được tải vào đây -->
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Modal để chỉnh sửa thông báo -->
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-lg">
+            <h2 class="text-xl font-bold mb-6">Chỉnh Sửa Thông Báo</h2>
+            <form id="edit-form">
+                <input type="hidden" id="edit-id">
+                <div class="mb-4">
+                    <label for="edit-title" class="block text-gray-700 font-medium mb-2">Tiêu đề</label>
+                    <input type="text" id="edit-title" class="w-full px-4 py-2 border rounded-lg" required>
+                </div>
+                <div class="mb-4">
+                    <label for="edit-content" class="block text-gray-700 font-medium mb-2">Nội dung</label>
+                    <textarea id="edit-content" rows="5" class="w-full px-4 py-2 border rounded-lg" required></textarea>
+                </div>
+                <div class="mb-6">
+                    <label for="edit-category" class="block text-gray-700 font-medium mb-2">Danh mục</label>
+                    <select id="edit-category" class="w-full px-4 py-2 border rounded-lg bg-white">
+                        <option>Thông Tin Chung</option> <option>Quan Trọng</option> <option>Lịch Học</option> <option>Sự Kiện</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancel-edit" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Hủy</button>
+                    <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Lưu Thay Đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
+            authDomain: "tracuu-d3ee9.firebaseapp.com",
+            projectId: "tracuu-d3ee9",
+            storageBucket: "tracuu-d3ee9.appspot.com",
+            messagingSenderId: "593568604435",
+            appId: "1:593568604435:web:9a5145457a8ee734143ae6",
+            measurementId: "G-R0M6Y502NP"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const announcementsCol = collection(db, 'announcements');
+
+        // ---- XỬ LÝ XÁC THỰC ----
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "admin.html";
+            }
+        });
+
+        const logoutBtn = document.getElementById("logoutBtn");
+        logoutBtn.addEventListener("click", () => {
+            signOut(auth).then(() => {
+                window.location.href = "admin.html";
+            }).catch((error) => {
+                console.error("Lỗi khi đăng xuất:", error);
+                alert("Đã có lỗi xảy ra khi đăng xuất.");
+            });
+        });
+
+        // ---- XỬ LÝ THÊM MỚI ----
+        const addForm = document.getElementById('add-announcement-form');
+        addForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await addDoc(announcementsCol, {
+                    title: addForm.title.value,
+                    content: addForm.content.value,
+                    category: addForm.category.value,
+                    createdAt: serverTimestamp()
+                });
+                addForm.reset();
+            } catch (error) {
+                console.error("Lỗi khi thêm: ", error);
+            }
+        });
+
+        // ---- XỬ LÝ HIỂN THỊ, SỬA, XÓA ----
+        const listContainer = document.getElementById('announcements-list');
+        const q = query(announcementsCol, orderBy('createdAt', 'desc'));
+
+        onSnapshot(q, (snapshot) => {
+            listContainer.innerHTML = '';
+            if (snapshot.empty) {
+                listContainer.innerHTML = '<p class="text-gray-500">Chưa có thông báo nào.</p>';
+                return;
+            }
+            snapshot.forEach(docSnap => {
+                const announcement = docSnap.data();
+                const div = document.createElement('div');
+                div.className = "border p-4 rounded-lg bg-gray-50 flex justify-between items-start";
+                
+                const isTruncated = announcement.content.length > 100;
+                const shortContent = isTruncated ? announcement.content.substring(0, 100) + '...' : announcement.content;
+
+                div.innerHTML = `
+                    <div class="flex-grow mr-4">
+                        <h3 class="font-bold text-lg">${announcement.title}</h3>
+                        
+                        <p class="text-sm text-gray-600 short-content">${shortContent}</p>
+                        <p class="text-sm text-gray-600 full-content whitespace-pre-wrap hidden">${announcement.content}</p>
+
+                        ${isTruncated ? `<button class="toggle-content-btn text-indigo-600 hover:underline text-sm mt-2" data-state="collapsed">Xem thêm</button>` : ''}
+                        
+                        <span class="text-xs font-semibold text-indigo-600 mt-4 block">${announcement.category}</span>
+                    </div>
+                    <div class="flex space-x-2 flex-shrink-0 ml-4">
+                        <button data-id="${docSnap.id}" class="edit-btn text-blue-500 hover:text-blue-700"><i class="fas fa-edit"></i></button>
+                        <button data-id="${docSnap.id}" class="delete-btn text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+        });
+
+        // ---- XỬ LÝ SỰ KIỆN CLICK SỬA/XÓA/XEM THÊM ----
+        const editModal = document.getElementById('edit-modal');
+        const editForm = document.getElementById('edit-form');
+        const cancelEditBtn = document.getElementById('cancel-edit');
+        
+        listContainer.addEventListener('click', async (e) => {
+            const target = e.target;
+            if (!target) return;
+
+            // Xử lý xem thêm/thu gọn
+            if (target.classList.contains('toggle-content-btn')) {
+                const wrapper = target.closest('.flex-grow');
+                const shortContent = wrapper.querySelector('.short-content');
+                const fullContent = wrapper.querySelector('.full-content');
+
+                if (target.dataset.state === 'collapsed') {
+                    shortContent.classList.add('hidden');
+                    fullContent.classList.remove('hidden');
+                    target.textContent = 'Thu gọn';
+                    target.dataset.state = 'expanded';
+                } else {
+                    shortContent.classList.remove('hidden');
+                    fullContent.classList.add('hidden');
+                    target.textContent = 'Xem thêm';
+                    target.dataset.state = 'collapsed';
+                }
+                return;
+            }
+
+            // Xử lý các nút khác (sửa/xóa)
+            const button = target.closest('button');
+            if (!button) return; 
+
+            const id = button.dataset.id;
+            if (!id) return;
+
+            // Xử lý xóa
+            if (button.classList.contains('delete-btn')) {
+                if (confirm('Bạn có chắc chắn muốn xóa thông báo này?')) {
+                    try {
+                        await deleteDoc(doc(db, 'announcements', id));
+                    } catch (error) {
+                        console.error("Lỗi khi xóa:", error);
+                    }
+                }
+            }
+            
+            // Xử lý sửa (mở modal)
+            if (button.classList.contains('edit-btn')) {
+                const docRef = doc(db, 'announcements', id);
+                const docSnap = await getDoc(docRef);
+
+                if(docSnap.exists()){
+                    const data = docSnap.data();
+                    editForm['edit-id'].value = id;
+                    editForm['edit-title'].value = data.title;
+                    editForm['edit-content'].value = data.content;
+                    editForm['edit-category'].value = data.category;
+                    editModal.classList.remove('hidden');
+                } else {
+                    console.error("Không tìm thấy tài liệu để sửa!");
+                }
+            }
+        });
+
+        // Xử lý khi submit form sửa
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = editForm['edit-id'].value;
+            try {
+                const docRef = doc(db, 'announcements', id);
+                await updateDoc(docRef, {
+                    title: editForm['edit-title'].value,
+                    content: editForm['edit-content'].value,
+                    category: editForm['edit-category'].value
+                });
+                editModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Lỗi khi cập nhật:", error);
+            }
+        });
+        
+        // Đóng modal khi nhấn nút Hủy
+        cancelEditBtn.addEventListener('click', () => {
+            editModal.classList.add('hidden');
+        });
+
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Tin Trung Tâm</title>
+    <!-- Tích hợp Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tích hợp Font Inter từ Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .announcement-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.5s forwards;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .content-wrapper {
+            transition: max-height 0.5s ease-in-out;
+            max-height: 100px; /* Chiều cao ban đầu bị giới hạn */
+            overflow: hidden;
+            position: relative;
+        }
+        .content-wrapper.expanded {
+            max-height: 1000px; /* Chiều cao đủ lớn để chứa nội dung */
+        }
+         .content-wrapper::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: linear-gradient(to top, white, rgba(255,255,255,0));
+        }
+        .content-wrapper.expanded::after {
+            display: none;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-6 py-4">
+            <h1 class="text-3xl font-bold text-indigo-600">Bảng Tin Trung Tâm</h1>
+            <p class="text-gray-600 mt-1">Cập nhật những thông tin mới và quan trọng nhất.</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8">
+        <div id="announcements-grid" class="grid gap-8 lg:grid-cols-3 md:grid-cols-2">
+            <!-- Thông báo sẽ được tải vào đây -->
+            <p id="loading-message" class="text-gray-500 col-span-full text-center">Đang tải thông báo...</p>
+        </div>
+    </main>
+
+    <footer class="bg-white mt-8">
+        <div class="container mx-auto px-6 py-4 text-center text-gray-600">
+            <p>&copy; 2025 Tên Trung Tâm Của Bạn. Mọi quyền được bảo lưu.</p>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, query, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Cấu hình Firebase bạn đã cung cấp
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
+            authDomain: "tracuu-d3ee9.firebaseapp.com",
+            projectId: "tracuu-d3ee9",
+            storageBucket: "tracuu-d3ee9.appspot.com",
+            messagingSenderId: "593568604435",
+            appId: "1:593568604435:web:9a5145457a8ee734143ae6",
+            measurementId: "G-R0M6Y502NP"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const announcementsCol = collection(db, 'announcements');
+        const grid = document.getElementById('announcements-grid');
+
+        const getCategoryStyles = (category) => {
+            switch (category) {
+                case 'Quan Trọng': return { border: 'border-red-500', bg: 'bg-red-100', text: 'text-red-700' };
+                case 'Lịch Học': return { border: 'border-blue-500', bg: 'bg-blue-100', text: 'text-blue-700' };
+                case 'Sự Kiện': return { border: 'border-green-500', bg: 'bg-green-100', text: 'text-green-700' };
+                default: return { border: 'border-yellow-500', bg: 'bg-yellow-100', text: 'text-yellow-700' };
+            }
+        };
+        
+        const q = query(announcementsCol, orderBy('createdAt', 'desc'));
+
+        onSnapshot(q, (querySnapshot) => {
+            grid.innerHTML = ''; // Xóa thông báo cũ
+            if (querySnapshot.empty) {
+                grid.innerHTML = '<p class="text-gray-500 col-span-full text-center">Chưa có thông báo nào.</p>';
+                return;
+            }
+            querySnapshot.forEach((doc) => {
+                const announcement = doc.data();
+                const styles = getCategoryStyles(announcement.category);
+                const date = announcement.createdAt?.toDate().toLocaleDateString('vi-VN', {
+                    day: '2-digit', month: '2-digit', year: 'numeric'
+                }) || 'Không có ngày';
+
+                const needsTruncation = announcement.content.length > 200;
+
+                const article = document.createElement('article');
+                article.className = `announcement-card bg-white rounded-lg shadow-lg overflow-hidden border-l-4 ${styles.border}`;
+                article.innerHTML = `
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="${styles.bg} ${styles.text} text-sm font-semibold px-3 py-1 rounded-full">${announcement.category}</span>
+                            <time class="text-sm text-gray-500">${date}</time>
+                        </div>
+                        <h2 class="text-2xl font-bold mb-2 text-gray-900">${announcement.title}</h2>
+                        <div class="content-wrapper">
+                             <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${announcement.content}</p>
+                        </div>
+                        ${needsTruncation ? `<button class="toggle-content-btn text-indigo-600 hover:underline text-sm mt-2 font-semibold">Xem thêm</button>` : ''}
+                    </div>
+                `;
+                grid.appendChild(article);
+            });
+        }, (error) => {
+            console.error("Lỗi khi tải thông báo: ", error);
+            grid.innerHTML = '<p class="text-red-500 col-span-full text-center">Không thể tải thông báo.</p>';
+        });
+
+        // Thêm sự kiện click để mở rộng/thu gọn nội dung
+        grid.addEventListener('click', function(e) {
+            if (e.target.classList.contains('toggle-content-btn')) {
+                const button = e.target;
+                const wrapper = button.previousElementSibling; // The .content-wrapper
+                
+                wrapper.classList.toggle('expanded');
+                
+                if (wrapper.classList.contains('expanded')) {
+                    button.textContent = 'Thu gọn';
+                     wrapper.style.maxHeight = wrapper.scrollHeight + "px";
+                } else {
+                    button.textContent = 'Xem thêm';
+                    wrapper.style.maxHeight = '100px';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
