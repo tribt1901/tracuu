@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quản Trị Thông Báo</title>
 
+  <!-- === SỬA LỖI: Thêm Bootstrap CSS === -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
   <!-- Tailwind & Font -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -41,11 +44,7 @@
 <body class="bg-gray-100">
   <!-- === SỬA LỖI: Tách biệt Menu và Nút Đăng xuất === -->
   <header id="navbar-placeholder" class="relative">
-      <!-- Nút Đăng xuất Tĩnh -->
-      <!-- Nút này là một phần của admin.html và được kiểm soát bởi auth -->
-      <!-- === NÚT ĐĂNG XUẤT ĐÃ BỊ XÓA KHỎI ĐÂY === -->
-      
-      <!-- menu.html sẽ được nạp vào đây, nhưng không còn chứa logic đăng xuất -->
+      <!-- menu.html sẽ được nạp vào đây -->
   </header>
   <!-- === KẾT THÚC SỬA LỖI === -->
 
@@ -143,6 +142,9 @@
 
   </div>
 
+  <!-- === SỬA LỖI: Thêm Bootstrap JS (defer để không chặn tải) === -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+
   <!-- SCRIPT -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -192,7 +194,6 @@
       
       const tabList = document.getElementById("tab-list");
       const tabAdd = document.getElementById("tab-add");
-      // === SỬA LỖI: Xóa ký tự '<' bị thừa ===
       const listContainer = document.getElementById("list-container");
       const formContainer = document.getElementById("form-container");
 
@@ -259,45 +260,38 @@
         }
       });
 
-      // === SỬA LỖI: Tải menu ngay lập tức ===
       // Tải menu.html bất kể trạng thái đăng nhập
       fetch("./menu.html")
           .then(r => r.text())
           .then(html => {
-              // Chèn menu, nhưng không gắn listener đăng xuất ở đây
               document.getElementById("navbar-placeholder").innerHTML = html;
           })
           .catch(err => console.error("Lỗi nạp menu:", err));
       
-      // === SỬA LỖI: Gắn listener vào nút đăng xuất TĨNH ===
       const staticLogoutBtn = document.getElementById("admin-logout-btn");
       staticLogoutBtn.addEventListener("click", () => signOut(auth));
 
 
       // AUTH
       onAuthStateChanged(auth, (user) => {
-        // const logoutBtn = document.getElementById("logoutBtn"); // KHÔNG CẦN NỮA
         if (user) {
           loginContainer.classList.add("hidden");
           adminContainer.classList.remove("hidden");
           
-          staticLogoutBtn.classList.remove("hidden"); // Hiển thị nút đăng xuất tĩnh
+          staticLogoutBtn.classList.remove("hidden"); 
 
-          // Chỉ tải dashboard nếu chưa tải
           if (!window.dashboardLoaded) {
-            // Tải dashboard (listeners)
             loadDashboard();
           }
           
-          showView('list'); // Hiển thị tab danh sách khi đăng nhập
+          showView('list'); 
           
         } else {
           loginContainer.classList.remove("hidden");
           adminContainer.classList.add("hidden");
           
-          staticLogoutBtn.classList.add("hidden"); // Ẩn nút đăng xuất tĩnh
+          staticLogoutBtn.classList.add("hidden"); 
           
-          // Dọn dẹp listeners khi đăng xuất
           window.dashboardLoaded = false;
           
           if (unsubscribeAnnouncements) {
@@ -327,7 +321,7 @@
             await addDoc(collection(db, "announcements"), { title, content, category, createdAt: serverTimestamp() });
           }
           resetForm();
-          showView('list'); // Chuyển về danh sách sau khi lưu
+          showView('list'); 
         } catch (error) {
             console.error("Lỗi khi lưu:", error);
         }
@@ -365,7 +359,7 @@
               submitBtn.classList.replace("bg-indigo-600", "bg-green-600");
               submitBtn.classList.replace("hover:bg-indigo-700", "hover:bg-green-700");
               
-              showView('form'); // Chuyển sang tab biểu mẫu
+              showView('form'); 
             }
           } catch (error) {
               console.error("Lỗi khi tải để sửa:", error);
@@ -376,7 +370,7 @@
       // NÚT HỦY SỬA
       cancelEditBtn.addEventListener("click", () => {
           resetForm();
-          showView('list'); // Chuyển về danh sách
+          showView('list'); 
       });
 
       // HÀM TẢI DASHBOARD
