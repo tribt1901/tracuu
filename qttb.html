@@ -43,6 +43,9 @@
 </head>
 <body class="bg-gray-100">
 
+    <!-- Navbar động (ĐÃ DI CHUYỂN RA NGOÀI) -->
+    <header id="navbar-placeholder"></header>
+
     <!-- === BIỂU MẪU ĐĂNG NHẬP (MỚI) === -->
     <div id="login-container" class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
@@ -64,8 +67,8 @@
 
     <!-- === NỘI DUNG QUẢN TRỊ (ĐƯỢC ẨN BAN ĐẦU) === -->
     <div id="admin-container" class="hidden">
-        <!-- Navbar động -->
-        <header id="navbar-placeholder"></header>
+        
+        <!-- Navbar placeholder đã bị di chuyển ra ngoài <body> -->
 
         <main class="container mx-auto px-6 py-8">
             <div class="online-counter-box">
@@ -155,15 +158,16 @@
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, push, onDisconnect, set, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // Firebase config của bạn
+        // Firebase config của bạn (ĐÃ CẬP NHẬT TỪ ad.login.html)
         const firebaseConfig = {
-            apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
+            apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M", // ĐÃ CẬP NHẬT
             authDomain: "tracuu-d3ee9.firebaseapp.com",
             databaseURL: "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "tracuu-d3ee9",
             storageBucket: "tracuu-d3ee9.appspot.com",
             messagingSenderId: "593568604435",
-            appId: "1:593568604435:web:9a5145457a8ee734143ae6"
+            appId: "1:593568604435:web:9a5145457a8ee734143ae6",
+            measurementId: "G-R0M6Y502NP" // ĐÃ BỔ SUNG
         };
 
         const app = initializeApp(firebaseConfig);
@@ -339,17 +343,8 @@
                 }
             });
 
-            // 6. Nạp menu & xử lý logout
-            fetch("./menu.html").then(r => r.text()).then(html => {
-                document.getElementById("navbar-placeholder").innerHTML = html;
-                const logoutBtn = document.getElementById("logoutBtn");
-                if (logoutBtn) {
-                    logoutBtn.addEventListener("click", () => {
-                        signOut(auth).catch(err => console.error("Lỗi đăng xuất:", err));
-                    });
-                }
-            }).catch(err => console.error("Lỗi nạp menu:", err));
-
+            // 6. Nạp menu & xử lý logout (ĐÃ BỊ XÓA KHỎI ĐÂY VÀ DI CHUYỂN RA NGOÀI)
+            
             // Đánh dấu đã khởi tạo
             listenersInitialized = true;
         }
@@ -382,7 +377,7 @@
                 console.error("Lỗi khởi tạo Quill:", e);
             }
 
-            // Xử lý submit Đăng nhập
+            // Xử lý submit Đăng nhập (ĐÃ CẬP NHẬT XỬ LÝ LỖI)
             loginForm.addEventListener("submit", async (e) => {
                 e.preventDefault();
                 const email = loginForm["login-email"].value;
@@ -392,12 +387,33 @@
                 try {
                     await signInWithEmailAndPassword(auth, email, password);
                     // onAuthStateChanged sẽ tự động xử lý việc hiển thị dashboard
-                } catch (error) {
-                    console.error("Lỗi đăng nhập:", error.code);
-                    loginError.textContent = "Email hoặc mật khẩu không đúng.";
-                    loginError.classList.remove("hidden");
+                } catch (err) {
+                    // SAO CHÉP LOGIC TỪ ad.login.html
+                    if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+                        loginError.textContent = "Sai thông tin đăng nhập!";
+                    } else if (err.code === "auth/too-many-requests") {
+                        loginError.textContent = "Bạn đã nhập sai nhiều lần. Vui lòng thử lại sau!";
+                    } else {
+                        loginError.textContent = "Có lỗi xảy ra! Vui lòng thử lại.";
+                    }
+                    loginError.classList.remove("hidden"); // Hiển thị lỗi
+                    console.error("Lỗi đăng nhập:", err.code);
                 }
             });
+
+            // Nạp menu & xử lý logout (ĐÃ DI CHUYỂN RA NGOÀI)
+            // Logic này chạy ngay lập tức để hiển thị menu
+            fetch("./menu.html").then(r => r.text()).then(html => {
+                document.getElementById("navbar-placeholder").innerHTML = html;
+                const logoutBtn = document.getElementById("logoutBtn");
+                if (logoutBtn) {
+                    logoutBtn.addEventListener("click", () => {
+                        // Chỉ cần signOut, onAuthStateChanged sẽ xử lý việc ẩn/hiện
+                        signOut(auth).catch(err => console.error("Lỗi đăng xuất:", err));
+                    });
+                }
+            }).catch(err => console.error("Lỗi nạp menu:", err));
+
 
             // Trình quản lý trạng thái Đăng nhập
             onAuthStateChanged(auth, (user) => {
