@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bảng Tin Trung Tâm</title>
-    <!-- Tích hợp Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SỬA LỖI: Tải Tailwind CSS CÙNG VỚI plugin 'typography' (để sửa lỗi link và xuống dòng) -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    
     <!-- Tích hợp Font Inter từ Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -57,6 +58,14 @@
         #announcement-modal.is-open #modal-content-box {
             transform: scale(1);
             opacity: 1;
+        }
+
+        /* Đảm bảo link trong 'prose' có màu xanh */
+        .prose a {
+            color: #2563eb; /* text-blue-600 */
+        }
+        .prose a:hover {
+            color: #1d4ed8; /* text-blue-800 */
         }
     </style>
 </head>
@@ -322,5 +331,4 @@
     </script>
 </body>
 </html>
-
 
