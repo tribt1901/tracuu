@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quản Trị Thông Báo</title>
 
-  <!-- Tailwind CSS -->
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <!-- Quill Editor (đầy đủ tính năng + emoji) -->
+  <!-- Quill -->
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
   <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/quill-emoji@0.2.0/dist/quill-emoji.min.js"></script>
@@ -39,43 +39,39 @@
 </head>
 
 <body class="bg-gray-100">
-
-  <!-- Thanh điều hướng -->
   <header id="navbar-placeholder"></header>
 
-  <!-- Form đăng nhập -->
+  <!-- LOGIN -->
   <div id="login-container" class="min-h-screen flex items-center justify-center p-4">
     <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
       <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Đăng Nhập Quản Trị</h2>
       <form id="login-form">
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">Email</label>
-          <input type="email" id="login-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" required>
+          <input type="email" id="login-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
         </div>
         <div class="mb-6">
           <label class="block text-gray-700 font-medium mb-2">Mật khẩu</label>
-          <input type="password" id="login-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" required>
+          <input type="password" id="login-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
         </div>
-        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-300">
-          Đăng Nhập
-        </button>
+        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition">Đăng Nhập</button>
         <div id="login-error" class="text-red-500 text-sm mt-4 text-center hidden"></div>
       </form>
     </div>
   </div>
 
-  <!-- Trang quản trị -->
+  <!-- ADMIN DASHBOARD -->
   <div id="admin-container" class="hidden container mx-auto px-6 py-8">
     <div class="online-counter-box">
       🟢 Bạn và <span id="online-counter">0</span> người khác đang truy cập hệ thống.
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <!-- Form thêm -->
+      <!-- FORM THÊM / SỬA -->
       <div class="lg:col-span-1">
         <div class="bg-white p-6 rounded-lg shadow-lg sticky top-8">
-          <h2 class="text-xl font-bold mb-6 text-gray-700">Thêm Thông Báo Mới</h2>
-          <form id="add-announcement-form">
+          <h2 id="form-title" class="text-xl font-bold mb-6 text-gray-700">Thêm Thông Báo Mới</h2>
+          <form id="announcement-form">
             <div class="mb-4">
               <label class="block text-gray-700 font-medium mb-2">Tiêu đề</label>
               <input id="title" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
@@ -83,7 +79,7 @@
             <div class="mb-4">
               <label class="block text-gray-700 font-medium mb-2">Nội dung</label>
               <div class="quill-container">
-                <div id="editor-add"></div>
+                <div id="editor"></div>
               </div>
             </div>
             <div class="mb-4">
@@ -95,14 +91,19 @@
                 <option>Sự Kiện</option>
               </select>
             </div>
-            <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">
-              <i class="fa fa-paper-plane mr-2"></i>Đăng Thông Báo
-            </button>
+            <div class="flex gap-3">
+              <button id="submit-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">
+                <i class="fa fa-paper-plane mr-2"></i><span>Đăng Thông Báo</span>
+              </button>
+              <button id="cancel-edit-btn" type="button" class="hidden flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded-lg">
+                <i class="fa fa-times mr-2"></i>Hủy
+              </button>
+            </div>
           </form>
         </div>
       </div>
 
-      <!-- Danh sách -->
+      <!-- DANH SÁCH -->
       <div class="lg:col-span-2">
         <div class="bg-white p-6 rounded-lg shadow-lg">
           <h2 class="text-xl font-bold mb-6 text-gray-700">Danh Sách Thông Báo</h2>
@@ -112,10 +113,10 @@
     </div>
   </div>
 
-  <!-- Firebase Logic -->
+  <!-- SCRIPT -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, updateDoc, serverTimestamp, onSnapshot, query, orderBy, doc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getDatabase, ref, push, onDisconnect, set, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
@@ -135,22 +136,24 @@
     const auth = getAuth(app);
     const rtdb = getDatabase(app, firebaseConfig.databaseURL);
 
+    let editingId = null;
     const stripHtml = (html) => {
       const tmp = document.createElement("DIV");
       tmp.innerHTML = html;
       return tmp.textContent || tmp.innerText || "";
     };
 
-    let quillAdd;
     document.addEventListener("DOMContentLoaded", () => {
       const loginContainer = document.getElementById("login-container");
       const adminContainer = document.getElementById("admin-container");
       const loginForm = document.getElementById("login-form");
       const loginError = document.getElementById("login-error");
-      const addForm = document.getElementById("add-announcement-form");
+      const form = document.getElementById("announcement-form");
       const list = document.getElementById("announcements-list");
+      const formTitle = document.getElementById("form-title");
+      const submitBtn = document.getElementById("submit-btn");
+      const cancelEditBtn = document.getElementById("cancel-edit-btn");
 
-      // Quill toolbar với nhiều tính năng + emoji
       const toolbarOptions = [
         [{ 'font': [] }, { 'size': [] }],
         ['bold', 'italic', 'underline', 'strike'],
@@ -161,18 +164,12 @@
         ['emoji'],
         ['clean']
       ];
-
-      quillAdd = new Quill('#editor-add', {
+      const quill = new Quill('#editor', {
         theme: 'snow',
-        modules: {
-          toolbar: toolbarOptions,
-          'emoji-toolbar': true,
-          'emoji-textarea': false,
-          'emoji-shortname': true
-        },
+        modules: { toolbar: toolbarOptions, 'emoji-toolbar': true, 'emoji-textarea': false, 'emoji-shortname': true }
       });
 
-      // Đăng nhập
+      // LOGIN
       loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         try {
@@ -183,14 +180,14 @@
         }
       });
 
-      // Nạp menu + xử lý logout
+      // MENU
       fetch("./menu.html").then(r => r.text()).then(html => {
         document.getElementById("navbar-placeholder").innerHTML = html;
         const logoutBtn = document.getElementById("logoutBtn");
         if (logoutBtn) logoutBtn.addEventListener("click", () => signOut(auth));
       });
 
-      // Theo dõi đăng nhập
+      // AUTH
       onAuthStateChanged(auth, (user) => {
         const logoutBtn = document.getElementById("logoutBtn");
         if (user) {
@@ -220,38 +217,69 @@
           snap.forEach((d) => {
             const a = d.data();
             const div = document.createElement("div");
-            div.className = "border p-4 rounded-lg bg-gray-50 flex justify-between";
+            div.className = "border p-4 rounded-lg bg-gray-50 flex justify-between items-start gap-4";
             div.innerHTML = `
-              <div class="max-w-[85%]">
+              <div class="flex-1">
                 <h3 class="font-semibold text-lg">${a.title}</h3>
                 <p class="text-sm text-gray-600">${stripHtml(a.content).substring(0,120)}...</p>
                 <span class="text-xs text-indigo-600">${a.category}</span>
               </div>
-              <button data-id="${d.id}" class="delete-btn text-red-500 hover:text-red-700"><i class="fa fa-trash"></i></button>`;
+              <div class="flex gap-3">
+                <button data-id="${d.id}" class="edit-btn text-blue-500 hover:text-blue-700"><i class="fa fa-edit"></i></button>
+                <button data-id="${d.id}" class="delete-btn text-red-500 hover:text-red-700"><i class="fa fa-trash"></i></button>
+              </div>`;
             list.appendChild(div);
           });
         });
 
-        // Thêm mới
-        addForm.addEventListener("submit", async (e) => {
+        // THÊM / CẬP NHẬT
+        form.addEventListener("submit", async (e) => {
           e.preventDefault();
-          const title = addForm.title.value.trim();
-          const content = quillAdd.root.innerHTML;
-          const category = addForm.category.value;
+          const title = form.title.value.trim();
+          const content = quill.root.innerHTML;
+          const category = form.category.value;
           if (!title || stripHtml(content) === "") return;
-          await addDoc(collection(db, "announcements"), { title, content, category, createdAt: serverTimestamp() });
-          addForm.reset();
-          quillAdd.setText("");
+
+          if (editingId) {
+            await updateDoc(doc(db, "announcements", editingId), { title, content, category });
+            resetForm();
+          } else {
+            await addDoc(collection(db, "announcements"), { title, content, category, createdAt: serverTimestamp() });
+            form.reset();
+            quill.setText("");
+          }
         });
 
-        // Xóa
+        // XOÁ + SỬA
         list.addEventListener("click", async (e) => {
-          const btn = e.target.closest(".delete-btn");
+          const btn = e.target.closest("button");
           if (!btn) return;
-          if (confirm("Bạn có chắc muốn xóa thông báo này?")) await deleteDoc(doc(db, "announcements", btn.dataset.id));
+          const id = btn.dataset.id;
+
+          if (btn.classList.contains("delete-btn")) {
+            if (confirm("Bạn có chắc muốn xóa thông báo này?")) await deleteDoc(doc(db, "announcements", id));
+          }
+
+          if (btn.classList.contains("edit-btn")) {
+            const docSnap = await getDoc(doc(db, "announcements", id));
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              form.title.value = data.title;
+              form.category.value = data.category;
+              quill.root.innerHTML = data.content;
+              editingId = id;
+              formTitle.textContent = "Chỉnh Sửa Thông Báo";
+              submitBtn.querySelector("span").textContent = "Cập Nhật";
+              cancelEditBtn.classList.remove("hidden");
+              submitBtn.classList.replace("bg-indigo-600", "bg-green-600");
+              submitBtn.classList.replace("hover:bg-indigo-700", "hover:bg-green-700");
+            }
+          }
         });
 
-        // Đếm online
+        cancelEditBtn.addEventListener("click", () => resetForm());
+
+        // ĐẾM ONLINE
         const onlineRef = ref(rtdb, "connections");
         const myRef = push(onlineRef);
         onDisconnect(myRef).remove();
@@ -259,6 +287,17 @@
         onValue(onlineRef, (snap) => {
           document.getElementById("online-counter").textContent = Object.keys(snap.val() || {}).length;
         });
+      }
+
+      function resetForm() {
+        form.reset();
+        editingId = null;
+        document.querySelector("#editor .ql-editor").innerHTML = "";
+        formTitle.textContent = "Thêm Thông Báo Mới";
+        submitBtn.querySelector("span").textContent = "Đăng Thông Báo";
+        cancelEditBtn.classList.add("hidden");
+        submitBtn.classList.replace("bg-green-600", "bg-indigo-600");
+        submitBtn.classList.replace("hover:bg-green-700", "hover:bg-indigo-700");
       }
     });
   </script>
