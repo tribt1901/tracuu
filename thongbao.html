@@ -202,7 +202,8 @@
                         <h2 class="text-2xl font-bold mb-2 text-gray-900">${announcement.title}</h2>
                         <div class="content-wrapper">
                              <!-- SỬA LỖI (Link): Sử dụng innerHTML để render HTML từ Quill -->
-                             <div class="text-gray-700 leading-relaxed">${announcement.content}</div>
+                             <!-- SỬA LỖI (Xuống dòng): Thêm 'prose max-w-none' để giữ định dạng xuống dòng -->
+                             <div class="text-gray-700 leading-relaxed prose max-w-none">${announcement.content}</div>
                         </div>
                         <!-- Cập nhật: Thêm data-id để biết mở thông báo nào -->
                         ${needsTruncation ? `<button data-id="${doc.id}" class="toggle-content-btn text-indigo-600 hover:underline text-sm mt-2 font-semibold">Xem thêm</button>` : ''}
@@ -321,4 +322,5 @@
     </script>
 </body>
 </html>
+
 
