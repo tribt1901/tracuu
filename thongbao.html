@@ -41,12 +41,22 @@
         .content-wrapper.expanded::after {
             display: none;
         }
-
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <header class="bg-white shadow-md">
+    <!-- Trình giữ chỗ cho Navbar được chèn vào đây -->
+    <header id="navbar-placeholder"></header>
+
+    <!-- Bộ đếm trực tuyến mới -->
+    <div class="online-counter-box container mx-auto px-6 pt-4">
+        <div class="bg-white shadow rounded-lg p-3 text-center text-gray-700 text-sm">
+            🟢 Hiện có Bạn và <span id="online-counter" class="font-bold">0</span> người nữa đang truy cập hệ thống.
+        </div>
+    </div>
+
+    <!-- Tiêu đề Bảng tin cũ -->
+    <header class="bg-white shadow-md mt-4">
         <div class="container mx-auto px-6 py-4">
             <h1 class="text-3xl font-bold text-indigo-600">Bảng Tin Trung Tâm</h1>
             <p class="text-gray-600 mt-1">Cập nhật những thông tin mới và quan trọng nhất.</p>
@@ -67,23 +77,30 @@
     </footer>
 
     <script type="module">
+        // Import các mô-đun Firebase (chuẩn hóa phiên bản 11.6.1)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, query, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getDatabase, ref, push, onValue, onDisconnect, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // Cấu hình Firebase bạn đã cung cấp
+        // Cấu hình Firebase mới (bao gồm databaseURL)
         const firebaseConfig = {
-            apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
+            apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c", // Lưu ý: API key này từ mã thứ 2
             authDomain: "tracuu-d3ee9.firebaseapp.com",
+            databaseURL: "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "tracuu-d3ee9",
             storageBucket: "tracuu-d3ee9.appspot.com",
             messagingSenderId: "593568604435",
-            appId: "1:593568604435:web:9a5145457a8ee734143ae6",
-            measurementId: "G-R0M6Y502NP"
+            appId: "1:593568604435:web:9a5145457a8ee734143ae6"
         };
 
+        // Khởi tạo Firebase
         const app = initializeApp(firebaseConfig);
+        // Khởi tạo Firestore (cho bảng tin)
         const db = getFirestore(app);
+        // Khởi tạo Realtime Database (cho bộ đếm)
+        const rtdb = getDatabase(app, firebaseConfig.databaseURL);
 
+        // --- Logic cho Bảng Tin (từ mã gốc) ---
         const announcementsCol = collection(db, 'announcements');
         const grid = document.getElementById('announcements-grid');
 
@@ -111,6 +128,7 @@
                     day: '2-digit', month: '2-digit', year: 'numeric'
                 }) || 'Không có ngày';
 
+                // Kiểm tra nội dung có cần rút gọn không
                 const needsTruncation = announcement.content.length > 200;
 
                 const article = document.createElement('article');
@@ -135,7 +153,7 @@
             grid.innerHTML = '<p class="text-red-500 col-span-full text-center">Không thể tải thông báo.</p>';
         });
 
-        // Thêm sự kiện click để mở rộng/thu gọn nội dung
+        // Sự kiện click để mở rộng/thu gọn nội dung
         grid.addEventListener('click', function(e) {
             if (e.target.classList.contains('toggle-content-btn')) {
                 const button = e.target;
@@ -152,7 +170,50 @@
                 }
             }
         });
+
+        // --- Logic cho Bộ Đếm Trực Tuyến (từ mã mới) ---
+        (function initOnlineCounter() {
+            const onlineCounterEl = document.getElementById('online-counter');
+            if (!onlineCounterEl) return;
+            try {
+                const connectionsRef = ref(rtdb, 'connections');
+                const myConnectionRef = push(connectionsRef);
+                onDisconnect(myConnectionRef).remove().catch(() => {});
+                set(myConnectionRef, true).catch(() => {});
+                
+                onValue(connectionsRef, snapshot => {
+                    let count = 0;
+                    if (snapshot.exists()) {
+                        const val = snapshot.val();
+                        if (val && typeof val === 'object') {
+                            count = Object.keys(val).length;
+                        } else {
+                            count = 1; // Xử lý trường hợp chỉ có 1 kết nối
+                        }
+                    }
+                    // Trừ 1 để không tính chính mình ("Bạn và X người nữa")
+                    onlineCounterEl.textContent = Math.max(0, count - 1); 
+                }, err => {
+                    console.error("Lỗi khi lấy giá trị connections: ", err);
+                });
+            } catch (err) {
+                console.error("Lỗi khởi tạo bộ đếm thời gian thực: ", err);
+            }
+        })();
+
+        // --- Logic tải Navbar (từ mã mới) ---
+        fetch('/menu.html')
+            .then(r => r.text())
+            .then(html => {
+                const placeholder = document.getElementById('navbar-placeholder');
+                if (placeholder) {
+                    placeholder.innerHTML = html;
+                }
+            })
+            .catch(err => {
+                console.warn("Không thể tải menu.html: ", err);
+            });
+
     </script>
 </body>
 </html>
-
