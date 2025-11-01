@@ -5,13 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quản Trị Thông Báo</title>
 
-  <!-- Tailwind & Font -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- ✅ Tailwind CDN ổn định, không cảnh báo -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.14/dist/tailwind.min.css" rel="stylesheet">
+
+  <!-- Font & Icon -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-  <!-- ✅ Thêm Alpine.js để menu dropdown hoạt động -->
-  <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
 
   <!-- Quill -->
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
@@ -20,7 +19,10 @@
   <link href="https://cdn.jsdelivr.net/npm/quill-emoji@0.2.0/dist/quill-emoji.css" rel="stylesheet">
 
   <style>
-    body { font-family: 'Inter', sans-serif; background: #f9fafb; }
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background: #f9fafb; 
+    }
     .ql-editor { min-height: 350px; max-height: 600px; overflow-y: auto; }
     .online-counter-box {
       background-color: #e0f2fe;
@@ -42,7 +44,7 @@
 </head>
 
 <body class="bg-gray-100">
-  <!-- ✅ Menu placeholder -->
+  <!-- MENU -->
   <header id="navbar-placeholder"></header>
 
   <!-- LOGIN -->
@@ -70,70 +72,62 @@
       🟢 Bạn và <span id="online-counter">0</span> người khác đang truy cập hệ thống.
     </div>
 
-    <!-- Tabs -->
     <div class="mb-6">
-        <div class="border-b border-gray-300 flex justify-between items-center">
-            <nav class="flex space-x-4" aria-label="Tabs">
-                <button id="tab-list" class="text-indigo-600 border-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Quản trị thông báo
-                </button>
-                <button id="tab-add" class="text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Thêm mới thông báo
-                </button>
-            </nav>
-            <!-- Nút Đăng xuất -->
-            <button id="admin-logout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg z-50 mb-2">
-                <i class="fas fa-sign-out-alt mr-2"></i>Đăng Xuất
-            </button>
-        </div>
+      <div class="border-b border-gray-300 flex justify-between items-center">
+        <nav class="flex space-x-4" aria-label="Tabs">
+          <button id="tab-list" class="text-indigo-600 border-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Quản trị thông báo</button>
+          <button id="tab-add" class="text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Thêm mới thông báo</button>
+        </nav>
+        <button id="admin-logout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg z-50 mb-2">
+          <i class="fas fa-sign-out-alt mr-2"></i>Đăng Xuất
+        </button>
+      </div>
     </div>
 
-    <!-- Danh sách -->
     <div id="list-container">
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-          <h2 class="text-xl font-bold mb-6 text-gray-700">Danh Sách Thông Báo</h2>
-          <div id="announcements-list" class="space-y-4"></div>
-        </div>
+      <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h2 class="text-xl font-bold mb-6 text-gray-700">Danh Sách Thông Báo</h2>
+        <div id="announcements-list" class="space-y-4"></div>
+      </div>
     </div>
     
-    <!-- Form -->
     <div id="form-container" class="hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg max-w-3xl mx-auto">
-          <h2 id="form-title" class="text-xl font-bold mb-6 text-gray-700">Thêm Thông Báo Mới</h2>
-          <form id="announcement-form">
-            <div class="mb-4">
-              <label class="block text-gray-700 font-medium mb-2">Tiêu đề</label>
-              <input id="title" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+      <div class="bg-white p-6 rounded-lg shadow-lg max-w-3xl mx-auto">
+        <h2 id="form-title" class="text-xl font-bold mb-6 text-gray-700">Thêm Thông Báo Mới</h2>
+        <form id="announcement-form">
+          <div class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2">Tiêu đề</label>
+            <input id="title" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2">Nội dung</label>
+            <div class="quill-container">
+              <div id="editor"></div>
             </div>
-            <div class="mb-4">
-              <label class="block text-gray-700 font-medium mb-2">Nội dung</label>
-              <div class="quill-container">
-                <div id="editor"></div>
-              </div>
-            </div>
-            <div class="mb-4">
-              <label class="block text-gray-700 font-medium mb-2">Danh mục</label>
-              <select id="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
-                <option>Thông Tin Chung</option>
-                <option>Quan Trọng</option>
-                <option>Lịch Học</option>
-                <option>Sự Kiện</option>
-              </select>
-            </div>
-            <div class="flex gap-3">
-              <button id="submit-btn" type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">
-                <i class="fa fa-paper-plane mr-2"></i><span>Đăng Thông Báo</span>
-              </button>
-              <button id="cancel-edit-btn" type="button" class="hidden flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded-lg">
-                <i class="fa fa-times mr-2"></i>Hủy
-              </button>
-            </div>
-          </form>
-        </div>
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2">Danh mục</label>
+            <select id="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
+              <option>Thông Tin Chung</option>
+              <option>Quan Trọng</option>
+              <option>Lịch Học</option>
+              <option>Sự Kiện</option>
+            </select>
+          </div>
+          <div class="flex gap-3">
+            <button id="submit-btn" type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">
+              <i class="fa fa-paper-plane mr-2"></i><span>Đăng Thông Báo</span>
+            </button>
+            <button id="cancel-edit-btn" type="button" class="hidden flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded-lg">
+              <i class="fa fa-times mr-2"></i>Hủy
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
-  <!-- SCRIPT -->
+  <!-- FIREBASE & MAIN LOGIC -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, collection, addDoc, updateDoc, serverTimestamp, onSnapshot, query, orderBy, doc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -141,51 +135,192 @@
     import { getDatabase, ref, push, onDisconnect, set, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
-      authDomain: "tracuu-d3ee9.firebaseapp.com",
-      databaseURL: "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "tracuu-d3ee9",
-      storageBucket: "tracuu-d3ee9.appspot.com",
-      messagingSenderId: "593568604435",
-      appId: "1:593568604435:web:9a5145457a8ee734143ae6",
-      measurementId: "G-R0M6Y502NP"
+      apiKey: "AIzaSy...YOUR_KEY_HERE...",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "1234567890",
+      appId: "1:1234567890:web:abcdefg"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
-    const rtdb = getDatabase(app, firebaseConfig.databaseURL);
+    const rtdb = getDatabase(app);
 
-    Quill.register('modules/emoji', QuillEmoji);
-    let editingId = null;
-    let quill;
-    const stripHtml = (html) => {
-      const tmp = document.createElement("DIV");
-      tmp.innerHTML = html;
-      return tmp.textContent || tmp.innerText || "";
-    };
+    // Load menu
+    fetch("menu_tailwind.html")
+      .then(res => res.text())
+      .then(html => document.getElementById("navbar-placeholder").innerHTML = html)
+      .catch(() => console.warn("Không thể load menu_tailwind.html"));
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const loginContainer = document.getElementById("login-container");
-      const adminContainer = document.getElementById("admin-container");
-      const loginForm = document.getElementById("login-form");
-      const loginError = document.getElementById("login-error");
-      const staticLogoutBtn = document.getElementById("admin-logout-btn");
+    // Quill setup
+    const quill = new Quill("#editor", {
+      theme: "snow",
+      modules: {
+        toolbar: [
+          ["bold", "italic", "underline"],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ["link"],
+          [{ 'color': [] }, { 'background': [] }],
+          ["emoji"]
+        ],
+        "emoji-toolbar": true
+      }
+    });
 
-      // ✅ Tải menu và khởi động lại Alpine
-      fetch("./menu_tailwind.html")
-        .then(r => r.text())
-        .then(html => {
-          const nav = document.getElementById("navbar-placeholder");
-          nav.innerHTML = html;
-          // Bắt Alpine chạy lại sau khi chèn menu
-          setTimeout(() => { if (window.Alpine) window.Alpine.start(); }, 100);
-        })
-        .catch(err => console.error("Lỗi nạp menu:", err));
+    const loginContainer = document.getElementById("login-container");
+    const adminContainer = document.getElementById("admin-container");
+    const loginForm = document.getElementById("login-form");
+    const loginError = document.getElementById("login-error");
+    const logoutBtn = document.getElementById("admin-logout-btn");
 
-      staticLogoutBtn.addEventListener("click", () => signOut(auth));
+    // Auth check
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        loginContainer.classList.add("hidden");
+        adminContainer.classList.remove("hidden");
+        logoutBtn.classList.remove("hidden");
+        trackOnlineUsers(user.uid);
+        loadAnnouncements();
+      } else {
+        loginContainer.classList.remove("hidden");
+        adminContainer.classList.add("hidden");
+      }
+    });
 
-      // ... toàn bộ phần còn lại của code bạn giữ nguyên
+    // Login
+    loginForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        loginError.textContent = "Sai email hoặc mật khẩu!";
+        loginError.classList.remove("hidden");
+      }
+    });
+
+    // Logout
+    logoutBtn.addEventListener("click", () => signOut(auth));
+
+    // Online tracking
+    function trackOnlineUsers(uid) {
+      const myRef = push(ref(rtdb, "online-users"));
+      set(myRef, { uid, timestamp: Date.now() });
+      onDisconnect(myRef).remove();
+      const counterRef = ref(rtdb, "online-users");
+      onValue(counterRef, snapshot => {
+        document.getElementById("online-counter").textContent = snapshot.size || Object.keys(snapshot.val() || {}).length;
+      });
+    }
+
+    // Tabs
+    const tabList = document.getElementById("tab-list");
+    const tabAdd = document.getElementById("tab-add");
+    const listContainer = document.getElementById("list-container");
+    const formContainer = document.getElementById("form-container");
+    const cancelEditBtn = document.getElementById("cancel-edit-btn");
+
+    tabList.addEventListener("click", () => {
+      tabList.classList.add("text-indigo-600", "border-indigo-600");
+      tabAdd.classList.remove("text-indigo-600", "border-indigo-600");
+      listContainer.classList.remove("hidden");
+      formContainer.classList.add("hidden");
+    });
+
+    tabAdd.addEventListener("click", () => {
+      tabAdd.classList.add("text-indigo-600", "border-indigo-600");
+      tabList.classList.remove("text-indigo-600", "border-indigo-600");
+      listContainer.classList.add("hidden");
+      formContainer.classList.remove("hidden");
+    });
+
+    cancelEditBtn.addEventListener("click", () => {
+      document.getElementById("announcement-form").reset();
+      quill.root.innerHTML = "";
+      cancelEditBtn.classList.add("hidden");
+      document.getElementById("submit-btn").querySelector("span").textContent = "Đăng Thông Báo";
+    });
+
+    // Load announcements
+    async function loadAnnouncements() {
+      const q = query(collection(db, "thongbao"), orderBy("createdAt", "desc"));
+      onSnapshot(q, snapshot => {
+        const list = document.getElementById("announcements-list");
+        list.innerHTML = "";
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const item = document.createElement("div");
+          item.className = "border p-4 rounded-lg shadow-sm hover:bg-gray-50";
+          item.innerHTML = `
+            <h3 class="font-bold text-lg text-gray-800">${data.title}</h3>
+            <div class="text-sm text-gray-500 mb-2">${data.category} • ${new Date(data.createdAt?.seconds*1000).toLocaleString()}</div>
+            <div class="prose max-w-none mb-4">${data.content}</div>
+            <div class="flex gap-3">
+              <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded edit-btn" data-id="${docSnap.id}"><i class="fa fa-edit"></i> Sửa</button>
+              <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded delete-btn" data-id="${docSnap.id}"><i class="fa fa-trash"></i> Xóa</button>
+            </div>
+          `;
+          list.appendChild(item);
+        });
+
+        document.querySelectorAll(".edit-btn").forEach(btn => {
+          btn.addEventListener("click", () => editAnnouncement(btn.dataset.id));
+        });
+        document.querySelectorAll(".delete-btn").forEach(btn => {
+          btn.addEventListener("click", () => deleteAnnouncement(btn.dataset.id));
+        });
+      });
+    }
+
+    async function editAnnouncement(id) {
+      const docRef = doc(db, "thongbao", id);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        document.getElementById("title").value = data.title;
+        document.getElementById("category").value = data.category;
+        quill.root.innerHTML = data.content;
+        formContainer.classList.remove("hidden");
+        listContainer.classList.add("hidden");
+        cancelEditBtn.classList.remove("hidden");
+        document.getElementById("submit-btn").dataset.editId = id;
+        document.getElementById("submit-btn").querySelector("span").textContent = "Cập Nhật";
+      }
+    }
+
+    async function deleteAnnouncement(id) {
+      if (confirm("Xóa thông báo này?")) {
+        await deleteDoc(doc(db, "thongbao", id));
+      }
+    }
+
+    document.getElementById("announcement-form").addEventListener("submit", async e => {
+      e.preventDefault();
+      const title = document.getElementById("title").value.trim();
+      const content = quill.root.innerHTML.trim();
+      const category = document.getElementById("category").value;
+      const btn = document.getElementById("submit-btn");
+      const editId = btn.dataset.editId;
+
+      if (!title || !content) return alert("Vui lòng nhập đầy đủ nội dung!");
+
+      if (editId) {
+        const docRef = doc(db, "thongbao", editId);
+        await updateDoc(docRef, { title, content, category });
+        btn.dataset.editId = "";
+        btn.querySelector("span").textContent = "Đăng Thông Báo";
+        cancelEditBtn.classList.add("hidden");
+      } else {
+        await addDoc(collection(db, "thongbao"), { title, content, category, createdAt: serverTimestamp() });
+      }
+
+      document.getElementById("announcement-form").reset();
+      quill.root.innerHTML = "";
+      formContainer.classList.add("hidden");
+      listContainer.classList.remove("hidden");
     });
   </script>
 </body>
