@@ -42,27 +42,17 @@
       overflow: hidden;
     }
     [x-cloak] { display: none !important; }
-    /* Cho drag dễ hơn */
-    #admin-logout-btn {
-      cursor: move;
-      user-select: none;
-      touch-action: none;
-      transition: box-shadow 0.2s;
-    }
-    #admin-logout-btn.dragging {
-      box-shadow: 0 0 0 4px #fca5a5;
-      opacity: 0.8;
-    }
   </style>
 </head>
 <body class="bg-gray-100">
   <header id="navbar-placeholder">
       <!-- menu_tailwind.html sẽ được nạp vào đây -->
   </header>
-  <!-- Nút đăng xuất nổi, kéo được, không đè lên menu -->
-  <button id="admin-logout-btn" class="hidden fixed z-40 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold text-base flex items-center gap-2 shadow-lg transition"
-    style="top:72px;right:32px;">
-    <i class="fas fa-sign-out-alt"></i> Đăng xuất
+  <!-- Nút đăng xuất dạng Bootstrap-style với Tailwind, luôn nằm dưới menu, không đè lên menu, nổi góc phải -->
+  <button id="admin-logout-btn"
+    class="hidden fixed top-[68px] right-8 z-40 flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm font-semibold shadow transition ms-auto"
+    type="button">
+    <span>🚪</span> Đăng xuất
   </button>
 
   <!-- ĐĂNG NHẬP -->
@@ -157,7 +147,6 @@
     import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getDatabase, ref, push, onDisconnect, set, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92M",
       authDomain: "tracuu-d3ee9.firebaseapp.com",
@@ -174,7 +163,6 @@
     const auth = getAuth(app);
     const rtdb = getDatabase(app, firebaseConfig.databaseURL);
 
-    // Quill Emoji
     Quill.register('modules/emoji', QuillEmoji);
 
     let editingId = null;
@@ -204,87 +192,8 @@
       const listContainer = document.getElementById("list-container");
       const formContainer = document.getElementById("form-container");
 
-      // Nút đăng xuất nổi
+      // Nút đăng xuất dạng Tailwind-Bootstrap
       const staticLogoutBtn = document.getElementById("admin-logout-btn");
-
-      const MENU_HEIGHT = 64; // px, chỉnh lại nếu menu bạn cao hơn/thấp hơn
-      const MENU_MARGIN = 8;  // px, khoảng cách dưới menu
-      const DEFAULT_TOP = MENU_HEIGHT + MENU_MARGIN; // px
-
-      // Drag logic
-      let offsetX, offsetY, isDragging = false;
-      let pos = {
-        top: DEFAULT_TOP, // luôn khởi tạo đúng dưới menu
-        left: window.innerWidth - staticLogoutBtn.offsetWidth - 32 // 32px từ phải
-      };
-
-      function setBtnPosition(top, left) {
-        // Không cho nút đi lên trên menu
-        if (top < DEFAULT_TOP) top = DEFAULT_TOP;
-        // Không cho nút ra ngoài màn hình
-        if (left < 8) left = 8;
-        if (left > window.innerWidth - staticLogoutBtn.offsetWidth - 8) left = window.innerWidth - staticLogoutBtn.offsetWidth - 8;
-        // Update style
-        staticLogoutBtn.style.top = top + "px";
-        staticLogoutBtn.style.left = left + "px";
-        pos.top = top;
-        pos.left = left;
-      }
-
-      // Drag with mouse
-      staticLogoutBtn.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        staticLogoutBtn.classList.add('dragging');
-        offsetX = e.clientX - staticLogoutBtn.getBoundingClientRect().left;
-        offsetY = e.clientY - staticLogoutBtn.getBoundingClientRect().top;
-        document.body.style.userSelect = 'none';
-      });
-      document.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-          setBtnPosition(e.clientY - offsetY, e.clientX - offsetX);
-        }
-      });
-      document.addEventListener('mouseup', () => {
-        isDragging = false;
-        staticLogoutBtn.classList.remove('dragging');
-        document.body.style.userSelect = '';
-      });
-
-      // Drag with touch
-      staticLogoutBtn.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-          isDragging = true;
-          staticLogoutBtn.classList.add('dragging');
-          const touch = e.touches[0];
-          offsetX = touch.clientX - staticLogoutBtn.getBoundingClientRect().left;
-          offsetY = touch.clientY - staticLogoutBtn.getBoundingClientRect().top;
-        }
-      });
-      document.addEventListener('touchmove', (e) => {
-        if (isDragging && e.touches.length === 1) {
-          const touch = e.touches[0];
-          setBtnPosition(touch.clientY - offsetY, touch.clientX - offsetX);
-        }
-      });
-      document.addEventListener('touchend', () => {
-        isDragging = false;
-        staticLogoutBtn.classList.remove('dragging');
-      });
-
-      // Khi cuộn, nếu nút đi lên sát menu thì luôn giữ dưới menu
-      window.addEventListener('scroll', () => {
-        // Lấy vị trí hiện tại so với viewport
-        const minTop = DEFAULT_TOP;
-        if (pos.top < minTop) {
-          setBtnPosition(minTop, pos.left);
-        }
-      });
-
-      // Khi resize, đảm bảo không bị ra ngoài màn hình
-      window.addEventListener('resize', () => {
-        setBtnPosition(pos.top, pos.left);
-      });
-
 
       const toolbarOptions = [
         [{ 'font': [] }, { 'size': [] }],
@@ -366,10 +275,6 @@
           loginContainer.classList.add("hidden");
           adminContainer.classList.remove("hidden");
           staticLogoutBtn.classList.remove("hidden"); 
-          // Reset vị trí nút khi đăng nhập
-          setTimeout(() => {
-            setBtnPosition(DEFAULT_TOP, window.innerWidth - staticLogoutBtn.offsetWidth - 32);
-          }, 10);
 
           if (!window.dashboardLoaded) {
             loadDashboard();
