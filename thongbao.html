@@ -4,15 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bảng Tin Trung Tâm</title>
-    <!-- SỬA LỖI: Tải Tailwind CSS (không cần plugin) -->
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- ✅ Thêm Alpine.js (toàn cục) để dropdown trong menu hoạt động -->
+    <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
     
-    <!-- Tích hợp Font Inter từ Google Fonts -->
+    <!-- Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- SỬA LỖI: Thêm CSS của Quill để định dạng nội dung chính xác -->
+    <!-- QuillJS CSS -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 
     <style>
@@ -25,16 +29,12 @@
         @keyframes fadeIn {
             to { opacity: 1; transform: translateY(0); }
         }
-
-        /* Đã cập nhật: Giữ nguyên trạng thái rút gọn */
         .content-wrapper {
-            max-height: 100px; /* Chiều cao ban đầu bị giới hạn */
+            max-height: 100px;
             overflow: hidden;
             position: relative;
         }
-        
-        /* Lớp giả ::after để tạo hiệu ứng mờ dần */
-         .content-wrapper::after {
+        .content-wrapper::after {
             content: '';
             position: absolute;
             bottom: 0;
@@ -43,16 +43,14 @@
             height: 30px;
             background: linear-gradient(to top, white, rgba(255,255,255,0));
         }
-        
-        /* CSS cho Modal */
         #announcement-modal {
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
-            pointer-events: none; /* Bắt đầu bị vô hiệu hóa */
+            pointer-events: none;
         }
         #announcement-modal.is-open {
             opacity: 1;
-            pointer-events: auto; /* Kích hoạt khi mở */
+            pointer-events: auto;
         }
         #modal-content-box {
             transform: scale(0.95);
@@ -63,34 +61,29 @@
             transform: scale(1);
             opacity: 1;
         }
-
-        /* SỬA LỖI: Ghi đè CSS của Quill để bỏ padding/border mặc định */
         .ql-editor {
             padding: 0;
             border: none;
-            line-height: 1.6; /* Thêm khoảng cách dòng dễ đọc */
+            line-height: 1.6;
         }
-        /* Đảm bảo link trong ql-editor có màu xanh */
         .ql-editor a {
-            color: #2563eb; /* text-blue-600 */
+            color: #2563eb;
             text-decoration: underline;
         }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <!-- Trình giữ chỗ cho Navbar được chèn vào đây -->
+    <!-- ✅ Placeholder cho Navbar -->
     <header id="navbar-placeholder"></header>
 
-    <!-- Bộ đếm trực tuyến mới -->
-    <!-- SỬA LỖI: Thêm pt-24 (padding-top: 6rem) để chừa không gian cho menu fixed -->
+    <!-- Nội dung chính giữ nguyên -->
     <div class="online-counter-box container mx-auto px-6 pt-24">
         <div class="bg-white shadow rounded-lg p-3 text-center text-gray-700 text-sm">
             🟢 Hiện có Bạn và <span id="online-counter" class="font-bold">0</span> người nữa đang truy cập hệ thống.
         </div>
     </div>
 
-    <!-- Tiêu đề Bảng tin cũ -->
     <header class="bg-white shadow-md mt-4">
         <div class="container mx-auto px-6 py-4">
             <h1 class="text-3xl font-bold text-indigo-600">Bảng Tin Trung Tâm</h1>
@@ -100,7 +93,6 @@
 
     <main class="container mx-auto px-6 py-8">
         <div id="announcements-grid" class="grid gap-8 lg:grid-cols-3 md:grid-cols-2">
-            <!-- Thông báo sẽ được tải vào đây -->
             <p id="loading-message" class="text-gray-500 col-span-full text-center">Đang tải thông báo...</p>
         </div>
     </main>
@@ -111,11 +103,9 @@
         </div>
     </footer>
 
-    <!-- Cấu trúc HTML của Modal (mới) -->
-    <!-- SỬA LỖI GIAO DIỆN: Tăng z-index từ z-40 lên z-[60] để nó hiển thị TRÊN menu -->
+    <!-- Modal -->
     <div id="announcement-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] hidden items-center justify-center p-4">
         <div id="modal-content-box" class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <!-- Header Modal -->
             <div class="flex justify-between items-start p-5 border-b">
                 <div class="flex flex-col">
                     <h3 id="modal-title" class="text-2xl font-bold text-gray-900"></h3>
@@ -125,26 +115,21 @@
                     </div>
                 </div>
                 <button id="modal-close-btn" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <!-- Body Modal (có thể cuộn) -->
-            <!-- SỬA LỖI (Link/Xuống dòng): Xóa 'prose', thêm 'ql-editor' và padding (p-6) -->
-            <div id="modal-body" class="p-6 overflow-y-auto ql-editor">
-                <!-- Nội dung đầy đủ sẽ được chèn vào đây -->
-            </div>
+            <div id="modal-body" class="p-6 overflow-y-auto ql-editor"></div>
         </div>
     </div>
 
+    <!-- Firebase -->
     <script type="module">
-        // Import các mô-đun Firebase (chuẩn hóa phiên bản 11.6.1)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, query, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getDatabase, ref, push, onValue, onDisconnect, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // Cấu hình Firebase mới (bao gồm databaseURL)
         const firebaseConfig = {
-            apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c", // Lưu ý: API key này từ mã thứ 2
+            apiKey: "AIzaSyAjBMA-atKKvecY8CWeQXZsIQ3yHckZ92c",
             authDomain: "tracuu-d3ee9.firebaseapp.com",
             databaseURL: "https://tracuu-d3ee9-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "tracuu-d3ee9",
@@ -153,25 +138,19 @@
             appId: "1:593568604435:web:9a5145457a8ee734143ae6"
         };
 
-        // Khởi tạo Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const rtdb = getDatabase(app, firebaseConfig.databaseURL);
 
-        // --- Lấy các phần tử Modal (mới) ---
         const modal = document.getElementById('announcement-modal');
         const modalTitle = document.getElementById('modal-title');
         const modalCategory = document.getElementById('modal-category');
         const modalDate = document.getElementById('modal-date');
         const modalBody = document.getElementById('modal-body');
         const modalCloseBtn = document.getElementById('modal-close-btn');
-
-        // --- Kho lưu trữ dữ liệu thông báo (mới) ---
         const announcementsData = new Map();
-
-        // --- Logic cho Bảng Tin ---
-        const announcementsCol = collection(db, 'announcements');
         const grid = document.getElementById('announcements-grid');
+        const announcementsCol = collection(db, 'announcements');
 
         const getCategoryStyles = (category) => {
             switch (category) {
@@ -181,162 +160,100 @@
                 default: return { border: 'border-yellow-500', bg: 'bg-yellow-100', text: 'text-yellow-700' };
             }
         };
-        
+
         const q = query(announcementsCol, orderBy('createdAt', 'desc'));
 
         onSnapshot(q, (querySnapshot) => {
-            grid.innerHTML = ''; // Xóa thông báo cũ
-            announcementsData.clear(); // Xóa dữ liệu cũ khỏi map
+            grid.innerHTML = '';
+            announcementsData.clear();
 
             if (querySnapshot.empty) {
                 grid.innerHTML = '<p class="text-gray-500 col-span-full text-center">Chưa có thông báo nào.</p>';
                 return;
             }
+
             querySnapshot.forEach((doc) => {
-                const announcement = doc.data();
-                announcementsData.set(doc.id, announcement); // Lưu dữ liệu đầy đủ
-                
-                const styles = getCategoryStyles(announcement.category);
-                const date = announcement.createdAt?.toDate().toLocaleDateString('vi-VN', {
-                    day: '2-digit', month: '2-digit', year: 'numeric'
-                }) || 'Không có ngày';
-
-                // Kiểm tra xem nội dung có thực sự dài hơn giới hạn hay không
-                // (Sử dụng textContent để đếm ký tự, không phải HTML)
+                const data = doc.data();
+                announcementsData.set(doc.id, data);
+                const styles = getCategoryStyles(data.category);
+                const date = data.createdAt?.toDate().toLocaleDateString('vi-VN') || 'Không có ngày';
                 const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = announcement.content;
-                const plainText = tempDiv.textContent || tempDiv.innerText || "";
-                const needsTruncation = plainText.length > 200;
-
+                tempDiv.innerHTML = data.content;
+                const needsTruncation = (tempDiv.textContent || "").length > 200;
 
                 const article = document.createElement('article');
                 article.className = `announcement-card bg-white rounded-lg shadow-lg overflow-hidden border-l-4 ${styles.border}`;
                 article.innerHTML = `
                     <div class="p-6">
                         <div class="flex items-center justify-between mb-4">
-                            <span class="${styles.bg} ${styles.text} text-sm font-semibold px-3 py-1 rounded-full">${announcement.category}</span>
+                            <span class="${styles.bg} ${styles.text} text-sm font-semibold px-3 py-1 rounded-full">${data.category}</span>
                             <time class="text-sm text-gray-500">${date}</time>
                         </div>
-                        <h2 class="text-2xl font-bold mb-2 text-gray-900">${announcement.title}</h2>
+                        <h2 class="text-2xl font-bold mb-2 text-gray-900">${data.title}</h2>
                         <div class="content-wrapper">
-                             <!-- SỬA LỖI (Link/Xuống dòng): Thay 'prose' bằng 'ql-editor' -->
-                             <div class="text-gray-700 leading-relaxed ql-editor">${announcement.content}</div>
+                            <div class="text-gray-700 leading-relaxed ql-editor">${data.content}</div>
                         </div>
-                        <!-- Cập nhật: Thêm data-id để biết mở thông báo nào -->
                         ${needsTruncation ? `<button data-id="${doc.id}" class="toggle-content-btn text-indigo-600 hover:underline text-sm mt-2 font-semibold">Xem thêm</button>` : ''}
-                    </div>
-                `;
+                    </div>`;
                 grid.appendChild(article);
             });
-        }, (error) => {
-            console.error("Lỗi khi tải thông báo: ", error);
-            grid.innerHTML = '<p class="text-red-500 col-span-full text-center">Không thể tải thông báo.</p>';
         });
 
-        // --- Các hàm xử lý Modal (mới) ---
-        function openModal(docId) {
-            const data = announcementsData.get(docId);
-            if (!data) return; // Không tìm thấy dữ liệu
-
-            // Định dạng lại ngày (để chắc chắn)
-            const date = data.createdAt?.toDate().toLocaleDateString('vi-VN', {
-                day: '2-digit', month: '2-digit', year: 'numeric'
-            }) || 'Không có ngày';
-            
+        function openModal(id) {
+            const data = announcementsData.get(id);
+            if (!data) return;
             const styles = getCategoryStyles(data.category);
-
-            // Đổ dữ liệu vào modal
             modalTitle.textContent = data.title;
-            // SỬA LỖI (Link): Sử dụng innerHTML để render HTML từ Quill
-            modalBody.innerHTML = data.content; 
-            modalDate.textContent = date;
+            modalBody.innerHTML = data.content;
+            modalDate.textContent = data.createdAt?.toDate().toLocaleDateString('vi-VN') || '';
             modalCategory.textContent = data.category;
             modalCategory.className = `${styles.bg} ${styles.text} text-sm font-semibold px-3 py-1 rounded-full`;
-
-            // Hiển thị modal
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            setTimeout(() => modal.classList.add('is-open'), 10); // Thêm class để kích hoạt transition
+            setTimeout(() => modal.classList.add('is-open'), 10);
         }
 
         function closeModal() {
-            modal.classList.remove('is-open'); // Bắt đầu transition đóng
+            modal.classList.remove('is-open');
             setTimeout(() => {
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
-                // Xóa nội dung cũ để tránh bị "flash" khi mở lần sau
-                modalTitle.textContent = '';
-                modalBody.innerHTML = ''; // SỬA LỖI: Dùng innerHTML
-                modalDate.textContent = '';
-                modalCategory.textContent = '';
-            }, 300); // Chờ transition 0.3s hoàn tất
+                modalBody.innerHTML = '';
+            }, 300);
         }
 
-        // --- Sự kiện click (đã cập nhật) ---
-        // Sự kiện click để mở modal
-        grid.addEventListener('click', function(e) {
-            // Cho phép click vào thẻ P, SPAN, v.v. bên trong nút
-            const button = e.target.closest('.toggle-content-btn');
-            if (button) {
-                const docId = button.dataset.id;
-                openModal(docId);
-            }
+        grid.addEventListener('click', (e) => {
+            const btn = e.target.closest('.toggle-content-btn');
+            if (btn) openModal(btn.dataset.id);
         });
 
-
-        // Sự kiện click để đóng modal
         modalCloseBtn.addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => {
-            // Chỉ đóng khi click vào nền mờ (chính là #announcement-modal)
-            if (e.target === modal) {
-                closeModal();
-            }
-        });
+        modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
-        // --- Logic cho Bộ Đếm Trực Tuyến (giữ nguyên) ---
+        // Online counter (giữ nguyên)
         (function initOnlineCounter() {
             const onlineCounterEl = document.getElementById('online-counter');
-            if (!onlineCounterEl) return;
-            try {
-                const connectionsRef = ref(rtdb, 'connections');
-                const myConnectionRef = push(connectionsRef);
-                onDisconnect(myConnectionRef).remove().catch(() => {});
-                set(myConnectionRef, true).catch(() => {});
-                
-                onValue(connectionsRef, snapshot => {
-                    let count = 0;
-                    if (snapshot.exists()) {
-                        const val = snapshot.val();
-                        if (val && typeof val === 'object') {
-                            count = Object.keys(val).length;
-                        } else {
-                            count = 1;
-                        }
-                    }
-                    // SỬA LỖI: Hiển thị tổng số lượng (không trừ 1)
-                    onlineCounterEl.textContent = count; 
-                }, err => {
-                    console.error("Lỗi khi lấy giá trị connections: ", err);
-                });
-            } catch (err) {
-                console.error("Lỗi khởi tạo bộ đếm thời gian thực: ", err);
-            }
+            const connectionsRef = ref(rtdb, 'connections');
+            const myConnectionRef = push(connectionsRef);
+            onDisconnect(myConnectionRef).remove();
+            set(myConnectionRef, true);
+            onValue(connectionsRef, snapshot => {
+                const val = snapshot.val();
+                const count = val ? Object.keys(val).length : 0;
+                onlineCounterEl.textContent = count;
+            });
         })();
 
-        // --- Logic tải Navbar (SỬA LỖI: Tải menu_tailwind.html) ---
-        fetch('./menu_tailwind.html') // Tải phiên bản Tailwind của menu
+        // ✅ Load menu và khởi động lại Alpine
+        fetch('./menu_tailwind.html')
             .then(r => r.text())
             .then(html => {
                 const placeholder = document.getElementById('navbar-placeholder');
-                if (placeholder) {
-                    placeholder.innerHTML = html;
-                }
+                placeholder.innerHTML = html;
+                // Bắt Alpine khởi chạy lại để dropdown hoạt động
+                setTimeout(() => { if (window.Alpine) window.Alpine.start(); }, 100);
             })
-            .catch(err => {
-                console.warn("Không thể tải menu_tailwind.html: ", err);
-            });
-
+            .catch(err => console.warn("Không thể tải menu_tailwind.html:", err));
     </script>
 </body>
 </html>
-
