@@ -74,66 +74,67 @@
       🟢 Bạn và <span id="online-counter">0</span> người khác đang truy cập hệ thống.
     </div>
 
-    <!-- TAB -->
+    <!-- TAB + ĐĂNG XUẤT (flex) -->
     <div class="mb-6">
-        <div class="border-b border-gray-300 flex justify-between items-center">
-            <nav class="flex space-x-4" aria-label="Tabs">
-                <button id="tab-list" class="text-indigo-600 border-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Quản trị thông báo
-                </button>
-                <button id="tab-add" class="text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Thêm mới thông báo
-                </button>
-            </nav>
-            <!-- Nút Đăng xuất -->
-            <button id="admin-logout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg z-50 mb-2">
-                <i class="fas fa-sign-out-alt mr-2"></i>Đăng Xuất
-            </button>
-        </div>
+      <div class="flex justify-between items-center border-b border-gray-300 py-2">
+        <!-- Tabs bên trái -->
+        <nav class="flex space-x-4" aria-label="Tabs">
+          <button id="tab-list" class="text-indigo-600 border-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+            Quản trị thông báo
+          </button>
+          <button id="tab-add" class="text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+            Thêm mới thông báo
+          </button>
+        </nav>
+        <!-- Nút đăng xuất bên phải -->
+        <button id="admin-logout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg z-50 font-semibold text-base flex items-center gap-2 transition">
+          <i class="fas fa-sign-out-alt"></i> Đăng Xuất
+        </button>
+      </div>
     </div>
 
     <!-- DANH SÁCH THÔNG BÁO -->
     <div id="list-container">
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-          <h2 class="text-xl font-bold mb-6 text-gray-700">Danh Sách Thông Báo</h2>
-          <div id="announcements-list" class="space-y-4"></div>
-        </div>
+      <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h2 class="text-xl font-bold mb-6 text-gray-700">Danh Sách Thông Báo</h2>
+        <div id="announcements-list" class="space-y-4"></div>
+      </div>
     </div>
     
     <!-- FORM THÔNG BÁO -->
     <div id="form-container" class="hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg max-w-3xl mx-auto">
-          <h2 id="form-title" class="text-xl font-bold mb-6 text-gray-700">Thêm Thông Báo Mới</h2>
-          <form id="announcement-form">
-            <div class="mb-4">
-              <label class="block text-gray-700 font-medium mb-2">Tiêu đề</label>
-              <input id="title" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+      <div class="bg-white p-6 rounded-lg shadow-lg max-w-3xl mx-auto">
+        <h2 id="form-title" class="text-xl font-bold mb-6 text-gray-700">Thêm Thông Báo Mới</h2>
+        <form id="announcement-form">
+          <div class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2">Tiêu đề</label>
+            <input id="title" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2">Nội dung</label>
+            <div class="quill-container">
+              <div id="editor"></div>
             </div>
-            <div class="mb-4">
-              <label class="block text-gray-700 font-medium mb-2">Nội dung</label>
-              <div class="quill-container">
-                <div id="editor"></div>
-              </div>
-            </div>
-            <div class="mb-4">
-              <label class="block text-gray-700 font-medium mb-2">Danh mục</label>
-              <select id="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
-                <option>Thông Tin Chung</option>
-                <option>Quan Trọng</option>
-                <option>Lịch Học</option>
-                <option>Sự Kiện</option>
-              </select>
-            </div>
-            <div class="flex gap-3">
-              <button id="submit-btn" type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">
-                <i class="fa fa-paper-plane mr-2"></i><span>Đăng Thông Báo</span>
-              </button>
-              <button id="cancel-edit-btn" type="button" class="hidden flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded-lg">
-                <i class="fa fa-times mr-2"></i>Hủy
-              </button>
-            </div>
-          </form>
-        </div>
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2">Danh mục</label>
+            <select id="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
+              <option>Thông Tin Chung</option>
+              <option>Quan Trọng</option>
+              <option>Lịch Học</option>
+              <option>Sự Kiện</option>
+            </select>
+          </div>
+          <div class="flex gap-3">
+            <button id="submit-btn" type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg">
+              <i class="fa fa-paper-plane mr-2"></i><span>Đăng Thông Báo</span>
+            </button>
+            <button id="cancel-edit-btn" type="button" class="hidden flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded-lg">
+              <i class="fa fa-times mr-2"></i>Hủy
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
