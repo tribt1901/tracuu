@@ -1,69 +1,98 @@
-<!-- 
-  Tệp này đã được viết lại bằng Tailwind CSS và Alpine.js 
-  để sao chép chính xác menu.html (Bootstrap) gốc.
-  Nó được sử dụng bởi admin.html và thongbao.html.
--->
-<!-- SỬA LỖI: Thay đổi //unpkg.com thành https://unpkg.com -->
-<script src="https://unpkg.com/alpinejs" defer></script>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu TVU & Tiện ích</title>
 
-<nav x-data="{ open: false }" class="fixed top-0 left-0 right-0 z-50 shadow-sm text-white" style="background-color:#3B5C94">
-  <div class="container-fluid mx-auto px-6 py-3">
-    <div class="flex justify-between items-center">
-      
-      <!-- Brand/Logo -->
-      <a class="text-white text-lg font-bold whitespace-nowrap" href="/">📘 Hệ thống tra cứu TVU & Tiện ích</a>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-      <!-- Mobile Menu Button -->
-      <button @click="open = !open" class="lg:hidden text-white focus:outline-none">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path :class="{'hidden': open}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-          <path :class="{'hidden': !open}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </button>
+  <!-- Alpine.js -->
+  <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
 
-      <!-- Menu Links (Desktop & Mobile) -->
-      <!-- 
-        Menu di động: 'absolute' để thả xuống, 'lg:relative' để trở lại bình thường trên desktop.
-        Nền: 'bg-[#3B5C94]' cho di động, 'lg:bg-transparent' cho desktop.
-      -->
-      <div :class="open ? 'block' : 'hidden'" class="w-full lg:flex lg:items-center lg:w-auto absolute lg:relative top-[60px] lg:top-auto left-0 bg-[#3B5C94] lg:bg-transparent shadow-md lg:shadow-none py-4 lg:py-0 px-6 lg:px-0">
-        <ul class="flex flex-col lg:flex-row lg:items-center lg:space-x-6">
+  <!-- Ẩn phần tử có x-cloak để chống chớp -->
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="bg-gray-100">
+
+  <!-- Thanh menu -->
+  <nav x-data="{ open: false }" class="fixed top-0 left-0 right-0 z-50 shadow-sm text-white" style="background-color:#3B5C94">
+    <div class="container-fluid mx-auto px-6 py-3">
+      <div class="flex justify-between items-center">
+        
+        <!-- Logo / Tên hệ thống -->
+        <a class="text-white text-lg font-bold whitespace-nowrap" href="/">📘 Hệ thống tra cứu TVU & Tiện ích</a>
+
+        <!-- Nút mở menu (mobile) -->
+        <button @click="open = !open" class="lg:hidden text-white focus:outline-none">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path x-show="!open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M4 6h16M4 12h16m-7 6h7"></path>
+            <path x-show="open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+
+        <!-- Danh sách menu -->
+        <div :class="open ? 'block' : 'hidden'" 
+             class="w-full lg:flex lg:items-center lg:w-auto absolute lg:relative top-[60px] lg:top-auto left-0 bg-[#3B5C94] lg:bg-transparent shadow-md lg:shadow-none py-4 lg:py-0 px-6 lg:px-0">
           
-          <li class="nav-item">
-            <a class="nav-link text-white hover:text-gray-200 py-2 block" href="/">Trang chủ</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white hover:text-gray-200 py-2 block" href="/upload">Upload</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white hover:text-gray-200 py-2 block" href="/export">Đề Cương</a>
-          </li>
-          
-          <!-- Dropdown "Tiện ích" -->
-          <li class="nav-item relative" x-data="{ dropdown: false }">
-            <button @click="dropdown = !dropdown" class="nav-link text-white hover:text-gray-200 py-2 w-full text-left lg:text-center flex items-center justify-between">
-              <span>Tiện ích</span>
-              <svg class="w-4 h-4 ml-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-            </button>
-            
-            <!-- Dropdown Panel -->
-            <ul @click.outside="dropdown = false" x-show="dropdown" x-transition
-                class="lg:absolute lg:right-0 mt-2 py-2 w-full lg:w-48 bg-white rounded-lg shadow-xl z-50 static"
-                style="display: none;"> <!-- style="display: none;" giúp chống chớp (flash) khi tải -->
-              <li><a class="dropdown-item block px-4 py-2 text-gray-800 hover:bg-indigo-500 hover:text-white" href="/ocr">Tra cứu OCR</a></li>
-              <li><a class="dropdown-item block px-4 py-2 text-gray-800 hover:bg-indigo-500 hover:text-white" href="https://microsoftedge.microsoft.com/addons/detail/tr%E1%BB%A3-l%C3%BD-h%E1%BB%8Dc-t%E1%BA%ADp-hg/ighppgieadhjnhinnodngbnbidgflajc" target="_blank">Trợ lý học tập HG</a></li>
-              <li><a class="dropdown-item block px-4 py-2 text-gray-800 hover:bg-indigo-500 hover:text-white" href="/wifi-qrcode">Tạo QR Wifi</a></li>
-              <li><a class="dropdown-item block px-4 py-2 text-gray-800 hover:bg-indigo-500 hover:text-white" href="/privacy_policy">Chính sách bảo mật</a></li>
-              <li><a class="dropdown-item block px-4 py-2 text-gray-800 hover:bg-indigo-500 hover:text-white" href="/outlineOK">Đề cương đóng góp</a></li>
-            </ul>
-          </li>
+          <ul class="flex flex-col lg:flex-row lg:items-center lg:space-x-6">
+            <li>
+              <a class="text-white hover:text-gray-200 py-2 block" href="/">Trang chủ</a>
+            </li>
+            <li>
+              <a class="text-white hover:text-gray-200 py-2 block" href="/upload">Upload</a>
+            </li>
+            <li>
+              <a class="text-white hover:text-gray-200 py-2 block" href="/export">Đề Cương</a>
+            </li>
 
-          <li class="nav-item">
-            <a class="nav-link text-white hover:text-gray-200 py-2 block" href="https://hugo.io.vn" target="_blank">Đếm ngày đến Tết</a>
-          </li>
-        </ul>
+            <!-- Dropdown Tiện ích -->
+            <li class="relative" x-data="{ dropdown: false }">
+              <button @click="dropdown = !dropdown" 
+                      class="text-white hover:text-gray-200 py-2 w-full text-left lg:text-center flex items-center justify-between">
+                <span>Tiện ích</span>
+                <svg class="w-4 h-4 ml-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" 
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" 
+                        clip-rule="evenodd"></path>
+                </svg>
+              </button>
+
+              <!-- Menu con -->
+              <ul x-cloak
+                  x-show="dropdown"
+                  x-transition
+                  @click.outside="dropdown = false"
+                  class="lg:absolute lg:right-0 mt-2 py-2 w-full lg:w-48 bg-white rounded-lg shadow-xl z-50 static">
+                <li><a class="block px-4 py-2 text-gray-800 hover:bg-indigo-500 hover:text-white" href="/ocr">Tra cứu OCR</a></li>
+                <li><a class="block px-4 py-2 text-gray-800 hover:bg-indigo-500 hover:text-white" 
+                       href="https://microsoftedge.microsoft.com/addons/detail/tr%E1%BB%A3-l%C3%BD-h%E1%BB%8Dc-t%E1%BA%ADp-hg/ighppgieadhjnhinnodngbnbidgflajc" 
+                       target="_blank">Trợ lý học tập HG</a></li>
+                <li><a class="block px-4 py-2 text-gray-800 hover:bg-indigo-500 hover:text-white" href="/wifi-qrcode">Tạo QR Wifi</a></li>
+                <li><a class="block px-4 py-2 text-gray-800 hover:bg-indigo-500 hover:text-white" href="/privacy_policy">Chính sách bảo mật</a></li>
+                <li><a class="block px-4 py-2 text-gray-800 hover:bg-indigo-500 hover:text-white" href="/outlineOK">Đề cương đóng góp</a></li>
+              </ul>
+            </li>
+
+            <li>
+              <a class="text-white hover:text-gray-200 py-2 block" href="https://hugo.io.vn" target="_blank">Đếm ngày đến Tết</a>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
+  <!-- Nội dung trang -->
+  <div class="pt-20 text-center">
+    <h1 class="text-2xl font-semibold text-gray-700 mt-6">Trang demo menu</h1>
+    <p class="text-gray-500 mt-2">Menu hoạt động tốt cả trên desktop và mobile, dropdown "Tiện ích" đã được sửa lỗi hiển thị.</p>
+  </div>
+
+</body>
+</html>
